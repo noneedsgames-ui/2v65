@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/Companion.tscn" id="2"]
@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://scenes/IronVein.tscn" id="9"]
 [ext_resource type="PackedScene" path="res://scenes/FiberPatch.tscn" id="10"]
 [ext_resource type="PackedScene" path="res://scenes/ui/UIRoot.tscn" id="11"]
+[ext_resource type="Script" path="res://scripts/Main.gd" id="12"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(3200, 40)
@@ -25,6 +26,7 @@ size = Vector2(200, 30)
 size = Vector2(240, 30)
 
 [node name="Main" type="Node2D"]
+script = ExtResource("12")
 
 [node name="Background" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(-100, -1200, 3300, -1200, 3300, 450, -100, 450)

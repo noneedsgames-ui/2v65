@@ -46,7 +46,7 @@ func refresh() -> void:
 func _buy(id: String, price: int) -> void:
 	if Inventory.spend_gold(price):
 		Inventory.add_item(id, 1)
-		EventBus.notify.emit("%sを購入した" % ItemDB.get_name(id))
+		EventBus.notify.emit("%sを購入した" % ItemDB.get_display_name(id))
 	else:
 		EventBus.notify.emit("お金が足りません")
 	refresh()
@@ -54,7 +54,7 @@ func _buy(id: String, price: int) -> void:
 func _sell(id: String, price: int) -> void:
 	if Inventory.remove_item(id, 1):
 		Inventory.add_gold(price)
-		EventBus.notify.emit("%sを売却した (+%dG)" % [ItemDB.get_name(id), price])
+		EventBus.notify.emit("%sを売却した (+%dG)" % [ItemDB.get_display_name(id), price])
 	refresh()
 
 func _on_close() -> void:

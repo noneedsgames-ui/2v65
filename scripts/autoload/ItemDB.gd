@@ -42,7 +42,9 @@ func _register(id: String, display_name: String, type: int, color: Color, sell_p
 func get_item(id: String) -> Dictionary:
 	return items.get(id, {})
 
-func get_name(id: String) -> String:
+## Node.get_name() (StringName を返すネイティブメソッド)と衝突するため
+## get_display_name という名前にしている。
+func get_display_name(id: String) -> String:
 	var it := get_item(id)
 	return it.get("name", id) if not it.is_empty() else id
 

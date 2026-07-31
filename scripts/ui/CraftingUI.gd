@@ -15,7 +15,7 @@ func refresh() -> void:
 		for item_id in recipe["inputs"].keys():
 			var need: int = int(recipe["inputs"][item_id])
 			var have: int = Inventory.get_count(item_id)
-			parts.append("%s %d/%d" % [ItemDB.get_name(item_id), have, need])
+			parts.append("%s %d/%d" % [ItemDB.get_display_name(item_id), have, need])
 		var out_item: Dictionary = ItemDB.get_item(recipe["output_id"])
 		var label_text := "%s ← %s" % [recipe["name"], ", ".join(parts)]
 		var can: bool = RecipeDB.can_craft(recipe["id"])

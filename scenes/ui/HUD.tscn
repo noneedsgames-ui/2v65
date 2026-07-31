@@ -41,7 +41,7 @@ theme_override_constants/outline_size = 3
 text = "移動:A/D  ジャンプ:Space  調べる:E  持ち物:I  クラフト:C"
 
 [node name="PromptLabel" type="Label" parent="."]
-layout_mode = 0
+layout_mode = 1
 anchor_left = 0.5
 anchor_right = 0.5
 anchor_top = 1.0
@@ -58,7 +58,7 @@ horizontal_alignment = 1
 text = ""
 
 [node name="ToastLabel" type="Label" parent="."]
-layout_mode = 0
+layout_mode = 1
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -260.0

@@ -54,7 +54,7 @@ func refresh() -> void:
 func _list_item(id: String, price: int) -> void:
 	if Inventory.remove_item(id, 1):
 		GameState.stall_add_item(id, 1, price)
-		EventBus.notify.emit("%sを露店に並べた" % ItemDB.get_name(id))
+		EventBus.notify.emit("%sを露店に並べた" % ItemDB.get_display_name(id))
 	refresh()
 
 func _withdraw(index: int) -> void:

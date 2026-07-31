@@ -17,10 +17,10 @@ func chest_add(id: String, count: int) -> void:
 	for entry in chest_items:
 		if entry["id"] == id:
 			entry["count"] += count
-			EventBus.notify.emit("収納箱に%sを預けました" % ItemDB.get_name(id))
+			EventBus.notify.emit("収納箱に%sを預けました" % ItemDB.get_display_name(id))
 			return
 	chest_items.append({"id": id, "count": count})
-	EventBus.notify.emit("収納箱に%sを預けました" % ItemDB.get_name(id))
+	EventBus.notify.emit("収納箱に%sを預けました" % ItemDB.get_display_name(id))
 
 func chest_remove(id: String, count: int) -> bool:
 	for entry in chest_items:
@@ -59,6 +59,21 @@ func save_game() -> void:
 		has_save = true
 		EventBus.notify.emit("セーブしました")
 
+## JSON は数値をすべて float で復元するため、int を期待するキーを整数に戻す。
+## これをしないと Stall や UI 側で int 型変数への代入が実行時エラーになる。
+func _restore_entries(raw, int_keys: Array) -> Array:
+	var result: Array = []
+	if typeof(raw) != TYPE_ARRAY:
+		return result
+	for entry in raw:
+		if typeof(entry) != TYPE_DICTIONARY or not entry.has("id"):
+			continue
+		var restored := {"id": str(entry["id"])}
+		for key in int_keys:
+			restored[key] = int(entry.get(key, 0))
+		result.append(restored)
+	return result
+
 func load_game() -> bool:
 	if not FileAccess.file_exists(SAVE_PATH):
 		return false
@@ -74,9 +89,9 @@ func load_game() -> bool:
 	if data.has("inventory"):
 		Inventory.load_save_data(data["inventory"])
 	if data.has("chest"):
-		chest_items = data["chest"]
+		chest_items = _restore_entries(data["chest"], ["count"])
 	if data.has("stall"):
-		stall_items = data["stall"]
+		stall_items = _restore_entries(data["stall"], ["count", "price"])
 	if data.has("spawn_x") and data.has("spawn_y"):
 		player_spawn_position = Vector2(data["spawn_x"], data["spawn_y"])
 	has_save = true

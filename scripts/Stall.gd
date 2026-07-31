@@ -36,7 +36,7 @@ func _try_sell_to_customer() -> void:
 	entry["count"] -= buy_count
 	var earned: int = entry["price"] * buy_count
 	Inventory.add_gold(earned)
-	var log_entry := "客が%sを%d個購入(+%dG)" % [ItemDB.get_name(entry["id"]), buy_count, earned]
+	var log_entry := "客が%sを%d個購入(+%dG)" % [ItemDB.get_display_name(entry["id"]), buy_count, earned]
 	GameState.stall_earnings_log.append(log_entry)
 	if GameState.stall_earnings_log.size() > 20:
 		GameState.stall_earnings_log.remove_at(0)

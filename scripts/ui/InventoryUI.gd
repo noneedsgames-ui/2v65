@@ -35,7 +35,7 @@ func refresh() -> void:
 
 func _use_item(id: String) -> void:
 	if Inventory.remove_item(id, 1):
-		EventBus.notify.emit("%sを食べた。おいしい!" % ItemDB.get_name(id))
+		EventBus.notify.emit("%sを食べた。おいしい!" % ItemDB.get_display_name(id))
 	refresh()
 
 func _on_close() -> void:

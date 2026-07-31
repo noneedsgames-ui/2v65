@@ -24,19 +24,19 @@ func get_prompt() -> String:
 	if depleted:
 		return ""
 	if required_tool != "" and not Inventory.has_item(required_tool):
-		return "%s (%sが必要) " % [display_name, ItemDB.get_name(required_tool)]
+		return "%s (%sが必要) " % [display_name, ItemDB.get_display_name(required_tool)]
 	return "%s を採集 [E]" % display_name
 
 func interact(_actor: Node) -> void:
 	if depleted:
 		return
 	if required_tool != "" and not Inventory.has_item(required_tool):
-		EventBus.notify.emit("%sが必要です" % ItemDB.get_name(required_tool))
+		EventBus.notify.emit("%sが必要です" % ItemDB.get_display_name(required_tool))
 		return
 	var amount := randi_range(min_amount, max_amount)
 	var added := Inventory.add_item(item_id, amount)
 	if added > 0:
-		EventBus.notify.emit("%s +%d" % [ItemDB.get_name(item_id), added])
+		EventBus.notify.emit("%s +%d" % [ItemDB.get_display_name(item_id), added])
 	_deplete()
 
 func _deplete() -> void:
