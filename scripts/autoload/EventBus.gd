@@ -7,7 +7,7 @@ signal interact_prompt_hide()
 signal notify(text: String)
 
 signal request_open_house()
-signal request_open_shop()
+signal request_open_shop(shop_name: String, stock: PackedStringArray)
 signal request_open_stall()
 signal request_close_menus()
 

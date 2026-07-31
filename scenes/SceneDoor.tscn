@@ -1,0 +1,37 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/SceneDoor.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_gate"]
+size = Vector2(64, 200)
+
+[node name="SceneDoor" type="Area2D"]
+collision_layer = 16
+collision_mask = 1
+script = ExtResource("1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -100)
+shape = SubResource("RectangleShape2D_gate")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="PostL" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-34, 0, -34, -150, -24, -150, -24, 0)
+color = Color(0.45, 0.32, 0.18, 1)
+
+[node name="PostR" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(24, 0, 24, -150, 34, -150, 34, 0)
+color = Color(0.45, 0.32, 0.18, 1)
+
+[node name="Beam" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-42, -150, 42, -150, 42, -136, -42, -136)
+color = Color(0.55, 0.4, 0.22, 1)
+
+[node name="SignBoard" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-30, -128, 30, -128, 30, -100, -30, -100)
+color = Color(0.92, 0.86, 0.66, 1)
+
+[node name="Arrow" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-14, -118, 8, -118, 8, -124, 20, -114, 8, -104, 8, -110, -14, -110)
+color = Color(0.35, 0.28, 0.16, 1)

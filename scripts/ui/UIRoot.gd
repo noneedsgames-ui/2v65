@@ -1,10 +1,11 @@
 extends CanvasLayer
-## HUD と各メニューパネルの表示切り替え・排他制御・一時停止を統括する。
+## HUD・ホットバーと各メニューパネルの表示切り替え・排他制御・一時停止を統括する。
 
 @onready var hud: Control = $HUD
+@onready var hotbar: Control = $Hotbar
 @onready var inventory_panel: Control = $InventoryUI
 @onready var house_panel: Control = $HouseUI
-@onready var shop_panel: Control = $ShopUI
+@onready var shop_panel = $ShopUI  # set_shop() を呼ぶため型は付けない
 @onready var stall_panel: Control = $StallUI
 @onready var crafting_panel: Control = $CraftingUI
 
@@ -17,9 +18,11 @@ func _ready() -> void:
 		p.visible = false
 		p.process_mode = Node.PROCESS_MODE_ALWAYS
 	hud.process_mode = Node.PROCESS_MODE_ALWAYS
+	# ホットバーはメニューを開いている間は反応させない
+	hotbar.process_mode = Node.PROCESS_MODE_PAUSABLE
 
 	EventBus.request_open_house.connect(func(): _open(house_panel))
-	EventBus.request_open_shop.connect(func(): _open(shop_panel))
+	EventBus.request_open_shop.connect(_on_request_open_shop)
 	EventBus.request_open_stall.connect(func(): _open(stall_panel))
 	EventBus.request_close_menus.connect(_close_all)
 
@@ -33,6 +36,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("ui_cancel") and _any_open():
 		_close_all()
 		get_viewport().set_input_as_handled()
+
+func _on_request_open_shop(shop_name: String, stock: PackedStringArray) -> void:
+	shop_panel.set_shop(shop_name, stock)
+	_open(shop_panel)
 
 func _toggle(panel: Control) -> void:
 	if panel.visible:
@@ -51,9 +58,11 @@ func _open(panel: Control) -> void:
 		p.visible = (p == panel)
 	if panel.has_method("refresh"):
 		panel.refresh()
+	hotbar.visible = false
 	get_tree().paused = true
 
 func _close_all() -> void:
 	for p in panels:
 		p.visible = false
+	hotbar.visible = true
 	get_tree().paused = false

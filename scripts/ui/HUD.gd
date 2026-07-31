@@ -12,7 +12,7 @@ func _ready() -> void:
 	EventBus.notify.connect(_on_notify)
 	Inventory.gold_changed.connect(_on_gold_changed)
 	toast_timer.timeout.connect(func(): toast_label.visible = false)
-	help_label.text = "移動:A/D  ジャンプ:Space  調べる:E  持ち物:I  クラフト:C  閉じる:Esc"
+	help_label.text = "移動:A/D  ジャンプ:Space  調べる:E  持ち物:I  クラフト:C\nホットバー:1-8 / Q・R  使う:F  閉じる:Esc"
 	prompt_label.visible = false
 	toast_label.visible = false
 	_on_gold_changed(Inventory.gold)

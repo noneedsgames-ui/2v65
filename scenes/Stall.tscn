@@ -43,6 +43,3 @@ color = Color(0.6, 0.6, 0.63, 1)
 [node name="GoodsC" type="Polygon2D" parent="Visual"]
 polygon = PackedVector2Array(26, -26, 26, -36, 40, -36, 40, -26)
 color = Color(0.8, 0.1, 0.3, 1)
-
-[node name="CustomerTimer" type="Timer" parent="."]
-one_shot = true

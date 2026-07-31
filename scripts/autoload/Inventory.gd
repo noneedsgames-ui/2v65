@@ -3,11 +3,15 @@ extends Node
 
 signal changed()
 signal gold_changed(amount: int)
+signal hotbar_selection_changed(index: int)
 
 const MAX_SLOTS := 20
+## 画面下のホットバーに常時表示するスロット数(slots の先頭から)
+const HOTBAR_SIZE := 8
 
 var slots: Array = []  # [{ "id": String, "count": int }, ...]
 var gold: int = 100
+var selected_hotbar: int = 0
 
 func _ready() -> void:
 	slots.resize(MAX_SLOTS)
@@ -78,6 +82,35 @@ func remove_from_slot(index: int, count: int = 1) -> bool:
 		slots[index] = null
 	changed.emit()
 	return true
+
+func get_slot(index: int) -> Variant:
+	if index < 0 or index >= MAX_SLOTS:
+		return null
+	return slots[index]
+
+func select_hotbar(index: int) -> void:
+	if index < 0 or index >= HOTBAR_SIZE or index == selected_hotbar:
+		return
+	selected_hotbar = index
+	hotbar_selection_changed.emit(selected_hotbar)
+
+func cycle_hotbar(step: int) -> void:
+	select_hotbar(posmod(selected_hotbar + step, HOTBAR_SIZE))
+
+## ホットバーで選択中のアイテムを使う。食べ物は消費し、装備品は装備する。
+func use_selected() -> void:
+	var slot = get_slot(selected_hotbar)
+	if slot == null:
+		EventBus.notify.emit("スロットが空です")
+		return
+	var id: String = slot["id"]
+	if ItemDB.get_type(id) == ItemDB.ItemType.FOOD:
+		if remove_item(id, 1):
+			EventBus.notify.emit("%sを食べた。おいしい!" % ItemDB.get_display_name(id))
+	elif ItemDB.is_equippable(id):
+		Equipment.equip(id)
+	else:
+		EventBus.notify.emit("%sは今は使えない" % ItemDB.get_display_name(id))
 
 func add_gold(amount: int) -> void:
 	gold += amount

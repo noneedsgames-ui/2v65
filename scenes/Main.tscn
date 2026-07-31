@@ -4,14 +4,14 @@
 [ext_resource type="PackedScene" path="res://scenes/Companion.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/House.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/Shop.tscn" id="4"]
-[ext_resource type="PackedScene" path="res://scenes/Stall.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/Tree.tscn" id="6"]
 [ext_resource type="PackedScene" path="res://scenes/Rock.tscn" id="7"]
 [ext_resource type="PackedScene" path="res://scenes/Bush.tscn" id="8"]
 [ext_resource type="PackedScene" path="res://scenes/IronVein.tscn" id="9"]
 [ext_resource type="PackedScene" path="res://scenes/FiberPatch.tscn" id="10"]
 [ext_resource type="PackedScene" path="res://scenes/ui/UIRoot.tscn" id="11"]
-[ext_resource type="Script" path="res://scripts/Main.gd" id="12"]
+[ext_resource type="Script" path="res://scripts/WorldRoot.gd" id="12"]
+[ext_resource type="PackedScene" path="res://scenes/SceneDoor.tscn" id="13"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(3200, 40)
@@ -27,6 +27,7 @@ size = Vector2(240, 30)
 
 [node name="Main" type="Node2D"]
 script = ExtResource("12")
+is_field = true
 
 [node name="Background" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(-100, -1200, 3300, -1200, 3300, 450, -100, 450)
@@ -82,9 +83,6 @@ position = Vector2(320, 400)
 [node name="Shop" parent="." instance=ExtResource("4")]
 position = Vector2(620, 400)
 
-[node name="Stall" parent="." instance=ExtResource("5")]
-position = Vector2(900, 400)
-
 [node name="Tree1" parent="." instance=ExtResource("6")]
 position = Vector2(480, 400)
 
@@ -126,6 +124,12 @@ position = Vector2(1400, 325)
 
 [node name="Rock3" parent="." instance=ExtResource("7")]
 position = Vector2(2200, 325)
+
+[node name="DoorToTown" parent="." instance=ExtResource("13")]
+position = Vector2(3060, 400)
+target_scene = "res://scenes/Town.tscn"
+spawn_position = Vector2(180, 380)
+label = "町へ行く"
 
 [node name="Companion" parent="." instance=ExtResource("2")]
 position = Vector2(60, 390)

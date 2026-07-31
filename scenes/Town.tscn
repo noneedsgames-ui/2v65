@@ -1,0 +1,144 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/Companion.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/Shop.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/Stall.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/TownNPC.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/SceneDoor.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/ui/UIRoot.tscn" id="7"]
+[ext_resource type="Script" path="res://scripts/WorldRoot.gd" id="8"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
+size = Vector2(2800, 40)
+
+[node name="Town" type="Node2D"]
+script = ExtResource("8")
+
+[node name="Sky" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-100, -1200, 2800, -1200, 2800, 450, -100, 450)
+color = Color(0.68, 0.76, 0.86, 1)
+
+[node name="FarBuildings" type="Node2D" parent="."]
+
+[node name="B1" type="Polygon2D" parent="FarBuildings"]
+polygon = PackedVector2Array(120, 380, 120, 120, 360, 120, 360, 380)
+color = Color(0.55, 0.53, 0.58, 1)
+
+[node name="B2" type="Polygon2D" parent="FarBuildings"]
+polygon = PackedVector2Array(420, 380, 420, 60, 700, 60, 700, 380)
+color = Color(0.48, 0.47, 0.53, 1)
+
+[node name="B3" type="Polygon2D" parent="FarBuildings"]
+polygon = PackedVector2Array(900, 380, 900, 150, 1180, 150, 1180, 380)
+color = Color(0.57, 0.55, 0.6, 1)
+
+[node name="B4" type="Polygon2D" parent="FarBuildings"]
+polygon = PackedVector2Array(1500, 380, 1500, 80, 1780, 80, 1780, 380)
+color = Color(0.5, 0.49, 0.55, 1)
+
+[node name="B5" type="Polygon2D" parent="FarBuildings"]
+polygon = PackedVector2Array(2000, 380, 2000, 160, 2320, 160, 2320, 380)
+color = Color(0.56, 0.54, 0.59, 1)
+
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(1300, 420)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("RectangleShape2D_ground")
+
+[node name="Paving" type="Polygon2D" parent="Ground"]
+polygon = PackedVector2Array(-1400, -20, 1400, -20, 1400, 20, -1400, 20)
+color = Color(0.45, 0.41, 0.38, 1)
+
+[node name="PavingTop" type="Polygon2D" parent="Ground"]
+polygon = PackedVector2Array(-1400, -20, 1400, -20, 1400, -12, -1400, -12)
+color = Color(0.6, 0.56, 0.5, 1)
+
+[node name="ToolShop" parent="." instance=ExtResource("3")]
+position = Vector2(400, 400)
+shop_name = "道具屋"
+stock = PackedStringArray("axe", "pickaxe", "basket", "stall_kit")
+
+[node name="FoodShop" parent="." instance=ExtResource("3")]
+position = Vector2(800, 400)
+shop_name = "食料品店"
+stock = PackedStringArray("berry_pie", "berry", "seed_wheat")
+
+[node name="BuilderShop" parent="." instance=ExtResource("3")]
+position = Vector2(1750, 400)
+shop_name = "建材屋"
+stock = PackedStringArray("plank", "stone_brick", "iron_ingot", "rope")
+
+[node name="GeneralShop" parent="." instance=ExtResource("3")]
+position = Vector2(2200, 400)
+shop_name = "雑貨屋"
+stock = PackedStringArray("wood", "stone", "fiber", "iron_ore")
+
+[node name="Stall" parent="." instance=ExtResource("4")]
+position = Vector2(1300, 400)
+
+[node name="DoorToField" parent="." instance=ExtResource("6")]
+position = Vector2(80, 400)
+target_scene = "res://scenes/Main.tscn"
+spawn_position = Vector2(2960, 380)
+label = "野原へ戻る"
+
+[node name="Townsfolk" type="Node2D" parent="."]
+
+[node name="NPC1" parent="Townsfolk" instance=ExtResource("5")]
+position = Vector2(300, 390)
+
+[node name="NPC2" parent="Townsfolk" instance=ExtResource("5")]
+position = Vector2(560, 390)
+
+[node name="NPC3" parent="Townsfolk" instance=ExtResource("5")]
+position = Vector2(880, 390)
+
+[node name="NPC4" parent="Townsfolk" instance=ExtResource("5")]
+position = Vector2(1120, 390)
+
+[node name="NPC5" parent="Townsfolk" instance=ExtResource("5")]
+position = Vector2(1420, 390)
+
+[node name="NPC6" parent="Townsfolk" instance=ExtResource("5")]
+position = Vector2(1640, 390)
+
+[node name="NPC7" parent="Townsfolk" instance=ExtResource("5")]
+position = Vector2(1900, 390)
+
+[node name="NPC8" parent="Townsfolk" instance=ExtResource("5")]
+position = Vector2(2100, 390)
+
+[node name="NPC9" parent="Townsfolk" instance=ExtResource("5")]
+position = Vector2(2350, 390)
+
+[node name="NPC10" parent="Townsfolk" instance=ExtResource("5")]
+position = Vector2(660, 390)
+shoplift_chance = 0.35
+
+[node name="NPC11" parent="Townsfolk" instance=ExtResource("5")]
+position = Vector2(1980, 390)
+stall_interest_chance = 0.7
+
+[node name="NPC12" parent="Townsfolk" instance=ExtResource("5")]
+position = Vector2(1220, 390)
+stall_interest_chance = 0.65
+
+[node name="Companion" parent="." instance=ExtResource("2")]
+position = Vector2(100, 390)
+
+[node name="Player" parent="." instance=ExtResource("1")]
+position = Vector2(180, 380)
+
+[node name="Camera2D" type="Camera2D" parent="Player"]
+position = Vector2(0, -100)
+zoom = Vector2(0.8, 0.8)
+position_smoothing_enabled = true
+position_smoothing_speed = 5.0
+limit_left = 0
+limit_top = -400
+limit_right = 2700
+limit_bottom = 460
+
+[node name="UIRoot" parent="." instance=ExtResource("7")]

@@ -12,6 +12,7 @@ var player = null
 @onready var visual: Node2D = $Visual
 
 func _ready() -> void:
+	add_to_group("companion")
 	call_deferred("_find_player")
 
 func _find_player() -> void:

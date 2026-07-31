@@ -13,6 +13,27 @@ var stall_earnings_log: Array = []
 var player_spawn_position: Vector2 = Vector2(200, 300)
 var has_save: bool = false
 
+const FIELD_SCENE := "res://scenes/Main.tscn"
+const TOWN_SCENE := "res://scenes/Town.tscn"
+
+## シーン遷移でプレイヤーを置く座標。change_scene 後の新シーンが _ready で読み取る。
+## NAN のときは指定なし(シーン既定のプレイヤー位置を使う)。
+var pending_spawn: Vector2 = Vector2(NAN, NAN)
+
+func has_pending_spawn() -> bool:
+	return not is_nan(pending_spawn.x)
+
+func clear_pending_spawn() -> void:
+	pending_spawn = Vector2(NAN, NAN)
+
+## 指定シーンへ遷移し、遷移先で spawn 位置にプレイヤーを配置する。
+func travel_to(scene_path: String, spawn: Vector2) -> void:
+	pending_spawn = spawn
+	# メニューを開いたまま遷移しても新シーンが止まったままにならないようにする
+	get_tree().paused = false
+	# 物理コールバック中に呼ばれても安全なように遅延実行する
+	get_tree().change_scene_to_file.call_deferred(scene_path)
+
 func chest_add(id: String, count: int) -> void:
 	for entry in chest_items:
 		if entry["id"] == id:
@@ -47,6 +68,7 @@ func stall_withdraw(index: int) -> void:
 func save_game() -> void:
 	var data := {
 		"inventory": Inventory.to_save_data(),
+		"equipment": Equipment.to_save_data(),
 		"chest": chest_items,
 		"stall": stall_items,
 		"spawn_x": player_spawn_position.x,
@@ -88,6 +110,8 @@ func load_game() -> bool:
 	var data: Dictionary = parsed
 	if data.has("inventory"):
 		Inventory.load_save_data(data["inventory"])
+	if data.has("equipment"):
+		Equipment.load_save_data(data["equipment"])
 	if data.has("chest"):
 		chest_items = _restore_entries(data["chest"], ["count"])
 	if data.has("stall"):
