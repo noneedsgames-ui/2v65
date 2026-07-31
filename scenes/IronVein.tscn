@@ -1,0 +1,37 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ResourceNode.gd" id="1"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_zone"]
+radius = 55.0
+
+[node name="IronVein" type="Area2D"]
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("1")
+item_id = "iron_ore"
+min_amount = 1
+max_amount = 2
+respawn_time = 22.0
+required_tool = "pickaxe"
+display_name = "鉄鉱脈"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_zone")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Body" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-30, 0, -34, -22, -10, -42, 18, -40, 34, -18, 26, 2)
+color = Color(0.35, 0.35, 0.4, 1)
+
+[node name="Vein1" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-16, -30, -6, -30, -6, -22, -16, -22)
+color = Color(0.75, 0.55, 0.4, 1)
+
+[node name="Vein2" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(6, -20, 16, -20, 16, -12, 6, -12)
+color = Color(0.75, 0.55, 0.4, 1)
+
+[node name="RespawnTimer" type="Timer" parent="."]
+one_shot = true

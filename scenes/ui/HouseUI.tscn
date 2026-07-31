@@ -1,0 +1,89 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/HouseUI.gd" id="1"]
+
+[node name="HouseUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.55)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Window" type="PanelContainer" parent="Center"]
+custom_minimum_size = Vector2(760, 520)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="Center/Window"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 16
+
+[node name="Content" type="VBoxContainer" parent="Center/Window/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TitleLabel" type="Label" parent="Center/Window/Margin/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "我が家"
+
+[node name="Columns" type="HBoxContainer" parent="Center/Window/Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="PlayerColumn" type="VBoxContainer" parent="Center/Window/Margin/Content/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Center/Window/Margin/Content/Columns/PlayerColumn"]
+layout_mode = 2
+text = "持ち物(クリックで収納箱へ)"
+
+[node name="Scroll" type="ScrollContainer" parent="Center/Window/Margin/Content/Columns/PlayerColumn"]
+custom_minimum_size = Vector2(340, 320)
+layout_mode = 2
+
+[node name="List" type="VBoxContainer" parent="Center/Window/Margin/Content/Columns/PlayerColumn/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="ChestColumn" type="VBoxContainer" parent="Center/Window/Margin/Content/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Center/Window/Margin/Content/Columns/ChestColumn"]
+layout_mode = 2
+text = "収納箱(クリックで持ち物へ)"
+
+[node name="Scroll" type="ScrollContainer" parent="Center/Window/Margin/Content/Columns/ChestColumn"]
+custom_minimum_size = Vector2(340, 320)
+layout_mode = 2
+
+[node name="List" type="VBoxContainer" parent="Center/Window/Margin/Content/Columns/ChestColumn/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="SleepButton" type="Button" parent="Center/Window/Margin/Content"]
+layout_mode = 2
+text = "ベッドで眠る(セーブ)"
+
+[node name="CloseButton" type="Button" parent="Center/Window/Margin/Content"]
+layout_mode = 2
+text = "閉じる [Esc]"

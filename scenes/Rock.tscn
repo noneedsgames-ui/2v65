@@ -1,0 +1,33 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ResourceNode.gd" id="1"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_zone"]
+radius = 55.0
+
+[node name="Rock" type="Area2D"]
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("1")
+item_id = "stone"
+min_amount = 1
+max_amount = 2
+respawn_time = 14.0
+required_tool = ""
+display_name = "岩"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_zone")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Body" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-30, 0, -34, -20, -14, -40, 16, -38, 32, -16, 24, 2)
+color = Color(0.55, 0.55, 0.58, 1)
+
+[node name="Highlight" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-14, -32, 8, -34, 4, -18, -10, -16)
+color = Color(0.7, 0.7, 0.74, 1)
+
+[node name="RespawnTimer" type="Timer" parent="."]
+one_shot = true

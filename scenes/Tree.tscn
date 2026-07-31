@@ -1,0 +1,33 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ResourceNode.gd" id="1"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_zone"]
+radius = 60.0
+
+[node name="Tree" type="Area2D"]
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("1")
+item_id = "wood"
+min_amount = 1
+max_amount = 3
+respawn_time = 10.0
+required_tool = ""
+display_name = "木"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_zone")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Trunk" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-8, -60, 8, -60, 8, 0, -8, 0)
+color = Color(0.42, 0.28, 0.15, 1)
+
+[node name="Canopy" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(0, -128, 34, -78, 20, -60, -20, -60, -34, -78)
+color = Color(0.22, 0.5, 0.24, 1)
+
+[node name="RespawnTimer" type="Timer" parent="."]
+one_shot = true

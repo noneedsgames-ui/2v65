@@ -1,0 +1,91 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/StallUI.gd" id="1"]
+
+[node name="StallUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.55)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Window" type="PanelContainer" parent="Center"]
+custom_minimum_size = Vector2(780, 560)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="Center/Window"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 16
+
+[node name="Content" type="VBoxContainer" parent="Center/Window/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TitleLabel" type="Label" parent="Center/Window/Margin/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "露店の管理"
+
+[node name="Columns" type="HBoxContainer" parent="Center/Window/Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="InvColumn" type="VBoxContainer" parent="Center/Window/Margin/Content/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Center/Window/Margin/Content/Columns/InvColumn"]
+layout_mode = 2
+text = "持ち物(クリックで出品)"
+
+[node name="Scroll" type="ScrollContainer" parent="Center/Window/Margin/Content/Columns/InvColumn"]
+custom_minimum_size = Vector2(350, 260)
+layout_mode = 2
+
+[node name="List" type="VBoxContainer" parent="Center/Window/Margin/Content/Columns/InvColumn/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="StallColumn" type="VBoxContainer" parent="Center/Window/Margin/Content/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Center/Window/Margin/Content/Columns/StallColumn"]
+layout_mode = 2
+text = "陳列中(クリックで回収)"
+
+[node name="Scroll" type="ScrollContainer" parent="Center/Window/Margin/Content/Columns/StallColumn"]
+custom_minimum_size = Vector2(350, 260)
+layout_mode = 2
+
+[node name="List" type="VBoxContainer" parent="Center/Window/Margin/Content/Columns/StallColumn/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="LogLabel" type="Label" parent="Center/Window/Margin/Content"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 110)
+autowrap_mode = 2
+text = "売上ログ: まだ売上はありません"
+
+[node name="CloseButton" type="Button" parent="Center/Window/Margin/Content"]
+layout_mode = 2
+text = "閉じる [Esc]"

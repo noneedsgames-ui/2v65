@@ -1,0 +1,48 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/Stall.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_zone"]
+size = Vector2(150, 120)
+
+[node name="Stall" type="Area2D"]
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -60)
+shape = SubResource("RectangleShape2D_zone")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="PoleL" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-64, 0, -64, -110, -54, -110, -54, 0)
+color = Color(0.5, 0.35, 0.2, 1)
+
+[node name="PoleR" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(54, 0, 54, -110, 64, -110, 64, 0)
+color = Color(0.5, 0.35, 0.2, 1)
+
+[node name="Canopy" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-74, -110, -40, -140, 40, -140, 74, -110)
+color = Color(0.9, 0.7, 0.2, 1)
+
+[node name="Table" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-60, 0, -60, -26, 60, -26, 60, 0)
+color = Color(0.65, 0.48, 0.3, 1)
+
+[node name="GoodsA" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-40, -26, -40, -38, -26, -38, -26, -26)
+color = Color(0.55, 0.35, 0.15, 1)
+
+[node name="GoodsB" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-8, -26, -8, -40, 8, -40, 8, -26)
+color = Color(0.6, 0.6, 0.63, 1)
+
+[node name="GoodsC" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(26, -26, 26, -36, 40, -36, 40, -26)
+color = Color(0.8, 0.1, 0.3, 1)
+
+[node name="CustomerTimer" type="Timer" parent="."]
+one_shot = true

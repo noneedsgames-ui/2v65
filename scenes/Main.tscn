@@ -1,0 +1,144 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/Companion.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/House.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/Shop.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/Stall.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/Tree.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/Rock.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://scenes/Bush.tscn" id="8"]
+[ext_resource type="PackedScene" path="res://scenes/IronVein.tscn" id="9"]
+[ext_resource type="PackedScene" path="res://scenes/FiberPatch.tscn" id="10"]
+[ext_resource type="PackedScene" path="res://scenes/ui/UIRoot.tscn" id="11"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
+size = Vector2(3200, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_plat_small"]
+size = Vector2(220, 30)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_plat_small2"]
+size = Vector2(200, 30)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_plat_small3"]
+size = Vector2(240, 30)
+
+[node name="Main" type="Node2D"]
+
+[node name="Background" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-100, -1200, 3300, -1200, 3300, 450, -100, 450)
+color = Color(0.55, 0.78, 0.92, 1)
+
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(1600, 420)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("RectangleShape2D_ground")
+
+[node name="Dirt" type="Polygon2D" parent="Ground"]
+polygon = PackedVector2Array(-1600, -20, 1600, -20, 1600, 20, -1600, 20)
+color = Color(0.36, 0.24, 0.14, 1)
+
+[node name="GrassTop" type="Polygon2D" parent="Ground"]
+polygon = PackedVector2Array(-1600, -20, 1600, -20, 1600, -10, -1600, -10)
+color = Color(0.32, 0.58, 0.27, 1)
+
+[node name="Platform1" type="StaticBody2D" parent="."]
+position = Vector2(700, 340)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform1"]
+shape = SubResource("RectangleShape2D_plat_small")
+
+[node name="Visual" type="Polygon2D" parent="Platform1"]
+polygon = PackedVector2Array(-110, -15, 110, -15, 110, 15, -110, 15)
+color = Color(0.42, 0.3, 0.18, 1)
+
+[node name="Platform2" type="StaticBody2D" parent="."]
+position = Vector2(1400, 340)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform2"]
+shape = SubResource("RectangleShape2D_plat_small2")
+
+[node name="Visual" type="Polygon2D" parent="Platform2"]
+polygon = PackedVector2Array(-100, -15, 100, -15, 100, 15, -100, 15)
+color = Color(0.42, 0.3, 0.18, 1)
+
+[node name="Platform3" type="StaticBody2D" parent="."]
+position = Vector2(2200, 340)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform3"]
+shape = SubResource("RectangleShape2D_plat_small3")
+
+[node name="Visual" type="Polygon2D" parent="Platform3"]
+polygon = PackedVector2Array(-120, -15, 120, -15, 120, 15, -120, 15)
+color = Color(0.42, 0.3, 0.18, 1)
+
+[node name="House" parent="." instance=ExtResource("3")]
+position = Vector2(320, 400)
+
+[node name="Shop" parent="." instance=ExtResource("4")]
+position = Vector2(620, 400)
+
+[node name="Stall" parent="." instance=ExtResource("5")]
+position = Vector2(900, 400)
+
+[node name="Tree1" parent="." instance=ExtResource("6")]
+position = Vector2(480, 400)
+
+[node name="Bush1" parent="." instance=ExtResource("8")]
+position = Vector2(760, 400)
+
+[node name="Rock1" parent="." instance=ExtResource("7")]
+position = Vector2(1050, 400)
+
+[node name="FiberPatch1" parent="." instance=ExtResource("10")]
+position = Vector2(1180, 400)
+
+[node name="Tree2" parent="." instance=ExtResource("6")]
+position = Vector2(1350, 400)
+
+[node name="IronVein1" parent="." instance=ExtResource("9")]
+position = Vector2(1600, 400)
+
+[node name="Rock2" parent="." instance=ExtResource("7")]
+position = Vector2(1850, 400)
+
+[node name="Tree3" parent="." instance=ExtResource("6")]
+position = Vector2(2050, 400)
+
+[node name="Bush2" parent="." instance=ExtResource("8")]
+position = Vector2(2350, 400)
+
+[node name="FiberPatch2" parent="." instance=ExtResource("10")]
+position = Vector2(2550, 400)
+
+[node name="IronVein2" parent="." instance=ExtResource("9")]
+position = Vector2(2750, 400)
+
+[node name="Tree4" parent="." instance=ExtResource("6")]
+position = Vector2(700, 325)
+
+[node name="Bush3" parent="." instance=ExtResource("8")]
+position = Vector2(1400, 325)
+
+[node name="Rock3" parent="." instance=ExtResource("7")]
+position = Vector2(2200, 325)
+
+[node name="Companion" parent="." instance=ExtResource("2")]
+position = Vector2(60, 390)
+
+[node name="Player" parent="." instance=ExtResource("1")]
+position = Vector2(150, 390)
+
+[node name="Camera2D" type="Camera2D" parent="Player"]
+position = Vector2(0, -100)
+zoom = Vector2(0.8, 0.8)
+position_smoothing_enabled = true
+position_smoothing_speed = 5.0
+limit_left = 0
+limit_top = -600
+limit_right = 3200
+limit_bottom = 460
+
+[node name="UIRoot" parent="." instance=ExtResource("11")]
