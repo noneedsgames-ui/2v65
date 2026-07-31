@@ -46,7 +46,7 @@ position = Vector2(1600, 420)
 shape = SubResource("RectangleShape2D_ground")
 
 [node name="Dirt" type="Polygon2D" parent="Ground"]
-polygon = PackedVector2Array(-1600, -20, 1600, -20, 1600, 20, -1600, 20)
+polygon = PackedVector2Array(-1600, -20, 1600, -20, 1600, 140, -1600, 140)
 color = Color(0.36, 0.24, 0.14, 1)
 
 [node name="GrassTop" type="Polygon2D" parent="Ground"]
@@ -199,6 +199,6 @@ position_smoothing_speed = 5.0
 limit_left = 0
 limit_top = -600
 limit_right = 3200
-limit_bottom = 460
+limit_bottom = 560
 
 [node name="UIRoot" parent="." instance=ExtResource("11")]

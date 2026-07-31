@@ -18,3 +18,10 @@ signal request_open_stall()
 signal request_open_crafting()
 signal request_close_menus()
 
+## 店番(呼び込みミニゲーム)。started/ended は UI とホットバーの切り替えに、
+## stats は店番中の売上表示の更新に使う。
+signal request_start_tending()
+signal tending_started()
+signal tending_stats(customers: int, gold: int)
+signal tending_ended()
+

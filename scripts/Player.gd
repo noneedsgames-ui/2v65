@@ -10,6 +10,9 @@ var facing: int = 1
 var nearby_interactables: Array = []
 var path_history: PackedVector2Array = PackedVector2Array()
 
+## true の間は操作を受け付けない(店番中など)。重力と減速だけ働く。
+var control_locked: bool = false
+
 @onready var interaction_area: Area2D = $InteractionArea
 @onready var visual: Node2D = $Visual
 
@@ -24,6 +27,11 @@ func _physics_process(delta: float) -> void:
 		velocity.y += GRAVITY * delta
 	elif velocity.y > 0:
 		velocity.y = 0.0
+
+	if control_locked:
+		velocity.x = move_toward(velocity.x, 0, SPEED)
+		move_and_slide()
+		return
 
 	if Input.is_action_just_pressed("jump") and is_on_floor():
 		velocity.y = JUMP_VELOCITY

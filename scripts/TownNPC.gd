@@ -68,6 +68,15 @@ func _physics_process(delta: float) -> void:
 	elif velocity.x < -1.0:
 		visual.scale.x = -abs(visual.scale.x)
 
+## 呼び込みに反応して露店へ向かわせる。すでに向かっている/品定め中なら false。
+func attract_to_stall() -> bool:
+	if _stall == null or not is_instance_valid(_stall) or not _stall.has_stock():
+		return false
+	if state == State.APPROACH_STALL or state == State.BROWSE:
+		return false
+	state = State.APPROACH_STALL
+	return true
+
 func _process_wander(delta: float) -> void:
 	velocity.x = direction * walk_speed
 	if global_position.x <= patrol_min_x:

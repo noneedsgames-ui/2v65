@@ -11,6 +11,8 @@ extends CanvasLayer
 @onready var crafting_panel: Control = $CraftingUI
 
 var panels: Array = []
+## 店番中はホットバーを隠し、F(use_item)を露店の呼び込みに譲る
+var tending: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -28,6 +30,18 @@ func _ready() -> void:
 	EventBus.request_open_stall.connect(func(): _open(stall_panel))
 	EventBus.request_open_crafting.connect(func(): _open(crafting_panel))
 	EventBus.request_close_menus.connect(_close_all)
+	EventBus.tending_started.connect(_on_tending_started)
+	EventBus.tending_ended.connect(_on_tending_ended)
+
+func _on_tending_started() -> void:
+	tending = true
+	hotbar.visible = false
+	hotbar.set_process_unhandled_input(false)
+
+func _on_tending_ended() -> void:
+	tending = false
+	hotbar.visible = true
+	hotbar.set_process_unhandled_input(true)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_inventory"):
@@ -67,5 +81,6 @@ func _open(panel: Control) -> void:
 func _close_all() -> void:
 	for p in panels:
 		p.visible = false
-	hotbar.visible = true
+	# 店番中にメニューを開閉してもホットバーを復活させない
+	hotbar.visible = not tending
 	get_tree().paused = false

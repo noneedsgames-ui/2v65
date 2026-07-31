@@ -24,7 +24,7 @@ size = Vector2(120, 120)
 script = ExtResource("6")
 
 [node name="Backdrop" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(0, -400, 1400, -400, 1400, 420, 0, 420)
+polygon = PackedVector2Array(0, -400, 1400, -400, 1400, 560, 0, 560)
 color = Color(0.32, 0.26, 0.22, 1)
 
 [node name="WallPaper" type="Polygon2D" parent="."]
@@ -44,7 +44,7 @@ position = Vector2(700, 420)
 shape = SubResource("RectangleShape2D_floor")
 
 [node name="Boards" type="Polygon2D" parent="Floor"]
-polygon = PackedVector2Array(-700, -20, 700, -20, 700, 20, -700, 20)
+polygon = PackedVector2Array(-700, -20, 700, -20, 700, 140, -700, 140)
 color = Color(0.42, 0.3, 0.2, 1)
 
 [node name="WallLeft" type="StaticBody2D" parent="."]
@@ -203,6 +203,6 @@ position_smoothing_speed = 5.0
 limit_left = 0
 limit_top = -200
 limit_right = 1400
-limit_bottom = 460
+limit_bottom = 560
 
 [node name="UIRoot" parent="." instance=ExtResource("5")]

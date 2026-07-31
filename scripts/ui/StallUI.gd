@@ -6,6 +6,7 @@ extends Control
 
 func _ready() -> void:
 	$Center/Window/Margin/Content/CloseButton.pressed.connect(_on_close)
+	$Center/Window/Margin/Content/TendButton.pressed.connect(_on_tend)
 	Inventory.changed.connect(refresh)
 
 func refresh() -> void:
@@ -60,6 +61,11 @@ func _list_item(id: String, price: int) -> void:
 func _withdraw(index: int) -> void:
 	GameState.stall_withdraw(index)
 	refresh()
+
+func _on_tend() -> void:
+	# メニューを閉じてから店番モードへ(閉じないと一時停止のままになる)
+	EventBus.request_close_menus.emit()
+	EventBus.request_start_tending.emit()
 
 func _on_close() -> void:
 	EventBus.request_close_menus.emit()
