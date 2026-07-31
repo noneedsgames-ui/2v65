@@ -150,7 +150,7 @@ polygon = PackedVector2Array(-40, -300, 20, -300, 20, 300, -40, 300)
 color = Color(0.38, 0.34, 0.3, 1)
 
 [node name="EdgeZone" parent="." instance=ExtResource("14")]
-position = Vector2(70, 400)
+position = Vector2(20, 400)
 lines = PackedStringArray("こっちは崖で行き止まりだよ。戻ろう。")
 cooldown_seconds = 30.0
 

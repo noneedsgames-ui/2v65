@@ -53,3 +53,5 @@ func _deplete() -> void:
 func _on_respawn() -> void:
 	depleted = false
 	visual.modulate = Color(1, 1, 1, 1)
+	# そばに立ったままでも「採集 [E]」が出るように案内を出し直す
+	EventBus.request_prompt_refresh.emit()

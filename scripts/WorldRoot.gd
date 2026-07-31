@@ -24,6 +24,7 @@ func _place_player(pos: Vector2) -> void:
 	player.global_position = pos
 	# 移動履歴に転送前の座標が残っていると仲間が古い位置へ走り出すので捨てる
 	player.reset_path_history()
-	var companion := get_tree().get_first_node_in_group("companion")
+	# global_position は Node2D のプロパティなので、Node のままだと未定義アクセス扱いになる
+	var companion := get_tree().get_first_node_in_group("companion") as Node2D
 	if companion:
 		companion.global_position = pos + Vector2(-80, 0)

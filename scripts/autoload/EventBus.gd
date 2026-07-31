@@ -4,6 +4,9 @@ extends Node
 
 signal interact_prompt_show(text: String)
 signal interact_prompt_hide()
+## 調べられるものの状態が変わったとき(素材の再湧きなど)に、
+## プレイヤーがその場から動かなくても操作案内を出し直すための合図。
+signal request_prompt_refresh()
 signal notify(text: String)
 
 ## 同行者(仲間)のひとこと。画面端の吹き出しに出る。

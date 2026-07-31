@@ -17,6 +17,7 @@ func _ready() -> void:
 	add_to_group("player")
 	interaction_area.area_entered.connect(_on_area_entered)
 	interaction_area.area_exited.connect(_on_area_exited)
+	EventBus.request_prompt_refresh.connect(_update_prompt)
 
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
