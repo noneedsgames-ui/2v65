@@ -1,0 +1,49 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/Enemy.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(56, 40)
+
+[node name="Enemy" type="CharacterBody2D"]
+collision_layer = 32
+collision_mask = 1
+script = ExtResource("1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -20)
+shape = SubResource("RectangleShape2D_body")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Body" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-28, 0, -32, -24, -14, -38, 14, -36, 30, -22, 26, 0)
+color = Color(0.35, 0.26, 0.2, 1)
+
+[node name="Snout" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(26, -22, 40, -16, 26, -10)
+color = Color(0.3, 0.22, 0.17, 1)
+
+[node name="Eye" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(14, -30, 22, -30, 22, -24, 14, -24)
+color = Color(0.9, 0.25, 0.2, 1)
+
+[node name="EarL" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-14, -38, -8, -50, -2, -38)
+color = Color(0.3, 0.22, 0.17, 1)
+
+[node name="EarR" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(2, -38, 8, -48, 14, -36)
+color = Color(0.3, 0.22, 0.17, 1)
+
+[node name="HPBar" type="Node2D" parent="."]
+position = Vector2(0, -60)
+
+[node name="BG" type="Polygon2D" parent="HPBar"]
+polygon = PackedVector2Array(-23, -1, 23, -1, 23, 7, -23, 7)
+color = Color(0.05, 0.05, 0.08, 0.9)
+
+[node name="Fill" type="Polygon2D" parent="HPBar"]
+position = Vector2(-22, 0)
+polygon = PackedVector2Array(0, 0, 44, 0, 44, 6, 0, 6)
+color = Color(0.85, 0.25, 0.3, 1)

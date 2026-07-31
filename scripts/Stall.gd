@@ -11,9 +11,15 @@ const STALL_KIT_ID := "stall_kit"
 @export var call_range: float = 620.0
 @export var call_cooldown: float = 2.2
 @export var call_attract_chance: float = 0.7
+## 店番中に泥棒が現れるまでの間隔(秒)
+@export var theft_interval_min: float = 22.0
+@export var theft_interval_max: float = 45.0
+## 品定めに来た客が話しかけてくる(交渉になる)確率
+@export var negotiation_chance: float = 0.45
 
 var tending: bool = false
 var _call_timer: float = 0.0
+var _theft_timer: float = 0.0
 var _tending_customers: int = 0
 var _tending_gold: int = 0
 var _player = null  # control_locked を触るため型は付けない
@@ -22,10 +28,17 @@ func _ready() -> void:
 	add_to_group("interactable")
 	add_to_group("player_stall")
 	EventBus.request_start_tending.connect(start_tending)
+	EventBus.negotiation_finished.connect(_on_negotiation_finished)
 
 func _process(delta: float) -> void:
-	if tending and _call_timer > 0.0:
+	if not tending:
+		return
+	if _call_timer > 0.0:
 		_call_timer -= delta
+	_theft_timer -= delta
+	if _theft_timer <= 0.0:
+		_theft_timer = 8.0  # 泥棒候補が見つからなければ少し後に再抽選
+		_try_spawn_thief()
 
 func get_prompt() -> String:
 	if not Inventory.has_item(STALL_KIT_ID):
@@ -48,6 +61,7 @@ func start_tending() -> void:
 		return
 	tending = true
 	_call_timer = 0.0
+	_theft_timer = randf_range(theft_interval_min, theft_interval_max)
 	_tending_customers = 0
 	_tending_gold = 0
 	_player.control_locked = true
@@ -96,6 +110,53 @@ func _call_out() -> void:
 	if attracted > 0:
 		EventBus.notify.emit("%d人がこちらに気づいた！" % attracted)
 
+# ---- 泥棒イベント(店番中) ----
+
+func _try_spawn_thief() -> void:
+	if not has_stock():
+		return
+	var candidates: Array = []
+	for npc in get_tree().get_nodes_in_group("townsfolk"):
+		if abs(npc.global_position.x - global_position.x) < 1000.0 and npc.can_become_thief():
+			candidates.append(npc)
+	if candidates.is_empty():
+		return
+	var thief = candidates[randi() % candidates.size()]
+	thief.start_theft_run()
+
+## 泥棒が台に到達して品物を掴んだ。盗まれた品のリストを返す(泥棒が抱えて逃げる)。
+## 店番は中断され、プレイヤーは自由になるので走って追いかけられる。
+func on_theft_grab() -> Array:
+	var idx := _random_stocked_index()
+	if idx < 0:
+		return []
+	if tending:
+		stop_tending()
+
+	var entry: Dictionary = GameState.stall_items[idx]
+	var quantity: int = min(int(entry["count"]), randi_range(1, 2))
+	entry["count"] = int(entry["count"]) - quantity
+	var stolen: Array = [{"id": entry["id"], "count": quantity, "price": int(entry["price"])}]
+	if int(entry["count"]) <= 0:
+		GameState.stall_items.remove_at(idx)
+
+	var message := "万引きだ！ %sを%d個持って逃げていく！" % [ItemDB.get_display_name(stolen[0]["id"]), quantity]
+	GameState.stall_earnings_log.append(message)
+	if GameState.stall_earnings_log.size() > 20:
+		GameState.stall_earnings_log.remove_at(0)
+	EventBus.notify.emit(message)
+	EventBus.companion_say.emit("泥棒だ！ 走って追いつけば取り返せるよ！")
+	return stolen
+
+func _on_negotiation_finished(gold: int, text: String) -> void:
+	GameState.stall_earnings_log.append(text)
+	if GameState.stall_earnings_log.size() > 20:
+		GameState.stall_earnings_log.remove_at(0)
+	if tending and gold > 0:
+		_tending_customers += 1
+		_tending_gold += gold
+		EventBus.tending_stats.emit(_tending_customers, _tending_gold)
+
 # ---- 町人との取引 ----
 
 func has_stock() -> bool:
@@ -115,9 +176,20 @@ func _random_stocked_index() -> int:
 
 ## 町人ひとりぶんの取引を処理する。steal_chance の確率で万引きになるが、
 ## 店番中は店主が見ているので必ず代金を払う。
-func serve_customer(steal_chance: float) -> void:
+func serve_customer(steal_chance: float, npc = null) -> void:
 	var idx := _random_stocked_index()
 	if idx < 0:
+		return
+
+	# 店番中は、客がこちらに話しかけてきて交渉になることがある
+	if tending and randf() < negotiation_chance:
+		var wanted: Dictionary = GameState.stall_items[idx]
+		EventBus.request_open_negotiation.emit({
+			"id": wanted["id"],
+			"qty": min(int(wanted["count"]), randi_range(1, 2)),
+			"unit_price": int(wanted["price"]),
+			"npc": npc,
+		})
 		return
 
 	var entry: Dictionary = GameState.stall_items[idx]

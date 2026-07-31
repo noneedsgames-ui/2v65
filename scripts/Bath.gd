@@ -14,5 +14,6 @@ func interact(_actor: Node) -> void:
 		EventBus.notify.emit("もうさっぱりしている")
 		return
 	GameState.set_refreshed(true)
-	EventBus.notify.emit("ひと風呂浴びた。採集量+%d(次に寝るまで)" % GameState.REFRESHED_GATHER_BONUS)
+	GameState.restore_player_hp()
+	EventBus.notify.emit("ひと風呂浴びた。HPが全回復し、採集量+%d(次に寝るまで)" % GameState.REFRESHED_GATHER_BONUS)
 	EventBus.companion_say.emit("いいお湯だったね。体が軽いや。")

@@ -14,5 +14,6 @@ func get_prompt() -> String:
 func interact(_actor: Node) -> void:
 	GameState.player_spawn_position = wake_position
 	GameState.set_refreshed(false)
+	GameState.restore_player_hp()
 	GameState.save_game()
 	EventBus.companion_say.emit("おやすみ。明日もいい採集日和だといいね。")

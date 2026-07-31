@@ -12,6 +12,8 @@ signal notify(text: String)
 ## 同行者(仲間)のひとこと。画面端の吹き出しに出る。
 signal companion_say(text: String)
 
+signal player_hp_changed(hp: int, max_hp: int)
+
 signal request_open_chest()
 signal request_open_shop(shop_name: String, stock: PackedStringArray)
 signal request_open_stall()
@@ -24,4 +26,9 @@ signal request_start_tending()
 signal tending_started()
 signal tending_stats(customers: int, gold: int)
 signal tending_ended()
+
+## 接客交渉。request は {"id": String, "qty": int, "unit_price": int}。
+## finished の gold は成立額(不成立なら 0)。
+signal request_open_negotiation(request: Dictionary)
+signal negotiation_finished(gold: int, text: String)
 

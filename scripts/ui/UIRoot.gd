@@ -9,6 +9,7 @@ extends CanvasLayer
 @onready var shop_panel = $ShopUI  # set_shop() を呼ぶため型は付けない
 @onready var stall_panel: Control = $StallUI
 @onready var crafting_panel: Control = $CraftingUI
+@onready var negotiation_panel = $NegotiationUI  # set_request() を呼ぶため型は付けない
 
 var panels: Array = []
 ## 店番中はホットバーを隠し、F(use_item)を露店の呼び込みに譲る
@@ -16,7 +17,7 @@ var tending: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	panels = [inventory_panel, house_panel, shop_panel, stall_panel, crafting_panel]
+	panels = [inventory_panel, house_panel, shop_panel, stall_panel, crafting_panel, negotiation_panel]
 	for p in panels:
 		p.visible = false
 		p.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -30,8 +31,13 @@ func _ready() -> void:
 	EventBus.request_open_stall.connect(func(): _open(stall_panel))
 	EventBus.request_open_crafting.connect(func(): _open(crafting_panel))
 	EventBus.request_close_menus.connect(_close_all)
+	EventBus.request_open_negotiation.connect(_on_open_negotiation)
 	EventBus.tending_started.connect(_on_tending_started)
 	EventBus.tending_ended.connect(_on_tending_ended)
+
+func _on_open_negotiation(request: Dictionary) -> void:
+	negotiation_panel.set_request(request)
+	_open(negotiation_panel)
 
 func _on_tending_started() -> void:
 	tending = true

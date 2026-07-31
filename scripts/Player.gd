@@ -2,6 +2,9 @@ extends CharacterBody2D
 ## 横スクロール操作、採集/施設インタラクションを行うプレイヤー本体。
 
 const SPEED := 220.0
+const ATTACK_RANGE := 82.0
+const ATTACK_DAMAGE := 25
+const ATTACK_COOLDOWN := 0.45
 const JUMP_VELOCITY := -520.0  # 到達可能高さ ≈ 96px (プラットフォーム配置と整合させること)
 const GRAVITY := 1400.0
 const PATH_HISTORY_MAX := 600
@@ -12,6 +15,8 @@ var path_history: PackedVector2Array = PackedVector2Array()
 
 ## true の間は操作を受け付けない(店番中など)。重力と減速だけ働く。
 var control_locked: bool = false
+
+var _attack_timer: float = 0.0
 
 @onready var interaction_area: Area2D = $InteractionArea
 @onready var visual: Node2D = $Visual
@@ -33,6 +38,10 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 
+	_attack_timer -= delta
+	if Input.is_action_just_pressed("attack") and _attack_timer <= 0.0:
+		_do_attack()
+
 	if Input.is_action_just_pressed("jump") and is_on_floor():
 		velocity.y = JUMP_VELOCITY
 
@@ -49,6 +58,14 @@ func _physics_process(delta: float) -> void:
 
 	if Input.is_action_just_pressed("interact"):
 		_try_interact()
+
+## 向いている方向の近くの敵をまとめて叩く。
+func _do_attack() -> void:
+	_attack_timer = ATTACK_COOLDOWN
+	for enemy in get_tree().get_nodes_in_group("enemy"):
+		var d: Vector2 = enemy.global_position - global_position
+		if abs(d.y) < 90.0 and abs(d.x) < ATTACK_RANGE and d.x * facing >= -12.0:
+			enemy.take_damage(ATTACK_DAMAGE, global_position)
 
 ## シーン遷移などで瞬間移動したときに呼ぶ。
 ## path_history は PackedVector2Array(値型)なので、外部から取得して clear() しても

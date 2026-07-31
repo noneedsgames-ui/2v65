@@ -22,6 +22,25 @@ const HOUSE_SCENE := "res://scenes/HouseInterior.tscn"
 const REFRESHED_GATHER_BONUS := 1
 var refreshed: bool = false
 
+const PLAYER_MAX_HP := 100
+var player_hp: int = PLAYER_MAX_HP
+
+func damage_player(amount: int) -> void:
+	if player_hp <= 0:
+		return
+	player_hp = max(0, player_hp - amount)
+	EventBus.player_hp_changed.emit(player_hp, PLAYER_MAX_HP)
+	if player_hp <= 0:
+		# 力尽きたら全回復して町の入り口へ運ばれる(持ち物は失わない)
+		EventBus.notify.emit("力尽きた…気がつくと町に運ばれていた")
+		EventBus.companion_say.emit("もう、無茶しないでよ…。町まで運んだからね。")
+		restore_player_hp()
+		travel_to(TOWN_SCENE, Vector2(2400, 380))
+
+func restore_player_hp() -> void:
+	player_hp = PLAYER_MAX_HP
+	EventBus.player_hp_changed.emit(player_hp, PLAYER_MAX_HP)
+
 func set_refreshed(value: bool) -> void:
 	refreshed = value
 
@@ -79,6 +98,7 @@ func save_game() -> void:
 		"inventory": Inventory.to_save_data(),
 		"equipment": Equipment.to_save_data(),
 		"refreshed": refreshed,
+		"hp": player_hp,
 		"chest": chest_items,
 		"stall": stall_items,
 		"spawn_x": player_spawn_position.x,
@@ -123,6 +143,8 @@ func load_game() -> bool:
 	if data.has("equipment"):
 		Equipment.load_save_data(data["equipment"])
 	refreshed = bool(data.get("refreshed", false))
+	player_hp = clamp(int(data.get("hp", PLAYER_MAX_HP)), 1, PLAYER_MAX_HP)
+	EventBus.player_hp_changed.emit(player_hp, PLAYER_MAX_HP)
 	if data.has("chest"):
 		chest_items = _restore_entries(data["chest"], ["count"])
 	if data.has("stall"):
