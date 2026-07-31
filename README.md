@@ -33,8 +33,18 @@ Godot 4 (GDScript) 製の横スクロール素材採集ゲームです。プレ�
 
 ## ワールド構成
 
-- **野原(`scenes/Main.tscn`)**: 採集場所。家と店がある。右端の門に触れると町へ移動します
-- **町(`scenes/Town.tscn`)**: 大勢の町人が歩き回り、品揃えの違う店が4軒とプレイヤーの露店があります。左端の門から野原へ戻れます
+```
+[野原] ⇄ [町] ⇄ [奥の森]
+  ↕
+[家の中]
+```
+
+- **野原(`scenes/Main.tscn`)**: 採集場所。家と店がある。右端の門から町へ。左端は崖(壁)で行き止まり
+- **町(`scenes/Town.tscn`)**: 大勢の町人が歩き回り、品揃えの違う店が4軒とプレイヤーの露店がある。左端の門から野原、右端の門から奥の森へ
+- **奥の森(`scenes/Wilds.tscn`)**: 採集専用の区画。鉄鉱脈が多い。左端の門から町へ戻れる。右端は崖(壁)で行き止まり
+- **家の中(`scenes/HouseInterior.tscn`)**: 野原の家を調べると入れる。ベッド・風呂・作業台・収納箱がある
+
+行き止まりの端には壁を置いてあるので、マップ外に出られません。
 
 ## 主な機能
 
@@ -46,7 +56,12 @@ Godot 4 (GDScript) 製の横スクロール素材採集ゲームです。プレ�
   - 斧・ツルハシ: 装備すると採集量が増える。鉄鉱脈の採掘にはツルハシの**装備**が必須
   - 採集かご: どの採集でも取れ高が増える
 - **ホットバー**: インベントリ先頭8スロットを画面下に常時表示。数字キーで選んで F で使用します
-- **家**: 収納チェストへの出し入れと、ベッドで眠ることによるセーブ(`scripts/House.gd`)。セーブデータは起動時に `scripts/WorldRoot.gd` が自動で読み込みます
+- **家の中**: 野原の家を調べると中に入れます
+  - **ベッド**: 眠るとセーブ。セーブデータは起動時に `scripts/WorldRoot.gd` が自動で読み込みます
+  - **風呂**: 入るとさっぱりして、次に寝るまで採集量が +1 されます
+  - **作業台**: クラフト画面を開きます
+  - **収納箱**: 持ち物との出し入れができます
+- **同行者のコメント**: 場所ごとに仲間が画面左下の吹き出しでひとこと言います(`scripts/CommentZone.gd`)。万引きされたときなど、出来事にも反応します
 - **店**: 町には道具屋・食料品店・建材屋・雑貨屋があり、それぞれ品揃えが違います(`scripts/Shop.gd` の `stock` で指定)
 - **露店(出店)**: 町の広場に構えます。開くには**露店キット**が必要です
   - 持ち物を並べて値段を付けると、町人が実際に歩いて来て買っていきます
@@ -61,17 +76,33 @@ assets/icons/          アイテムアイコン(SVG)
 scenes/
   Main.tscn            野原(起動シーン)
   Town.tscn            町
+  Wilds.tscn           奥の森(採集区画)
+  HouseInterior.tscn   家の中
   Player.tscn / Companion.tscn / TownNPC.tscn
-  House.tscn / Shop.tscn / Stall.tscn / SceneDoor.tscn
+  House.tscn / Shop.tscn / Stall.tscn / SceneDoor.tscn / CommentZone.tscn
   Tree.tscn / Rock.tscn / Bush.tscn / IronVein.tscn / FiberPatch.tscn
   ui/                  HUD・ホットバー・升目・各種メニュー
 scripts/
   WorldRoot.gd          各ワールドの共通ルート(スポーン配置とセーブ読み込み)
   Player.gd / Companion.gd / TownNPC.gd
   ResourceNode.gd / House.gd / Shop.gd / Stall.gd / SceneDoor.gd
+  Bed.gd / Bath.gd / Workbench.gd / Chest.gd   家の中の設備
+  CommentZone.gd        同行者が喋る範囲
   UIRowFactory.gd       UI行の共通生成ヘルパー
   autoload/             ItemDB, RecipeDB, Inventory, Equipment, GameState, EventBus
   ui/                   各UIパネルのスクリプト
 ```
+
+## 当たり判定レイヤー
+
+| ビット | 用途 |
+|---|---|
+| 1 | 地形(床・床板・壁) |
+| 2 | プレイヤー |
+| 4 | 仲間 |
+| 8 | 通行人(町人) |
+| 16 | 調べられるもの(採集ノード・店・露店・家具・門) |
+
+通行人はプレイヤーと別レイヤーなので、ぶつかったり通せんぼしたりしません。地形だけに乗ります。
 
 キャラクターや建物の見た目はプレースホルダーの図形(Polygon2D)で構成されています。

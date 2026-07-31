@@ -15,6 +15,15 @@ var has_save: bool = false
 
 const FIELD_SCENE := "res://scenes/Main.tscn"
 const TOWN_SCENE := "res://scenes/Town.tscn"
+const WILDS_SCENE := "res://scenes/Wilds.tscn"
+const HOUSE_SCENE := "res://scenes/HouseInterior.tscn"
+
+## 風呂に入るとさっぱりして採集がはかどる。寝ると翌日になって解ける。
+const REFRESHED_GATHER_BONUS := 1
+var refreshed: bool = false
+
+func set_refreshed(value: bool) -> void:
+	refreshed = value
 
 ## シーン遷移でプレイヤーを置く座標。change_scene 後の新シーンが _ready で読み取る。
 ## NAN のときは指定なし(シーン既定のプレイヤー位置を使う)。
@@ -69,6 +78,7 @@ func save_game() -> void:
 	var data := {
 		"inventory": Inventory.to_save_data(),
 		"equipment": Equipment.to_save_data(),
+		"refreshed": refreshed,
 		"chest": chest_items,
 		"stall": stall_items,
 		"spawn_x": player_spawn_position.x,
@@ -112,6 +122,7 @@ func load_game() -> bool:
 		Inventory.load_save_data(data["inventory"])
 	if data.has("equipment"):
 		Equipment.load_save_data(data["equipment"])
+	refreshed = bool(data.get("refreshed", false))
 	if data.has("chest"):
 		chest_items = _restore_entries(data["chest"], ["count"])
 	if data.has("stall"):

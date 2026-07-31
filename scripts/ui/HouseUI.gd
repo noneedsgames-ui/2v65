@@ -5,7 +5,6 @@ extends Control
 
 func _ready() -> void:
 	$Center/Window/Margin/Content/CloseButton.pressed.connect(_on_close)
-	$Center/Window/Margin/Content/SleepButton.pressed.connect(_on_sleep)
 	Inventory.changed.connect(refresh)
 
 func refresh() -> void:
@@ -50,12 +49,6 @@ func _withdraw(id: String) -> void:
 	if GameState.chest_remove(id, 1):
 		Inventory.add_item(id, 1)
 	refresh()
-
-func _on_sleep() -> void:
-	var player := get_tree().get_first_node_in_group("player")
-	if player:
-		GameState.player_spawn_position = player.global_position
-	GameState.save_game()
 
 func _on_close() -> void:
 	EventBus.request_close_menus.emit()

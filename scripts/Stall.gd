@@ -49,6 +49,7 @@ func serve_customer(steal_chance: float) -> void:
 	var message := ""
 	if randf() < steal_chance:
 		message = "万引き! %sを%d個盗まれた" % [item_name, quantity]
+		EventBus.companion_say.emit("あっ、今の人お金払ってないよ！ 追いかける？")
 	else:
 		var earned: int = int(entry["price"]) * quantity
 		Inventory.add_gold(earned)

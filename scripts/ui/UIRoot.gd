@@ -3,6 +3,7 @@ extends CanvasLayer
 
 @onready var hud: Control = $HUD
 @onready var hotbar: Control = $Hotbar
+@onready var bubble: Control = $CompanionBubble
 @onready var inventory_panel: Control = $InventoryUI
 @onready var house_panel: Control = $HouseUI
 @onready var shop_panel = $ShopUI  # set_shop() を呼ぶため型は付けない
@@ -18,12 +19,14 @@ func _ready() -> void:
 		p.visible = false
 		p.process_mode = Node.PROCESS_MODE_ALWAYS
 	hud.process_mode = Node.PROCESS_MODE_ALWAYS
+	bubble.process_mode = Node.PROCESS_MODE_ALWAYS
 	# ホットバーはメニューを開いている間は反応させない
 	hotbar.process_mode = Node.PROCESS_MODE_PAUSABLE
 
-	EventBus.request_open_house.connect(func(): _open(house_panel))
+	EventBus.request_open_chest.connect(func(): _open(house_panel))
 	EventBus.request_open_shop.connect(_on_request_open_shop)
 	EventBus.request_open_stall.connect(func(): _open(stall_panel))
+	EventBus.request_open_crafting.connect(func(): _open(crafting_panel))
 	EventBus.request_close_menus.connect(_close_all)
 
 func _unhandled_input(event: InputEvent) -> void:

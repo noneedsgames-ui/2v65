@@ -40,7 +40,7 @@ theme_override_constants/separation = 10
 [node name="TitleLabel" type="Label" parent="Center/Window/Margin/Content"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
-text = "我が家"
+text = "収納箱"
 
 [node name="Columns" type="HBoxContainer" parent="Center/Window/Margin/Content"]
 layout_mode = 2
@@ -52,7 +52,7 @@ size_flags_horizontal = 3
 
 [node name="Label" type="Label" parent="Center/Window/Margin/Content/Columns/PlayerColumn"]
 layout_mode = 2
-text = "持ち物(クリックで収納箱へ)"
+text = "持ち物(クリックで預ける)"
 
 [node name="Scroll" type="ScrollContainer" parent="Center/Window/Margin/Content/Columns/PlayerColumn"]
 custom_minimum_size = Vector2(340, 320)
@@ -69,7 +69,7 @@ size_flags_horizontal = 3
 
 [node name="Label" type="Label" parent="Center/Window/Margin/Content/Columns/ChestColumn"]
 layout_mode = 2
-text = "収納箱(クリックで持ち物へ)"
+text = "収納箱(クリックで取り出す)"
 
 [node name="Scroll" type="ScrollContainer" parent="Center/Window/Margin/Content/Columns/ChestColumn"]
 custom_minimum_size = Vector2(340, 320)
@@ -79,10 +79,6 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
-
-[node name="SleepButton" type="Button" parent="Center/Window/Margin/Content"]
-layout_mode = 2
-text = "ベッドで眠る(セーブ)"
 
 [node name="CloseButton" type="Button" parent="Center/Window/Margin/Content"]
 layout_mode = 2

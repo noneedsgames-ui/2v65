@@ -37,6 +37,8 @@ func interact(_actor: Node) -> void:
 		EventBus.notify.emit("%sを装備する必要があります" % ItemDB.get_display_name(required_tool))
 		return
 	var amount := randi_range(min_amount, max_amount) + Equipment.get_total_gather_bonus()
+	if GameState.refreshed:
+		amount += GameState.REFRESHED_GATHER_BONUS
 	var added := Inventory.add_item(item_id, amount)
 	if added > 0:
 		EventBus.notify.emit("%s +%d" % [ItemDB.get_display_name(item_id), added])

@@ -1,0 +1,202 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/Companion.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/Tree.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/Rock.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/Bush.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/IronVein.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/FiberPatch.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://scenes/SceneDoor.tscn" id="8"]
+[ext_resource type="PackedScene" path="res://scenes/CommentZone.tscn" id="9"]
+[ext_resource type="PackedScene" path="res://scenes/ui/UIRoot.tscn" id="10"]
+[ext_resource type="Script" path="res://scripts/WorldRoot.gd" id="11"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
+size = Vector2(2600, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
+size = Vector2(40, 600)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ledge"]
+size = Vector2(240, 30)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ledge2"]
+size = Vector2(200, 30)
+
+[node name="Wilds" type="Node2D"]
+script = ExtResource("11")
+
+[node name="Sky" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-100, -1200, 2700, -1200, 2700, 450, -100, 450)
+color = Color(0.42, 0.58, 0.6, 1)
+
+[node name="FarTrees" type="Node2D" parent="."]
+
+[node name="T1" type="Polygon2D" parent="FarTrees"]
+polygon = PackedVector2Array(100, 380, 220, 120, 340, 380)
+color = Color(0.16, 0.32, 0.22, 1)
+
+[node name="T2" type="Polygon2D" parent="FarTrees"]
+polygon = PackedVector2Array(420, 380, 560, 80, 700, 380)
+color = Color(0.13, 0.28, 0.19, 1)
+
+[node name="T3" type="Polygon2D" parent="FarTrees"]
+polygon = PackedVector2Array(820, 380, 940, 140, 1060, 380)
+color = Color(0.17, 0.33, 0.23, 1)
+
+[node name="T4" type="Polygon2D" parent="FarTrees"]
+polygon = PackedVector2Array(1300, 380, 1440, 90, 1580, 380)
+color = Color(0.13, 0.28, 0.19, 1)
+
+[node name="T5" type="Polygon2D" parent="FarTrees"]
+polygon = PackedVector2Array(1800, 380, 1930, 150, 2060, 380)
+color = Color(0.17, 0.33, 0.23, 1)
+
+[node name="T6" type="Polygon2D" parent="FarTrees"]
+polygon = PackedVector2Array(2200, 380, 2340, 110, 2480, 380)
+color = Color(0.13, 0.28, 0.19, 1)
+
+[node name="Ground" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+position = Vector2(1300, 420)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("RectangleShape2D_ground")
+
+[node name="Dirt" type="Polygon2D" parent="Ground"]
+polygon = PackedVector2Array(-1300, -20, 1300, -20, 1300, 20, -1300, 20)
+color = Color(0.3, 0.22, 0.14, 1)
+
+[node name="MossTop" type="Polygon2D" parent="Ground"]
+polygon = PackedVector2Array(-1300, -20, 1300, -20, 1300, -10, -1300, -10)
+color = Color(0.26, 0.5, 0.25, 1)
+
+[node name="Ledge1" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+position = Vector2(750, 340)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ledge1"]
+shape = SubResource("RectangleShape2D_ledge")
+
+[node name="Visual" type="Polygon2D" parent="Ledge1"]
+polygon = PackedVector2Array(-120, -15, 120, -15, 120, 15, -120, 15)
+color = Color(0.36, 0.28, 0.18, 1)
+
+[node name="Ledge2" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+position = Vector2(1600, 340)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ledge2"]
+shape = SubResource("RectangleShape2D_ledge2")
+
+[node name="Visual" type="Polygon2D" parent="Ledge2"]
+polygon = PackedVector2Array(-100, -15, 100, -15, 100, 15, -100, 15)
+color = Color(0.36, 0.28, 0.18, 1)
+
+[node name="WallRight" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+position = Vector2(2580, 100)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallRight"]
+shape = SubResource("RectangleShape2D_wall")
+
+[node name="Cliff" type="Polygon2D" parent="WallRight"]
+polygon = PackedVector2Array(-20, -300, 60, -300, 60, 300, -20, 300)
+color = Color(0.3, 0.32, 0.3, 1)
+
+[node name="DoorToTown" parent="." instance=ExtResource("8")]
+position = Vector2(90, 400)
+target_scene = "res://scenes/Town.tscn"
+spawn_position = Vector2(2530, 380)
+label = "町へ戻る"
+
+[node name="Tree1" parent="." instance=ExtResource("3")]
+position = Vector2(320, 400)
+
+[node name="FiberPatch1" parent="." instance=ExtResource("7")]
+position = Vector2(470, 400)
+
+[node name="Bush1" parent="." instance=ExtResource("5")]
+position = Vector2(600, 400)
+
+[node name="Tree2" parent="." instance=ExtResource("3")]
+position = Vector2(900, 400)
+
+[node name="IronVein1" parent="." instance=ExtResource("6")]
+position = Vector2(1050, 400)
+
+[node name="Rock1" parent="." instance=ExtResource("4")]
+position = Vector2(1200, 400)
+
+[node name="IronVein2" parent="." instance=ExtResource("6")]
+position = Vector2(1350, 400)
+
+[node name="Tree3" parent="." instance=ExtResource("3")]
+position = Vector2(1500, 400)
+
+[node name="FiberPatch2" parent="." instance=ExtResource("7")]
+position = Vector2(1780, 400)
+
+[node name="Rock2" parent="." instance=ExtResource("4")]
+position = Vector2(1900, 400)
+
+[node name="IronVein3" parent="." instance=ExtResource("6")]
+position = Vector2(2050, 400)
+
+[node name="Bush2" parent="." instance=ExtResource("5")]
+position = Vector2(2200, 400)
+
+[node name="Tree4" parent="." instance=ExtResource("3")]
+position = Vector2(2350, 400)
+
+[node name="IronVein4" parent="." instance=ExtResource("6")]
+position = Vector2(2470, 400)
+
+[node name="Tree5" parent="." instance=ExtResource("3")]
+position = Vector2(750, 325)
+
+[node name="Rock3" parent="." instance=ExtResource("4")]
+position = Vector2(1600, 325)
+
+[node name="EntranceZone" parent="." instance=ExtResource("9")]
+position = Vector2(220, 400)
+lines = PackedStringArray("うわ、空気が濃い。ここが奥の森だね。", "町よりずっと素材が多いよ。かごは持ってきた？")
+cooldown_seconds = 40.0
+
+[node name="MineZone" parent="." instance=ExtResource("9")]
+position = Vector2(1200, 400)
+lines = PackedStringArray("鉄鉱脈がごろごろしてる。ツルハシを装備しておこう。", "ここの鉱脈、町で売ると結構な値がつくよ。")
+cooldown_seconds = 40.0
+
+[node name="DeepZone" parent="." instance=ExtResource("9")]
+position = Vector2(2050, 400)
+lines = PackedStringArray("奥まで来たね。持ちきれなくなる前に戻ろう。")
+cooldown_seconds = 40.0
+
+[node name="CliffZone" parent="." instance=ExtResource("9")]
+position = Vector2(2500, 400)
+lines = PackedStringArray("行き止まりだ。この崖はさすがに登れないよ。")
+cooldown_seconds = 30.0
+
+[node name="Companion" parent="." instance=ExtResource("2")]
+position = Vector2(60, 390)
+
+[node name="Player" parent="." instance=ExtResource("1")]
+position = Vector2(160, 380)
+
+[node name="Camera2D" type="Camera2D" parent="Player"]
+position = Vector2(0, -100)
+zoom = Vector2(0.8, 0.8)
+position_smoothing_enabled = true
+position_smoothing_speed = 5.0
+limit_left = 0
+limit_top = -500
+limit_right = 2600
+limit_bottom = 460
+
+[node name="UIRoot" parent="." instance=ExtResource("10")]
