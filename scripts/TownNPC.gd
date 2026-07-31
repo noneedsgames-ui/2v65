@@ -97,7 +97,8 @@ func _process_approach(_delta: float) -> void:
 	if _stall == null or not is_instance_valid(_stall) or not _stall.has_stock():
 		state = State.WANDER
 		return
-	var dx := _stall.global_position.x - global_position.x
+	# _stall は未型付け(Variant)なので := では型推論できない。明示的に float を指定する。
+	var dx: float = _stall.global_position.x - global_position.x
 	if abs(dx) < 36.0:
 		velocity.x = 0.0
 		state = State.BROWSE

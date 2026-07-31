@@ -23,7 +23,7 @@ func _ready() -> void:
 func _place_player(pos: Vector2) -> void:
 	player.global_position = pos
 	# 移動履歴に転送前の座標が残っていると仲間が古い位置へ走り出すので捨てる
-	player.path_history.clear()
+	player.reset_path_history()
 	var companion := get_tree().get_first_node_in_group("companion")
 	if companion:
 		companion.global_position = pos + Vector2(-80, 0)

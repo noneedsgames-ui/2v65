@@ -41,6 +41,12 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("interact"):
 		_try_interact()
 
+## シーン遷移などで瞬間移動したときに呼ぶ。
+## path_history は PackedVector2Array(値型)なので、外部から取得して clear() しても
+## 複製が消えるだけで実体に効かない。必ずこのメソッド経由で消すこと。
+func reset_path_history() -> void:
+	path_history.clear()
+
 func _record_path() -> void:
 	path_history.append(global_position)
 	if path_history.size() > PATH_HISTORY_MAX:
