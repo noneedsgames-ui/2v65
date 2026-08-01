@@ -1,8 +1,6 @@
 extends Control
 ## 画面端に出る同行者のひとこと。EventBus.companion_say を受けて一定時間表示する。
 
-@export var display_seconds: float = 4.5
-
 @onready var panel: PanelContainer = $Panel
 @onready var text_label: Label = $Panel/Margin/VBox/TextLabel
 @onready var timer: Timer = $HideTimer
@@ -18,4 +16,4 @@ func say(text: String) -> void:
 		return
 	text_label.text = text
 	panel.visible = true
-	timer.start(display_seconds)
+	timer.start(Settings.bubble_seconds)

@@ -8,6 +8,9 @@ extends Area2D
 @export var respawn_time: float = 12.0
 @export var required_tool: String = ""  # 空なら道具不要。"axe" / "pickaxe" など(装備している必要がある)
 @export var display_name: String = "木"
+## 通常の素材に加えて、まれにこちらが採れる(土地ごとの薬草・鉱石)。
+@export var bonus_ids: PackedStringArray = PackedStringArray()
+@export var bonus_chance: float = 0.55
 
 var depleted: bool = false
 
@@ -39,9 +42,14 @@ func interact(_actor: Node) -> void:
 	var amount := randi_range(min_amount, max_amount) + Equipment.get_total_gather_bonus()
 	if GameState.refreshed:
 		amount += GameState.REFRESHED_GATHER_BONUS
-	var added := Inventory.add_item(item_id, amount)
+	# その土地ならではの素材が採れることがある
+	var gained: String = item_id
+	if not bonus_ids.is_empty() and randf() < bonus_chance:
+		gained = bonus_ids[randi() % bonus_ids.size()]
+		amount = max(1, amount - 1)
+	var added := Inventory.add_item(gained, amount)
 	if added > 0:
-		EventBus.notify.emit("%s +%d" % [ItemDB.get_display_name(item_id), added])
+		EventBus.notify.emit("%s +%d" % [ItemDB.get_display_name(gained), added])
 	_deplete()
 
 func _deplete() -> void:

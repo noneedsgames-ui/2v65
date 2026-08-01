@@ -70,6 +70,14 @@ func _register_resident(id: String, display_name: String, role: String,
 	}
 	quest_state[quest["id"]] = QuestState.UNKNOWN
 
+## 新規開始用。出会いとクエストの記録を消す。
+func reset() -> void:
+	met.clear()
+	for key in quest_state.keys():
+		quest_state[key] = QuestState.UNKNOWN
+	residents_changed.emit()
+	quests_changed.emit()
+
 # ---- 住民 ----
 
 func meet(resident_id: String) -> void:

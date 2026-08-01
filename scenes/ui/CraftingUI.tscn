@@ -14,7 +14,7 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0, 0, 0, 0.55)
+color = Color(0, 0, 0, 0.6)
 
 [node name="Center" type="CenterContainer" parent="."]
 layout_mode = 1
@@ -23,7 +23,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 
 [node name="Window" type="PanelContainer" parent="Center"]
-custom_minimum_size = Vector2(600, 560)
+custom_minimum_size = Vector2(1040, 600)
 layout_mode = 2
 
 [node name="Margin" type="MarginContainer" parent="Center/Window"]
@@ -40,60 +40,110 @@ theme_override_constants/separation = 10
 [node name="TitleLabel" type="Label" parent="Center/Window/Margin/Content"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
-text = "クラフト"
+text = "工房"
 
 [node name="Tabs" type="HBoxContainer" parent="Center/Window/Margin/Content"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 8
 
-[node name="Scroll" type="ScrollContainer" parent="Center/Window/Margin/Content"]
-custom_minimum_size = Vector2(540, 300)
+[node name="AlchemyTab" type="Button" parent="Center/Window/Margin/Content/Tabs"]
+custom_minimum_size = Vector2(140, 34)
 layout_mode = 2
+toggle_mode = true
+button_pressed = true
+text = "錬成(図鑑)"
 
-[node name="List" type="VBoxContainer" parent="Center/Window/Margin/Content/Scroll"]
+[node name="CraftTab" type="Button" parent="Center/Window/Margin/Content/Tabs"]
+custom_minimum_size = Vector2(140, 34)
+layout_mode = 2
+toggle_mode = true
+text = "細工"
+
+[node name="AlchemyBox" type="HBoxContainer" parent="Center/Window/Margin/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="Codex" type="VBoxContainer" parent="Center/Window/Margin/Content/AlchemyBox"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CodexTitle" type="Label" parent="Center/Window/Margin/Content/AlchemyBox/Codex"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.75, 0.85, 1, 1)
+text = "素材図鑑"
+
+[node name="FilterRow" type="HBoxContainer" parent="Center/Window/Margin/Content/AlchemyBox/Codex"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Scroll" type="ScrollContainer" parent="Center/Window/Margin/Content/AlchemyBox/Codex"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="List" type="VBoxContainer" parent="Center/Window/Margin/Content/AlchemyBox/Codex/Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="GameBox" type="VBoxContainer" parent="Center/Window/Margin/Content"]
+[node name="Bench" type="VBoxContainer" parent="Center/Window/Margin/Content/AlchemyBox"]
+custom_minimum_size = Vector2(460, 0)
 layout_mode = 2
-theme_override_constants/separation = 8
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
 
-[node name="GameLabel" type="Label" parent="Center/Window/Margin/Content/GameBox"]
+[node name="BenchTitle" type="Label" parent="Center/Window/Margin/Content/AlchemyBox/Bench"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 17
+theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(1, 0.85, 0.4, 1)
+text = "錬成の釜"
 
-[node name="Bar" type="ColorRect" parent="Center/Window/Margin/Content/GameBox"]
-custom_minimum_size = Vector2(480, 40)
+[node name="SlotRow" type="HBoxContainer" parent="Center/Window/Margin/Content/AlchemyBox/Bench"]
 layout_mode = 2
-size_flags_horizontal = 0
-color = Color(0.12, 0.12, 0.15, 1)
+theme_override_constants/separation = 6
 
-[node name="Good" type="ColorRect" parent="Center/Window/Margin/Content/GameBox/Bar"]
-offset_left = 100.0
-offset_top = 4.0
-offset_right = 250.0
-offset_bottom = 36.0
-color = Color(0.3, 0.65, 0.35, 0.8)
-
-[node name="Perfect" type="ColorRect" parent="Center/Window/Margin/Content/GameBox/Bar"]
-offset_left = 152.0
-offset_top = 4.0
-offset_right = 198.0
-offset_bottom = 36.0
-color = Color(1, 0.85, 0.3, 0.9)
-
-[node name="Marker" type="ColorRect" parent="Center/Window/Margin/Content/GameBox/Bar"]
-offset_top = 2.0
-offset_right = 8.0
-offset_bottom = 38.0
-color = Color(1, 1, 1, 1)
-
-[node name="StopButton" type="Button" parent="Center/Window/Margin/Content/GameBox"]
-custom_minimum_size = Vector2(0, 38)
+[node name="ReadoutLabel" type="Label" parent="Center/Window/Margin/Content/AlchemyBox/Bench"]
+custom_minimum_size = Vector2(0, 96)
 layout_mode = 2
-text = "止める [Space / E]"
+theme_override_font_sizes/font_size = 16
+autowrap_mode = 2
+
+[node name="BrewButton" type="Button" parent="Center/Window/Margin/Content/AlchemyBox/Bench"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "錬成する"
+
+[node name="ClearButton" type="Button" parent="Center/Window/Margin/Content/AlchemyBox/Bench"]
+layout_mode = 2
+text = "釜を空にする"
+
+[node name="DetailLabel" type="Label" parent="Center/Window/Margin/Content/AlchemyBox/Bench"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+autowrap_mode = 2
+
+[node name="ProgressLabel" type="Label" parent="Center/Window/Margin/Content/AlchemyBox/Bench"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.7, 1, 0.75, 1)
+
+[node name="CraftBox" type="VBoxContainer" parent="Center/Window/Margin/Content"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Scroll" type="ScrollContainer" parent="Center/Window/Margin/Content/CraftBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="List" type="VBoxContainer" parent="Center/Window/Margin/Content/CraftBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
 
 [node name="CloseButton" type="Button" parent="Center/Window/Margin/Content"]
 layout_mode = 2

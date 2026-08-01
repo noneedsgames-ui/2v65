@@ -16,7 +16,7 @@ func _ready() -> void:
 	EventBus.player_hp_changed.connect(_on_hp_changed)
 	_on_hp_changed(GameState.player_hp, GameState.PLAYER_MAX_HP)
 	toast_timer.timeout.connect(func(): toast_label.visible = false)
-	help_label.text = "移動:A/D  ジャンプ:Space  調べる:E  攻撃:J  持ち物:I  クラフト:C\nホットバー:1-8 / Q・R  使う:F  閉じる:Esc"
+	help_label.text = "移動:A/D  ジャンプ(壁蹴り):Space  調べる:E  攻撃:J\n持ち物:I  工房:C  メモ帳:K  メニュー:Tab  使う:F  閉じる:Esc"
 	prompt_label.visible = false
 	toast_label.visible = false
 	_on_gold_changed(Inventory.gold)
@@ -31,7 +31,7 @@ func _on_prompt_hide() -> void:
 func _on_notify(text: String) -> void:
 	toast_label.text = text
 	toast_label.visible = true
-	toast_timer.start()
+	toast_timer.start(Settings.toast_seconds)
 
 func _on_gold_changed(amount: int) -> void:
 	gold_label.text = "所持金: %dG" % amount

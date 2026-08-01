@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/UIRoot.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="2"]
@@ -13,6 +13,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/NegotiationUI.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://scenes/ui/DialogueUI.tscn" id="12"]
 [ext_resource type="PackedScene" path="res://scenes/ui/JournalUI.tscn" id="13"]
+[ext_resource type="PackedScene" path="res://scenes/ui/AreaSelectUI.tscn" id="14"]
+[ext_resource type="PackedScene" path="res://scenes/ui/SystemMenuUI.tscn" id="15"]
 
 [node name="UIRoot" type="CanvasLayer"]
 script = ExtResource("1")
@@ -40,3 +42,7 @@ script = ExtResource("1")
 [node name="DialogueUI" parent="." instance=ExtResource("12")]
 
 [node name="JournalUI" parent="." instance=ExtResource("13")]
+
+[node name="AreaSelectUI" parent="." instance=ExtResource("14")]
+
+[node name="SystemMenuUI" parent="." instance=ExtResource("15")]

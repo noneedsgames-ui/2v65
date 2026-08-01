@@ -18,6 +18,16 @@ func _ready() -> void:
 	for i in range(MAX_SLOTS):
 		slots[i] = null
 
+## 新規開始用。持ち物と所持金を初期状態に戻す。
+func reset() -> void:
+	for i in range(MAX_SLOTS):
+		slots[i] = null
+	gold = 100
+	selected_hotbar = 0
+	changed.emit()
+	gold_changed.emit(gold)
+	hotbar_selection_changed.emit(selected_hotbar)
+
 func add_item(id: String, count: int = 1) -> int:
 	var remaining := count
 	var stack_max := ItemDB.get_stack_max(id)

@@ -31,6 +31,9 @@ const GATHER_SCENES := [TREE, ROCK, BUSH, IRON_VEIN, FIBER_PATCH]
 ## 0 なら毎回ランダム。値を入れると同じ地形を再現できる(デバッグ用)。
 @export var generation_seed: int = 0
 
+## 入る探索地(AreaDB)の定義。見た目・採れる素材・敵の強さがここで決まる。
+var area: Dictionary = {}
+
 var rng := RandomNumberGenerator.new()
 var _terrain: Node2D
 var _props: Node2D
@@ -45,12 +48,28 @@ func _ready() -> void:
 	_props.name = "GeneratedProps"
 	add_child(_props)
 
+	area = AreaDB.get_area(GameState.selected_area)
+	stage_length = float(area.get("length", stage_length))
+
 	if generation_seed != 0:
 		rng.seed = generation_seed
 	else:
 		rng.randomize()
 
+	_paint_backdrop()
 	_generate()
+
+## 空と遠景をその土地の色に塗る。
+func _paint_backdrop() -> void:
+	var sky := get_parent().get_node_or_null("Sky") as Polygon2D
+	if sky != null:
+		sky.color = area["sky"]
+	var far := get_parent().get_node_or_null("FarShapes")
+	if far != null:
+		for child in far.get_children():
+			var poly := child as Polygon2D
+			if poly != null:
+				poly.color = area["far"]
 
 func _generate() -> void:
 	var x := START_X
@@ -107,7 +126,28 @@ func _generate() -> void:
 		_add_ground(x, stage_length - x, floor_y)
 		_add_platform_record(x, x + (stage_length - x), floor_y)
 
+	# 行き止まりの崖。探索地ごとに長さが違うので、生成側で立てる。
+	_add_wall(stage_length, FLOOR_Y_MIN - 500.0, 40.0, 1000.0)
+	var cliff := Polygon2D.new()
+	cliff.polygon = PackedVector2Array([
+		Vector2(stage_length, FLOOR_Y_MIN - 500.0), Vector2(stage_length + 80.0, FLOOR_Y_MIN - 500.0),
+		Vector2(stage_length + 80.0, FLOOR_Y_MAX + 200.0), Vector2(stage_length, FLOOR_Y_MAX + 200.0)])
+	cliff.color = area["ground"].darkened(0.25)
+	_terrain.add_child(cliff)
+	_add_comment(stage_length - 90.0, floor_y, ["行き止まりだ。ここから先へは進めないよ。"])
+
 	_populate()
+	# プレイヤーは生成器より後に _ready するので、カメラの調整は次のフレームに回す
+	call_deferred("_apply_camera_limits")
+
+## 探索地の長さにあわせてカメラの可動範囲を締める。
+func _apply_camera_limits() -> void:
+	var player := get_tree().get_first_node_in_group("player")
+	if player == null:
+		return
+	var cam := player.get_node_or_null("Camera2D") as Camera2D
+	if cam != null:
+		cam.limit_right = int(stage_length + 40.0)
 
 # ---- 区画の種類 ----
 
@@ -229,14 +269,14 @@ func _add_ground(x: float, w: float, y: float) -> void:
 	dirt.polygon = PackedVector2Array([
 		Vector2(-w * 0.5, -20), Vector2(w * 0.5, -20),
 		Vector2(w * 0.5, 140), Vector2(-w * 0.5, 140)])
-	dirt.color = Color(0.3, 0.22, 0.14)
+	dirt.color = area["ground"]
 	body.add_child(dirt)
 
 	var moss := Polygon2D.new()
 	moss.polygon = PackedVector2Array([
 		Vector2(-w * 0.5, -20), Vector2(w * 0.5, -20),
 		Vector2(w * 0.5, -10), Vector2(-w * 0.5, -10)])
-	moss.color = Color(0.26, 0.5, 0.25)
+	moss.color = area["surface"]
 	body.add_child(moss)
 
 	_terrain.add_child(body)
@@ -256,7 +296,7 @@ func _add_platform(x: float, w: float, y: float) -> void:
 	visual.polygon = PackedVector2Array([
 		Vector2(-w * 0.5, -15), Vector2(w * 0.5, -15),
 		Vector2(w * 0.5, 15), Vector2(-w * 0.5, 15)])
-	visual.color = Color(0.36, 0.28, 0.18)
+	visual.color = area["ground"].lightened(0.12)
 	body.add_child(visual)
 	_terrain.add_child(body)
 
@@ -305,18 +345,40 @@ func _populate() -> void:
 			if px < plat["x_min"] + 60.0 or px > plat["x_max"] - 60.0:
 				continue
 			var roll := rng.randf()
-			if not is_start and roll < 0.16:
+			if not is_start and roll < float(area["enemy_rate"]):
 				_spawn_enemy(px, plat)
 			elif roll < 0.72:
 				_spawn_gather(px, plat["y"])
 
 	_add_comment(START_X - 40.0, GROUND_Y,
-		["うわ、空気が濃い。ここが奥の森だね。", "地形は来るたびに変わるみたい。気をつけて。"])
+		["ここが%sだね。%s" % [area["name"], area["blurb"]],
+		"地形は来るたびに変わるみたい。気をつけて。"])
+
+const NODE_SCENES := {"tree": TREE, "bush": BUSH, "fiber": FIBER_PATCH,
+	"rock": ROCK, "vein": IRON_VEIN}
+
+## 重み付きで採集ノードの種類を選ぶ。土地ごとに出やすさが違う。
+func _pick_node_kind() -> String:
+	var weights: Dictionary = area["nodes"]
+	var total := 0
+	for k in weights.keys():
+		total += int(weights[k])
+	var roll := rng.randi_range(1, max(1, total))
+	for k in weights.keys():
+		roll -= int(weights[k])
+		if roll <= 0:
+			return k
+	return "tree"
 
 func _spawn_gather(x: float, y: float) -> void:
-	var scene: PackedScene = GATHER_SCENES[rng.randi() % GATHER_SCENES.size()]
-	var node := scene.instantiate()
+	var kind := _pick_node_kind()
+	var node = NODE_SCENES[kind].instantiate()
 	node.position = Vector2(x, y)
+	# 草木からはその土地の薬草、岩と鉱脈からは鉱石が採れる
+	if kind == "rock" or kind == "vein":
+		node.bonus_ids = PackedStringArray(area["ores"])
+	else:
+		node.bonus_ids = PackedStringArray(area["herbs"])
 	_props.add_child(node)
 
 func _spawn_enemy(x: float, plat: Dictionary) -> void:
@@ -325,9 +387,14 @@ func _spawn_enemy(x: float, plat: Dictionary) -> void:
 	# 足場からはみ出さない範囲を巡回させる
 	enemy.patrol_min_x = plat["x_min"] + 40.0
 	enemy.patrol_max_x = plat["x_max"] - 40.0
-	# 奥へ行くほど手強くする
+	enemy.max_hp = int(area["enemy_hp"])
+	enemy.contact_damage = int(area["enemy_damage"])
+	# 奥へ行くほど手強くし、落とす物も良くなる
 	if x > stage_length * 0.6:
-		enemy.max_hp = 80
-		enemy.contact_damage = 16
-		enemy.drop_id = "iron_ore"
+		enemy.max_hp = int(area["enemy_hp"]) + 25
+		var ores: Array = area["ores"]
+		enemy.drop_id = ores[rng.randi() % ores.size()]
+	else:
+		var herbs: Array = area["herbs"]
+		enemy.drop_id = herbs[rng.randi() % herbs.size()]
 	_props.add_child(enemy)

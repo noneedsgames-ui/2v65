@@ -18,6 +18,9 @@ const TOWN_SCENE := "res://scenes/Town.tscn"
 const WILDS_SCENE := "res://scenes/Wilds.tscn"
 const HOUSE_SCENE := "res://scenes/HouseInterior.tscn"
 
+## 次に入る探索地の id(AreaDB)。町の外れで選ぶ。
+var selected_area: String = "forest"
+
 ## 風呂に入るとさっぱりして採集がはかどる。寝ると翌日になって解ける。
 const REFRESHED_GATHER_BONUS := 1
 var refreshed: bool = false
@@ -93,6 +96,25 @@ func stall_withdraw(index: int) -> void:
 		Inventory.add_item(entry["id"], entry["count"])
 		stall_items.remove_at(index)
 
+## 「はじめから」を選んだとき、持ち越しの状態をすべて捨てる。
+## オートロードはシーンを跨いで生き続けるので、明示的に消さないと前の周回が混ざる。
+func reset_for_new_game() -> void:
+	chest_items.clear()
+	stall_items.clear()
+	stall_earnings_log.clear()
+	refreshed = false
+	selected_area = "forest"
+	player_spawn_position = Vector2(200, 300)
+	has_save = false
+	restore_player_hp()
+	Inventory.reset()
+	Equipment.reset()
+	Journal.reset()
+	RecipeDB.reset()
+	AlchemyDB.reset()
+	if FileAccess.file_exists(SAVE_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+
 func save_game() -> void:
 	var data := {
 		"inventory": Inventory.to_save_data(),
@@ -100,6 +122,7 @@ func save_game() -> void:
 		"refreshed": refreshed,
 		"journal": Journal.to_save_data(),
 		"recipes": RecipeDB.to_save_data(),
+		"alchemy": AlchemyDB.to_save_data(),
 		"hp": player_hp,
 		"chest": chest_items,
 		"stall": stall_items,
@@ -148,6 +171,8 @@ func load_game() -> bool:
 		Journal.load_save_data(data["journal"])
 	if data.has("recipes"):
 		RecipeDB.load_save_data(data["recipes"])
+	if data.has("alchemy"):
+		AlchemyDB.load_save_data(data["alchemy"])
 	refreshed = bool(data.get("refreshed", false))
 	player_hp = clamp(int(data.get("hp", PLAYER_MAX_HP)), 1, PLAYER_MAX_HP)
 	EventBus.player_hp_changed.emit(player_hp, PLAYER_MAX_HP)

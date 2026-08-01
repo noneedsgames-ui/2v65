@@ -1,160 +1,251 @@
 extends Control
-## クラフト画面。カテゴリで絞り込み、未発見のレシピは伏せて表示する。
-## 「作る」を押すと手さばきのミニゲームが始まり、止めた位置で品質が決まる。
+## 工房。左が図鑑、右が釜の二画面。
+##
+## 図鑑で素材の属性と力を見比べ、狙った属性を狙った強さまで積んで釜に入れる。
+## 釜の実況(主属性・合計・純度・出来上がりそうなもの)は入れるたびに更新されるので、
+## 「あと火をいくつ足せば次の段に届くか」を考えながら調合できる。
+##
+## 「細工」タブは従来どおりの決まったレシピ(板・道具など)。
 
-const BAR_WIDTH := 460.0
-## 針の速さ(px/秒)。作るものが高度なほど速くなる。
-const BASE_SPEED := 300.0
+const TAB_ALCHEMY := "alchemy"
+const TAB_CRAFT := "craft"
 
-var current_category: int = 0
+## 図鑑の絞り込み
+const FILTER_ALL := -1
+
+var current_tab: String = TAB_ALCHEMY
+var filter_type: int = FILTER_ALL
 var selected_id: String = ""
+## 釜の中身。空きは ""
+var cauldron: Array = []
 
-## ミニゲームの状態
-var playing: bool = false
-var marker_x: float = 0.0
-var marker_dir: float = 1.0
-var marker_speed: float = BASE_SPEED
+@onready var tab_alchemy: Button = $Center/Window/Margin/Content/Tabs/AlchemyTab
+@onready var tab_craft: Button = $Center/Window/Margin/Content/Tabs/CraftTab
 
-@onready var tabs: HBoxContainer = $Center/Window/Margin/Content/Tabs
-@onready var list: VBoxContainer = $Center/Window/Margin/Content/Scroll/List
-@onready var game_box: VBoxContainer = $Center/Window/Margin/Content/GameBox
-@onready var game_label: Label = $Center/Window/Margin/Content/GameBox/GameLabel
-@onready var marker: ColorRect = $Center/Window/Margin/Content/GameBox/Bar/Marker
-@onready var zone_good: ColorRect = $Center/Window/Margin/Content/GameBox/Bar/Good
-@onready var zone_perfect: ColorRect = $Center/Window/Margin/Content/GameBox/Bar/Perfect
-@onready var stop_button: Button = $Center/Window/Margin/Content/GameBox/StopButton
+@onready var alchemy_box: HBoxContainer = $Center/Window/Margin/Content/AlchemyBox
+@onready var filter_row: HBoxContainer = $Center/Window/Margin/Content/AlchemyBox/Codex/FilterRow
+@onready var codex_list: VBoxContainer = $Center/Window/Margin/Content/AlchemyBox/Codex/Scroll/List
+@onready var detail_label: Label = $Center/Window/Margin/Content/AlchemyBox/Bench/DetailLabel
+@onready var slot_row: HBoxContainer = $Center/Window/Margin/Content/AlchemyBox/Bench/SlotRow
+@onready var readout_label: Label = $Center/Window/Margin/Content/AlchemyBox/Bench/ReadoutLabel
+@onready var brew_button: Button = $Center/Window/Margin/Content/AlchemyBox/Bench/BrewButton
+@onready var clear_button: Button = $Center/Window/Margin/Content/AlchemyBox/Bench/ClearButton
+@onready var progress_label: Label = $Center/Window/Margin/Content/AlchemyBox/Bench/ProgressLabel
+
+@onready var craft_box: VBoxContainer = $Center/Window/Margin/Content/CraftBox
+@onready var craft_list: VBoxContainer = $Center/Window/Margin/Content/CraftBox/Scroll/List
 
 func _ready() -> void:
+	cauldron.resize(AlchemyDB.SLOT_COUNT)
+	for i in range(cauldron.size()):
+		cauldron[i] = ""
+
 	$Center/Window/Margin/Content/CloseButton.pressed.connect(_on_close)
-	stop_button.pressed.connect(_stop_game)
+	tab_alchemy.pressed.connect(func(): _set_tab(TAB_ALCHEMY))
+	tab_craft.pressed.connect(func(): _set_tab(TAB_CRAFT))
+	brew_button.pressed.connect(_brew)
+	clear_button.pressed.connect(_clear_cauldron)
 	Inventory.changed.connect(_on_inventory_changed)
-	_build_tabs()
-	game_box.visible = false
+
+	_build_filters()
+	_build_slots()
+	_set_tab(TAB_ALCHEMY)
 
 func _on_inventory_changed() -> void:
 	RecipeDB.discover_from_inventory()
 	refresh()
 
-func _build_tabs() -> void:
-	for c in tabs.get_children():
-		c.queue_free()
-	for category in RecipeDB.categories_in_order():
-		var b := Button.new()
-		b.text = RecipeDB.CATEGORY_LABELS[category]
-		b.toggle_mode = true
-		b.custom_minimum_size = Vector2(110, 32)
-		var cat: int = category
-		b.pressed.connect(func(): _set_category(cat))
-		tabs.add_child(b)
+# ---- 図鑑の絞り込み ----
 
-func _set_category(category: int) -> void:
-	current_category = category
+func _build_filters() -> void:
+	var kinds := [
+		[FILTER_ALL, "すべて"],
+		[ItemDB.ItemType.HERB, "薬草"],
+		[ItemDB.ItemType.ORE, "鉱石"],
+		[ItemDB.ItemType.MATERIAL, "素材"],
+		[ItemDB.ItemType.CATALYST, "触媒"],
+	]
+	for entry in kinds:
+		var b := Button.new()
+		b.text = entry[1]
+		b.toggle_mode = true
+		b.custom_minimum_size = Vector2(74, 28)
+		var v: int = entry[0]
+		b.pressed.connect(func(): _set_filter(v))
+		filter_row.add_child(b)
+
+func _set_filter(value: int) -> void:
+	filter_type = value
 	refresh()
 
+func _set_tab(tab: String) -> void:
+	current_tab = tab
+	alchemy_box.visible = tab == TAB_ALCHEMY
+	craft_box.visible = tab == TAB_CRAFT
+	tab_alchemy.button_pressed = tab == TAB_ALCHEMY
+	tab_craft.button_pressed = tab == TAB_CRAFT
+	refresh()
+
+# ---- 釜のスロット ----
+
+func _build_slots() -> void:
+	for i in range(AlchemyDB.SLOT_COUNT):
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(88, 44)
+		var idx := i
+		b.pressed.connect(func(): _remove_from_cauldron(idx))
+		slot_row.add_child(b)
+
+func _add_to_cauldron(id: String) -> void:
+	# 手持ちの数を超えて同じ素材は入れられない
+	var already := 0
+	for entry in cauldron:
+		if entry == id:
+			already += 1
+	if Inventory.get_count(id) <= already:
+		EventBus.notify.emit("%sの持ち合わせが足りない" % ItemDB.get_display_name(id))
+		return
+	for i in range(cauldron.size()):
+		if cauldron[i] == "":
+			cauldron[i] = id
+			refresh()
+			return
+	EventBus.notify.emit("釜がいっぱいだ")
+
+func _remove_from_cauldron(index: int) -> void:
+	if index >= 0 and index < cauldron.size() and cauldron[index] != "":
+		cauldron[index] = ""
+		refresh()
+
+func _clear_cauldron() -> void:
+	for i in range(cauldron.size()):
+		cauldron[i] = ""
+	refresh()
+
+func _brew() -> void:
+	var used: Array = []
+	for entry in cauldron:
+		if entry != "":
+			used.append(entry)
+	if used.is_empty():
+		return
+	AlchemyDB.brew(cauldron)
+	_clear_cauldron()
+
+# ---- 描画 ----
+
 func refresh() -> void:
-	# 開いた時点の手持ちで新しいレシピに気づくことがある
-	RecipeDB.discover_from_inventory()
+	if current_tab == TAB_ALCHEMY:
+		_refresh_codex()
+		_refresh_bench()
+	else:
+		_refresh_craft()
 
-	var order := RecipeDB.categories_in_order()
-	for i in range(tabs.get_child_count()):
-		var b := tabs.get_child(i) as Button
-		if b != null and i < order.size():
-			b.button_pressed = order[i] == current_category
+func _refresh_codex() -> void:
+	for i in range(filter_row.get_child_count()):
+		var b := filter_row.get_child(i) as Button
+		if b == null:
+			continue
+		var kinds := [FILTER_ALL, ItemDB.ItemType.HERB, ItemDB.ItemType.ORE,
+			ItemDB.ItemType.MATERIAL, ItemDB.ItemType.CATALYST]
+		if i < kinds.size():
+			b.button_pressed = kinds[i] == filter_type
 
-	for c in list.get_children():
+	for c in codex_list.get_children():
 		c.queue_free()
 
-	for recipe in RecipeDB.recipes_in_category(current_category):
+	var shown := 0
+	for id in ItemDB.all_ids():
+		if not ItemDB.is_ingredient(id):
+			continue
+		if filter_type != FILTER_ALL and ItemDB.get_type(id) != filter_type:
+			continue
+		var have := Inventory.get_count(id)
+		if have <= 0:
+			continue
+		shown += 1
+		var iid: String = id
+		var label_text := "%s  〈%s〉力%d  x%d" % [
+			ItemDB.get_display_name(id), ItemDB.get_element_label(id),
+			ItemDB.get_potency(id), have]
+		var row := UIRowFactory.make_item_row(
+			ItemDB.get_color(id), label_text, "釜へ", func(): _add_to_cauldron(iid))
+		# 行を押すと説明を出す(ボタンは釜へ入れる)
+		codex_list.add_child(row)
+
+	if shown == 0:
+		var l := Label.new()
+		l.text = "手持ちに素材がない。採集してこよう。"
+		codex_list.add_child(l)
+
+func _refresh_bench() -> void:
+	for i in range(slot_row.get_child_count()):
+		var b := slot_row.get_child(i) as Button
+		if b == null:
+			continue
+		var id: String = cauldron[i] if i < cauldron.size() else ""
+		if id == "":
+			b.text = "(空)"
+			b.tooltip_text = ""
+		else:
+			b.text = "%s\n〈%s〉%d" % [
+				ItemDB.get_display_name(id), ItemDB.get_element_label(id), ItemDB.get_potency(id)]
+			b.tooltip_text = "押すと釜から戻す"
+
+	var result := AlchemyDB.preview(cauldron)
+	var lines: Array = []
+	if int(result["tier"]) < 0 and String(result["output_id"]) == "":
+		lines.append(String(result["note"]))
+	else:
+		lines.append("主属性: 〈%s〉  合計の力: %d" % [
+			ItemDB.ELEMENT_LABELS.get(result["element"], "無"), int(result["total"])])
+		lines.append("純度: %d%%" % int(float(result["purity"]) * 100.0))
+		var out: String = result["output_id"]
+		if out == AlchemyDB.FAILURE_ID:
+			lines.append("→ このままでは澱む(%s)" % String(result["note"]))
+		elif out != "":
+			lines.append("→ %s x%d ができそうだ" % [ItemDB.get_display_name(out), int(result["amount"])])
+	readout_label.text = "\n".join(lines)
+	brew_button.disabled = String(result["output_id"]) == ""
+
+	if selected_id != "":
+		detail_label.text = "%s 〈%s〉力%d\n%s" % [
+			ItemDB.get_display_name(selected_id), ItemDB.get_element_label(selected_id),
+			ItemDB.get_potency(selected_id), ItemDB.get_description(selected_id)]
+	else:
+		detail_label.text = "図鑑から素材を釜に入れよう。\n同じ属性を積むほど強い霊薬になる。"
+
+	progress_label.text = "調合の記録: %d / %d" % [
+		AlchemyDB.discovered_count(), AlchemyDB.total_outputs()]
+
+func _refresh_craft() -> void:
+	RecipeDB.discover_from_inventory()
+	for c in craft_list.get_children():
+		c.queue_free()
+	for recipe in RecipeDB.recipes:
 		var rid: String = recipe["id"]
 		if not RecipeDB.is_discovered(rid):
-			var row := UIRowFactory.make_item_row(
-				Color(0.3, 0.3, 0.34), "？？？  (材料を手に入れると分かる)", "", func(): pass, true)
-			list.add_child(row)
+			craft_list.add_child(UIRowFactory.make_item_row(
+				Color(0.3, 0.3, 0.34), "？？？  (材料を手に入れると分かる)", "", func(): pass, true))
 			continue
-
 		var parts: Array = []
 		for item_id in recipe["inputs"].keys():
-			var need := int(recipe["inputs"][item_id])
-			var have := Inventory.get_count(item_id)
-			parts.append("%s %d/%d" % [ItemDB.get_display_name(item_id), have, need])
-		var label_text := "%s ← %s" % [recipe["name"], "、".join(parts)]
+			parts.append("%s %d/%d" % [ItemDB.get_display_name(item_id),
+				Inventory.get_count(item_id), int(recipe["inputs"][item_id])])
 		var can: bool = RecipeDB.can_craft(rid)
-		var row2 := UIRowFactory.make_item_row(
-			ItemDB.get_color(recipe["output_id"]), label_text,
-			"作る" if can else "材料不足", func(): _start_game(rid), not can)
-		list.add_child(row2)
+		craft_list.add_child(UIRowFactory.make_item_row(
+			ItemDB.get_color(recipe["output_id"]),
+			"%s ← %s" % [recipe["name"], "、".join(parts)],
+			"作る" if can else "材料不足", func(): _craft(rid), not can))
 
-func _start_game(id: String) -> void:
-	selected_id = id
-	playing = true
-	marker_x = 0.0
-	marker_dir = 1.0
-	# 材料の種類が多いレシピほど針が速く、狙いにくい
-	var complexity: int = RecipeDB.get_recipe(id)["inputs"].size()
-	marker_speed = BASE_SPEED + 90.0 * float(complexity - 1)
-	_place_zones()
-	game_box.visible = true
-	game_label.text = "%s を作る — 止めろ！" % RecipeDB.get_recipe(id)["name"]
-	stop_button.disabled = false
-
-## 当たり判定の帯をランダムな位置に置く。
-func _place_zones() -> void:
-	var good_w := 150.0
-	var good_x: float = randf_range(20.0, BAR_WIDTH - good_w - 20.0)
-	zone_good.position.x = good_x
-	zone_good.size.x = good_w
-	var perfect_w := 46.0
-	zone_perfect.position.x = good_x + (good_w - perfect_w) * 0.5
-	zone_perfect.size.x = perfect_w
-
-func _process(delta: float) -> void:
-	if not playing:
-		return
-	marker_x += marker_dir * marker_speed * delta
-	if marker_x >= BAR_WIDTH:
-		marker_x = BAR_WIDTH
-		marker_dir = -1.0
-	elif marker_x <= 0.0:
-		marker_x = 0.0
-		marker_dir = 1.0
-	marker.position.x = marker_x
-
-func _unhandled_input(event: InputEvent) -> void:
-	if playing and (event.is_action_pressed("jump") or event.is_action_pressed("interact")):
-		_stop_game()
-		get_viewport().set_input_as_handled()
-
-func _stop_game() -> void:
-	if not playing:
-		return
-	playing = false
-	stop_button.disabled = true
-
-	var quality := RecipeDB.Quality.NORMAL
-	var center := marker_x + marker.size.x * 0.5
-	if center >= zone_perfect.position.x and center <= zone_perfect.position.x + zone_perfect.size.x:
-		quality = RecipeDB.Quality.PERFECT
-	elif center >= zone_good.position.x and center <= zone_good.position.x + zone_good.size.x:
-		quality = RecipeDB.Quality.GOOD
-	elif center < 40.0 or center > BAR_WIDTH - 40.0:
-		quality = RecipeDB.Quality.POOR
-
-	var recipe := RecipeDB.get_recipe(selected_id)
-	var amount := RecipeDB.craft_amount(selected_id, quality)
-	if RecipeDB.craft(selected_id, quality):
-		EventBus.notify.emit("%s: %s x%d" % \
-			[RecipeDB.QUALITY_LABELS[quality], recipe["name"], amount])
-		if quality == RecipeDB.Quality.PERFECT:
-			EventBus.companion_say.emit("見事！ ひとつ多く取れたよ。")
-		elif quality == RecipeDB.Quality.POOR:
-			EventBus.companion_say.emit("うーん、ちょっと惜しかったね。")
+func _craft(id: String) -> void:
+	var recipe := RecipeDB.get_recipe(id)
+	if RecipeDB.craft(id, RecipeDB.Quality.NORMAL):
+		EventBus.notify.emit("%sを作った" % recipe["name"])
 	else:
 		EventBus.notify.emit("材料が足りません")
-
-	game_box.visible = false
 	refresh()
 
 func _on_close() -> void:
-	playing = false
-	game_box.visible = false
+	_clear_cauldron()
 	EventBus.request_close_menus.emit()

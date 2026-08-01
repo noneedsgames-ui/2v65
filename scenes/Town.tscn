@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/Companion.tscn" id="2"]
@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://scripts/WorldRoot.gd" id="8"]
 [ext_resource type="PackedScene" path="res://scenes/CommentZone.tscn" id="9"]
 [ext_resource type="PackedScene" path="res://scenes/Villager.tscn" id="10"]
+[ext_resource type="PackedScene" path="res://scenes/AreaSelectDoor.tscn" id="11"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(2800, 40)
@@ -88,11 +89,8 @@ target_scene = "res://scenes/Main.tscn"
 spawn_position = Vector2(2960, 380)
 label = "野原へ戻る"
 
-[node name="DoorToWilds" parent="." instance=ExtResource("6")]
+[node name="Crossroads" parent="." instance=ExtResource("11")]
 position = Vector2(2620, 400)
-target_scene = "res://scenes/Wilds.tscn"
-spawn_position = Vector2(160, 380)
-label = "奥の森へ行く"
 
 [node name="ArrivalZone" parent="." instance=ExtResource("9")]
 position = Vector2(240, 400)
@@ -111,7 +109,7 @@ cooldown_seconds = 45.0
 
 [node name="WildsGateZone" parent="." instance=ExtResource("9")]
 position = Vector2(2500, 400)
-lines = PackedStringArray("町の先は奥の森。素材の宝庫だって聞いたよ。")
+lines = PackedStringArray("町の外れの分かれ道。三つの土地に通じてるんだって。", "行き先で採れるものが違うらしいよ。")
 cooldown_seconds = 40.0
 
 [node name="Villagers" type="Node2D" parent="."]

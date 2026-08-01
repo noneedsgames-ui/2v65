@@ -14,50 +14,53 @@ size = Vector2(40, 600)
 script = ExtResource("5")
 
 [node name="Sky" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(-100, -1200, 4500, -1200, 4500, 700, -100, 700)
+polygon = PackedVector2Array(-200, -1200, 5600, -1200, 5600, 700, -200, 700)
 color = Color(0.42, 0.58, 0.6, 1)
 
-[node name="FarTrees" type="Node2D" parent="."]
+[node name="FarShapes" type="Node2D" parent="."]
 
-[node name="T1" type="Polygon2D" parent="FarTrees"]
+[node name="F1" type="Polygon2D" parent="FarShapes"]
 polygon = PackedVector2Array(100, 380, 220, 120, 340, 380)
-color = Color(0.16, 0.32, 0.22, 1)
+color = Color(0.15, 0.3, 0.21, 1)
 
-[node name="T2" type="Polygon2D" parent="FarTrees"]
+[node name="F2" type="Polygon2D" parent="FarShapes"]
 polygon = PackedVector2Array(420, 380, 560, 80, 700, 380)
-color = Color(0.13, 0.28, 0.19, 1)
+color = Color(0.15, 0.3, 0.21, 1)
 
-[node name="T3" type="Polygon2D" parent="FarTrees"]
+[node name="F3" type="Polygon2D" parent="FarShapes"]
 polygon = PackedVector2Array(820, 380, 940, 140, 1060, 380)
-color = Color(0.17, 0.33, 0.23, 1)
+color = Color(0.15, 0.3, 0.21, 1)
 
-[node name="T4" type="Polygon2D" parent="FarTrees"]
+[node name="F4" type="Polygon2D" parent="FarShapes"]
 polygon = PackedVector2Array(1300, 380, 1440, 90, 1580, 380)
-color = Color(0.13, 0.28, 0.19, 1)
+color = Color(0.15, 0.3, 0.21, 1)
 
-[node name="T5" type="Polygon2D" parent="FarTrees"]
+[node name="F5" type="Polygon2D" parent="FarShapes"]
 polygon = PackedVector2Array(1800, 380, 1930, 150, 2060, 380)
-color = Color(0.17, 0.33, 0.23, 1)
+color = Color(0.15, 0.3, 0.21, 1)
 
-[node name="T6" type="Polygon2D" parent="FarTrees"]
+[node name="F6" type="Polygon2D" parent="FarShapes"]
 polygon = PackedVector2Array(2200, 380, 2340, 110, 2480, 380)
-color = Color(0.13, 0.28, 0.19, 1)
+color = Color(0.15, 0.3, 0.21, 1)
 
-[node name="T7" type="Polygon2D" parent="FarTrees"]
+[node name="F7" type="Polygon2D" parent="FarShapes"]
 polygon = PackedVector2Array(2900, 380, 3050, 100, 3200, 380)
-color = Color(0.16, 0.32, 0.22, 1)
+color = Color(0.15, 0.3, 0.21, 1)
 
-[node name="T8" type="Polygon2D" parent="FarTrees"]
+[node name="F8" type="Polygon2D" parent="FarShapes"]
 polygon = PackedVector2Array(3500, 380, 3650, 130, 3800, 380)
-color = Color(0.13, 0.28, 0.19, 1)
+color = Color(0.15, 0.3, 0.21, 1)
 
-[node name="T9" type="Polygon2D" parent="FarTrees"]
+[node name="F9" type="Polygon2D" parent="FarShapes"]
 polygon = PackedVector2Array(3950, 380, 4100, 90, 4250, 380)
-color = Color(0.17, 0.33, 0.23, 1)
+color = Color(0.15, 0.3, 0.21, 1)
+
+[node name="F10" type="Polygon2D" parent="FarShapes"]
+polygon = PackedVector2Array(4500, 380, 4650, 120, 4800, 380)
+color = Color(0.15, 0.3, 0.21, 1)
 
 [node name="Generator" type="Node2D" parent="."]
 script = ExtResource("6")
-stage_length = 4400.0
 
 [node name="WallLeft" type="StaticBody2D" parent="."]
 collision_layer = 1
@@ -66,18 +69,6 @@ position = Vector2(-20, 100)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="WallLeft"]
 shape = SubResource("RectangleShape2D_wall")
-
-[node name="WallRight" type="StaticBody2D" parent="."]
-collision_layer = 1
-collision_mask = 0
-position = Vector2(4420, 100)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="WallRight"]
-shape = SubResource("RectangleShape2D_wall")
-
-[node name="Cliff" type="Polygon2D" parent="WallRight"]
-polygon = PackedVector2Array(-20, -300, 60, -300, 60, 300, -20, 300)
-color = Color(0.3, 0.32, 0.3, 1)
 
 [node name="DoorToTown" parent="." instance=ExtResource("3")]
 position = Vector2(90, 400)
@@ -98,7 +89,7 @@ position_smoothing_enabled = true
 position_smoothing_speed = 5.0
 limit_left = 0
 limit_top = -500
-limit_right = 4400
+limit_right = 5200
 limit_bottom = 720
 
 [node name="UIRoot" parent="." instance=ExtResource("4")]

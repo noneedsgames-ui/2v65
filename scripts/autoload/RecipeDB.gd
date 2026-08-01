@@ -59,6 +59,10 @@ func get_recipe(id: String) -> Dictionary:
 
 # ---- レシピの発見 ----
 
+## 新規開始用。覚えたレシピを忘れる。
+func reset() -> void:
+	discovered.clear()
+
 func is_discovered(id: String) -> bool:
 	return discovered.has(id)
 

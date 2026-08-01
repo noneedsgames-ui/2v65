@@ -22,6 +22,12 @@ var slots: Dictionary = {
 	SLOT_ACCESSORY: "",
 }
 
+## 新規開始用。装備をすべて外す(中身は捨てる)。
+func reset() -> void:
+	for slot in SLOTS:
+		slots[slot] = ""
+	changed.emit()
+
 func get_equipped(slot: String) -> String:
 	return slots.get(slot, "")
 
