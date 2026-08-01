@@ -51,11 +51,22 @@ func _physics_process(delta: float) -> void:
 		visual.scale.x = -abs(visual.scale.x)
 
 	# 接触ダメージ(体当たりの物理衝突はレイヤーで切ってあるので距離で判定)
-	if _player != null and is_instance_valid(_player) and _hit_cooldown <= 0.0:
-		var d: Vector2 = _player.global_position - global_position
-		if abs(d.x) < 46.0 and abs(d.y) < 70.0:
-			_hit_cooldown = 0.9
-			GameState.damage_player(contact_damage)
+	# 相棒が間に入っているとそちらに噛みつく。相棒は体が丈夫でひるむだけ。
+	if _hit_cooldown > 0.0:
+		return
+	var companion := get_tree().get_first_node_in_group("companion") as Node2D
+	if companion != null and _in_bite_range(companion.global_position):
+		_hit_cooldown = 0.9
+		if companion.has_method("on_bitten"):
+			companion.on_bitten()
+		return
+	if _player != null and is_instance_valid(_player) and _in_bite_range(_player.global_position):
+		_hit_cooldown = 0.9
+		GameState.damage_player(contact_damage)
+
+func _in_bite_range(target_position: Vector2) -> bool:
+	var d: Vector2 = target_position - global_position
+	return abs(d.x) < 46.0 and abs(d.y) < 70.0
 
 func take_damage(amount: int, from_position: Vector2) -> void:
 	hp -= amount

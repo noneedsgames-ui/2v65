@@ -23,7 +23,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 
 [node name="Window" type="PanelContainer" parent="Center"]
-custom_minimum_size = Vector2(520, 520)
+custom_minimum_size = Vector2(600, 560)
 layout_mode = 2
 
 [node name="Margin" type="MarginContainer" parent="Center/Window"]
@@ -42,14 +42,58 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "クラフト"
 
+[node name="Tabs" type="HBoxContainer" parent="Center/Window/Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
 [node name="Scroll" type="ScrollContainer" parent="Center/Window/Margin/Content"]
-custom_minimum_size = Vector2(480, 370)
+custom_minimum_size = Vector2(540, 300)
 layout_mode = 2
 
 [node name="List" type="VBoxContainer" parent="Center/Window/Margin/Content/Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
+
+[node name="GameBox" type="VBoxContainer" parent="Center/Window/Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="GameLabel" type="Label" parent="Center/Window/Margin/Content/GameBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+theme_override_colors/font_color = Color(1, 0.85, 0.4, 1)
+
+[node name="Bar" type="ColorRect" parent="Center/Window/Margin/Content/GameBox"]
+custom_minimum_size = Vector2(480, 40)
+layout_mode = 2
+size_flags_horizontal = 0
+color = Color(0.12, 0.12, 0.15, 1)
+
+[node name="Good" type="ColorRect" parent="Center/Window/Margin/Content/GameBox/Bar"]
+offset_left = 100.0
+offset_top = 4.0
+offset_right = 250.0
+offset_bottom = 36.0
+color = Color(0.3, 0.65, 0.35, 0.8)
+
+[node name="Perfect" type="ColorRect" parent="Center/Window/Margin/Content/GameBox/Bar"]
+offset_left = 152.0
+offset_top = 4.0
+offset_right = 198.0
+offset_bottom = 36.0
+color = Color(1, 0.85, 0.3, 0.9)
+
+[node name="Marker" type="ColorRect" parent="Center/Window/Margin/Content/GameBox/Bar"]
+offset_top = 2.0
+offset_right = 8.0
+offset_bottom = 38.0
+color = Color(1, 1, 1, 1)
+
+[node name="StopButton" type="Button" parent="Center/Window/Margin/Content/GameBox"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+text = "止める [Space / E]"
 
 [node name="CloseButton" type="Button" parent="Center/Window/Margin/Content"]
 layout_mode = 2

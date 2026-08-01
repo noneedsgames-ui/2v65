@@ -28,7 +28,11 @@ Godot 4 (GDScript) 製の横スクロール素材採集ゲームです。プレ�
 | Q / R | ホットバーの選択を左右に送る |
 | F | 選択中のアイテムを使う(食べる / 装備する) |
 | J | 攻撃(奥の森のけものを追い払う) |
+| K | メモ帳(クエスト・住民名簿)を開閉 |
 | Esc | 開いているメニューを閉じる |
+
+**壁ジャンプ**: 空中で壁に触れながらその壁の方向に入力すると壁ずりで落下が遅くなり、
+Space でもう一段跳べます。左右の壁を交互に蹴れば深い谷からも登れます。
 
 ホットバーの升目は直接クリックでも操作できます。選択済みの升目をもう一度押すと使用します。
 店番中は F が「呼び込み」、Esc が「店番をやめる」に切り替わります。
@@ -43,10 +47,11 @@ Godot 4 (GDScript) 製の横スクロール素材採集ゲームです。プレ�
 
 - **野原(`scenes/Main.tscn`)**: 採集場所。家と店がある。右端の門から町へ。左端は崖(壁)で行き止まり
 - **町(`scenes/Town.tscn`)**: 大勢の町人が歩き回り、品揃えの違う店が4軒とプレイヤーの露店がある。左端の門から野原、右端の門から奥の森へ
-- **奥の森(`scenes/Wilds.tscn`)**: 長い探索ステージ。鉄鉱脈が多く、けものが徘徊する。左端の門から町へ戻れる。右端は崖(壁)で行き止まり
-  - 多段の足場、プレイヤーだけが通れる**狭い隙間**(相棒は入れない)
+- **奥の森(`scenes/Wilds.tscn`)**: 入るたびに**地形が自動生成される**探索ステージ(`scripts/WildsGenerator.gd`)。鉄鉱脈が多く、けものが徘徊する
+  - 平地・段差・谷・トンネル・高台・岩の谷を継ぎ足して作るので、道が途切れず必ず踏破できます
+  - プレイヤーだけが通れる**狭い隙間**(相棒は入れないが、宙を越えて追いついてくる)
   - 高い段差の下の看板で相棒に頼むと**引き上げて**もらえる
-  - 道をふさぐ**大岩**は相棒に頼むと押して落とし穴にはめてくれる
+  - 谷をふさぐ**大岩**は相棒に頼むと押して落とし、足場にしてくれる
 - **家の中(`scenes/HouseInterior.tscn`)**: 野原の家を調べると入れる。ベッド・風呂・作業台・収納箱がある
 
 行き止まりの端には壁を置いてあるので、マップ外に出られません。
@@ -82,6 +87,12 @@ Godot 4 (GDScript) 製の横スクロール素材採集ゲームです。プレ�
   - プレイヤーのHPはHUD左上、けもののHPは頭上のバーに表示されます
   - HPが尽きると持ち物はそのままで町へ運ばれます。ベッドで寝るか風呂に入ると全回復します
 - **クラフト**: 素材を組み合わせて道具・加工品を作成(`scripts/autoload/RecipeDB.gd`)
+  - レシピは最初は伏せられていて「？？？」表示。材料をひとつでも持つと**ひらめいて**内容が読めます
+  - 加工材・道具・食べ物・特別のカテゴリで絞り込めます
+  - 作るときに**手さばきのミニゲーム**。往復する針を帯の中で止めると品質が上がり、会心なら1個おまけ、粗いと1個減ります。材料の種類が多いレシピほど針が速くなります
+- **相棒の参戦**: 近くに敵がいると相棒は追従をやめて割って入り、自分から殴りかかります。体が大きいので敵の噛みつきを肩代わりし、相棒自身はダメージを受けません
+- **村人とクエスト**: 町には決まった場所に立つ村人がいて、話しかけると素材の納品クエストをくれます(`scripts/Villager.gd`)
+- **メモ帳(K)**: 受けたクエストの進捗・必要数・報酬と、出会った住民の情報(役割・好み・関係)を一覧できます(`scripts/ui/JournalUI.gd`)
 
 ## プロジェクト構成
 
@@ -93,18 +104,20 @@ scenes/
   Town.tscn            町
   Wilds.tscn           奥の森(採集区画)
   HouseInterior.tscn   家の中
-  Player.tscn / Companion.tscn / TownNPC.tscn
+  Player.tscn / Companion.tscn / TownNPC.tscn / Villager.tscn / Enemy.tscn
   House.tscn / Shop.tscn / Stall.tscn / SceneDoor.tscn / CommentZone.tscn
   Tree.tscn / Rock.tscn / Bush.tscn / IronVein.tscn / FiberPatch.tscn
   ui/                  HUD・ホットバー・升目・各種メニュー
 scripts/
   WorldRoot.gd          各ワールドの共通ルート(スポーン配置とセーブ読み込み)
-  Player.gd / Companion.gd / TownNPC.gd
+  WildsGenerator.gd     奥の森の地形自動生成
+  Player.gd / Companion.gd / TownNPC.gd / Villager.gd / Enemy.gd
+  BoostSpot.gd / PushableRock.gd  相棒に頼むギミック
   ResourceNode.gd / House.gd / Shop.gd / Stall.gd / SceneDoor.gd
   Bed.gd / Bath.gd / Workbench.gd / Chest.gd   家の中の設備
   CommentZone.gd        同行者が喋る範囲
   UIRowFactory.gd       UI行の共通生成ヘルパー
-  autoload/             ItemDB, RecipeDB, Inventory, Equipment, GameState, EventBus
+  autoload/             ItemDB, RecipeDB, Inventory, Equipment, Journal, GameState, EventBus
   ui/                   各UIパネルのスクリプト
 ```
 
@@ -116,7 +129,8 @@ scripts/
 | 2 | プレイヤー |
 | 4 | 仲間 |
 | 8 | 通行人(町人) |
-| 16 | 調べられるもの(採集ノード・店・露店・家具・門) |
+| 16 | 調べられるもの(採集ノード・店・露店・家具・門・村人) |
+| 32 | 敵(けもの) |
 
 通行人はプレイヤーと別レイヤーなので、ぶつかったり通せんぼしたりしません。地形だけに乗ります。
 

@@ -9,6 +9,16 @@ const JUMP_VELOCITY := -520.0  # 到達可能高さ ≈ 96px (プラットフォ
 const GRAVITY := 1400.0
 const PATH_HISTORY_MAX := 600
 
+## 壁ジャンプ。壁に触れて落下中は壁ずりで減速し、そこからもう一段跳べる。
+const WALL_SLIDE_SPEED := 90.0
+const WALL_JUMP_VELOCITY := -500.0
+const WALL_KICK_SPEED := 260.0
+## 壁を蹴った直後は入力で横速度を上書きしない時間。これが無いと
+## 壁に向かって入力したままだと蹴った瞬間に壁へ戻ってしまう。
+const WALL_KICK_LOCK := 0.16
+## 壁から離れた直後の猶予(コヨーテタイム)
+const WALL_COYOTE := 0.1
+
 var facing: int = 1
 var nearby_interactables: Array = []
 var path_history: PackedVector2Array = PackedVector2Array()
@@ -17,6 +27,11 @@ var path_history: PackedVector2Array = PackedVector2Array()
 var control_locked: bool = false
 
 var _attack_timer: float = 0.0
+var _wall_kick_timer: float = 0.0
+var _wall_coyote_timer: float = 0.0
+## 直前に触れていた壁の向き(1 = 右側に壁, -1 = 左側に壁)
+var _wall_side: int = 0
+var wall_sliding: bool = false
 
 @onready var interaction_area: Area2D = $InteractionArea
 @onready var visual: Node2D = $Visual
@@ -39,14 +54,33 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_attack_timer -= delta
+	_wall_kick_timer -= delta
+	_update_wall_contact(delta)
+
+	var direction := Input.get_axis("move_left", "move_right")
+
+	# 壁ずり: 壁に触れて落下中なら、ゆっくり滑り降りる
+	wall_sliding = false
+	if not is_on_floor() and _wall_side != 0 and velocity.y > 0.0 \
+			and _wall_coyote_timer > 0.0 and direction * _wall_side > 0.0:
+		wall_sliding = true
+		velocity.y = min(velocity.y, WALL_SLIDE_SPEED)
+
 	if Input.is_action_just_pressed("attack") and _attack_timer <= 0.0:
 		_do_attack()
 
-	if Input.is_action_just_pressed("jump") and is_on_floor():
-		velocity.y = JUMP_VELOCITY
+	if Input.is_action_just_pressed("jump"):
+		if is_on_floor():
+			velocity.y = JUMP_VELOCITY
+		elif _wall_side != 0 and _wall_coyote_timer > 0.0:
+			_do_wall_jump()
 
-	var direction := Input.get_axis("move_left", "move_right")
-	if direction != 0:
+	if _wall_kick_timer > 0.0:
+		# 壁を蹴った直後は反発を優先し、入力での上書きを待つ
+		if direction != 0:
+			facing = 1 if direction > 0 else -1
+			visual.scale.x = facing * abs(visual.scale.x)
+	elif direction != 0:
 		velocity.x = direction * SPEED
 		facing = 1 if direction > 0 else -1
 		visual.scale.x = facing * abs(visual.scale.x)
@@ -58,6 +92,33 @@ func _physics_process(delta: float) -> void:
 
 	if Input.is_action_just_pressed("interact"):
 		_try_interact()
+
+## 壁との接触状況を更新する。is_on_wall_only() は床に居ないときだけ true になる。
+func _update_wall_contact(delta: float) -> void:
+	if is_on_floor():
+		_wall_side = 0
+		_wall_coyote_timer = 0.0
+		return
+	if is_on_wall_only():
+		# 法線は壁からプレイヤーへ向く。右側に壁があれば法線は左(-1)を向く。
+		var normal_x := get_wall_normal().x
+		if absf(normal_x) > 0.5:
+			_wall_side = -1 if normal_x > 0.0 else 1
+			_wall_coyote_timer = WALL_COYOTE
+			return
+	_wall_coyote_timer -= delta
+	if _wall_coyote_timer <= 0.0:
+		_wall_side = 0
+
+## 壁を蹴って反対側へ跳ぶ。
+func _do_wall_jump() -> void:
+	velocity.y = WALL_JUMP_VELOCITY
+	velocity.x = -_wall_side * WALL_KICK_SPEED
+	facing = -_wall_side
+	visual.scale.x = facing * abs(visual.scale.x)
+	_wall_kick_timer = WALL_KICK_LOCK
+	_wall_coyote_timer = 0.0
+	_wall_side = 0
 
 ## 向いている方向の近くの敵をまとめて叩く。
 func _do_attack() -> void:

@@ -14,6 +14,10 @@ signal companion_say(text: String)
 
 signal player_hp_changed(hp: int, max_hp: int)
 
+## 村人との会話。resident_id と雑談候補を渡す。
+signal request_open_dialogue(resident_id: String, idle_lines: PackedStringArray)
+signal request_open_journal()
+
 signal request_open_chest()
 signal request_open_shop(shop_name: String, stock: PackedStringArray)
 signal request_open_stall()

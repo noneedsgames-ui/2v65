@@ -41,6 +41,7 @@ func add_item(id: String, count: int = 1) -> int:
 
 	if remaining < count:
 		changed.emit()
+		_notify_quest_progress()
 	if remaining > 0:
 		EventBus.notify.emit("インベントリがいっぱいです")
 	return count - remaining
@@ -70,6 +71,7 @@ func remove_item(id: String, count: int = 1) -> bool:
 			if slot["count"] <= 0:
 				slots[i] = null
 	changed.emit()
+	_notify_quest_progress()
 	return true
 
 func remove_from_slot(index: int, count: int = 1) -> bool:
@@ -82,6 +84,10 @@ func remove_from_slot(index: int, count: int = 1) -> bool:
 		slots[index] = null
 	changed.emit()
 	return true
+
+func _notify_quest_progress() -> void:
+	# 所持数が変わるとクエストの達成状況も変わりうる
+	Journal.refresh_progress()
 
 func get_slot(index: int) -> Variant:
 	if index < 0 or index >= MAX_SLOTS:

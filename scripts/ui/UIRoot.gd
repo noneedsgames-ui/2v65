@@ -10,6 +10,8 @@ extends CanvasLayer
 @onready var stall_panel: Control = $StallUI
 @onready var crafting_panel: Control = $CraftingUI
 @onready var negotiation_panel = $NegotiationUI  # set_request() を呼ぶため型は付けない
+@onready var dialogue_panel = $DialogueUI        # set_resident() を呼ぶため型は付けない
+@onready var journal_panel: Control = $JournalUI
 
 var panels: Array = []
 ## 店番中はホットバーを隠し、F(use_item)を露店の呼び込みに譲る
@@ -17,7 +19,8 @@ var tending: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	panels = [inventory_panel, house_panel, shop_panel, stall_panel, crafting_panel, negotiation_panel]
+	panels = [inventory_panel, house_panel, shop_panel, stall_panel, crafting_panel,
+		negotiation_panel, dialogue_panel, journal_panel]
 	for p in panels:
 		p.visible = false
 		p.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -32,12 +35,18 @@ func _ready() -> void:
 	EventBus.request_open_crafting.connect(func(): _open(crafting_panel))
 	EventBus.request_close_menus.connect(_close_all)
 	EventBus.request_open_negotiation.connect(_on_open_negotiation)
+	EventBus.request_open_dialogue.connect(_on_open_dialogue)
+	EventBus.request_open_journal.connect(func(): _open(journal_panel))
 	EventBus.tending_started.connect(_on_tending_started)
 	EventBus.tending_ended.connect(_on_tending_ended)
 
 func _on_open_negotiation(request: Dictionary) -> void:
 	negotiation_panel.set_request(request)
 	_open(negotiation_panel)
+
+func _on_open_dialogue(resident_id: String, idle_lines: PackedStringArray) -> void:
+	dialogue_panel.set_resident(resident_id, idle_lines)
+	_open(dialogue_panel)
 
 func _on_tending_started() -> void:
 	tending = true
@@ -55,6 +64,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("toggle_crafting"):
 		_toggle(crafting_panel)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("toggle_journal"):
+		_toggle(journal_panel)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel") and _any_open():
 		_close_all()
