@@ -62,7 +62,7 @@ theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 3
-text = "移動:A/D  ジャンプ:Space  調べる:E  持ち物:I  クラフト:C"
+text = "移動:A/D  ジャンプ:Space  調べる:E  持ち物:I  工房:C"
 
 [node name="PromptLabel" type="Label" parent="."]
 layout_mode = 1

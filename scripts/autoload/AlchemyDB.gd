@@ -1,56 +1,66 @@
 extends Node
-## 錬成(魔法研究)の仕組み。
+## 調合。素材を「順番に」釜へ入れて霊薬を作る。
 ##
-## 決まった組み合わせで作る。釜に素材を入れて焚くと、その中身とぴったり一致する
-## レシピがあれば成果物になる。一致しなければ澱(sludge)にしかならない。
+## レシピは特定の素材ではなく、**性質の並び**で決まっている。
+## たとえば〈熱・熱・輝〉なら、熱を持つ素材2つのあとに輝を持つ素材を入れればよい。
+## どの素材を使うかはプレイヤーの自由で、手持ち次第で組み替えられる。
 ##
-## レシピは最初は伏せられていて、図鑑には「？？？」と手がかりだけが載る。
-## 実際に作れたものから順に書き足されていく。
+## ただし隣り合う素材どうしは性質をひとつ以上共有していなければならない(ManaDB.resonates)。
+## 〈熱〉のあとに〈輝〉を置きたければ、どちらかが〈熱・輝〉の二重素材である必要がある。
+## この「あいだをつなぐ素材」が緩衝材で、調合のいちばんの考えどころになる。
 ##
-## 上の段の霊薬は下の段の霊薬を材料にするので、
-##   薬草だけの一段目 → 鉱石を足した二段目 → 三段目 → 杖・護符
-## と積み上げていくことになる。
-##
-## 焚くときは魔力の脈にあわせて拍を打つリズムゲームになり、
-## その精度で出来高が変わる(外しすぎると澱む)。
+## さらに魔力の総量が帯に収まっていないと形にならない。
+## 同じ並びでも、強い素材で組めば上位の霊薬になる。
 
 signal formula_discovered(formula_id: String)
 
-const SLOT_COUNT := 4
+const SLOT_COUNT := 5
 const FAILURE_ID := "sludge"
 
-## 表の並び: id, 名前, 材料, 成果物, 個数, 手がかり
+## 表の並び: id, 名前, 性質の並び, 魔力の下限, 魔力の上限, 成果物, 個数, 手がかり
 const RECIPE_TABLE := [
-	["draught_ember", "燠の霊薬", {"emberleaf": 2, "scorchroot": 1}, "draught_ember", 2, "薬草だけで作れる、いちばん易しい調合"],
-	["draught_blaze", "烈火の霊薬", {"draught_ember": 1, "flamecap": 1, "ruby_shard": 1}, "draught_blaze", 1, "燠の霊薬に薬草と鉱石を重ねる"],
-	["draught_inferno", "業火の霊薬", {"draught_blaze": 1, "cinderbloom": 1, "magma_stone": 1}, "draught_inferno", 1, "烈火の霊薬をさらに煮詰める"],
-	["wand_ember", "燠の杖", {"draught_inferno": 1, "phoenix_moss": 1, "sunsteel_ore": 1, "catalyst_quick": 1}, "wand_ember", 1, "業火の霊薬に希少な鉱を溶かし、水銀で形を留める"],
-	["charm_salamander", "火竜の護符", {"draught_inferno": 1, "ifrit_core": 1, "catalyst_prima": 1}, "charm_salamander", 1, "業火の霊薬と核を第一質料で結びつける"],
-	["draught_dew", "露の霊薬", {"dewgrass": 2, "tidefern": 1}, "draught_dew", 2, "薬草だけで作れる、いちばん易しい調合"],
-	["draught_tide", "潮の霊薬", {"draught_dew": 1, "mirror_lily": 1, "aqua_shard": 1}, "draught_tide", 1, "露の霊薬に薬草と鉱石を重ねる"],
-	["draught_abyss", "深淵の霊薬", {"draught_tide": 1, "deepkelp": 1, "frost_stone": 1}, "draught_abyss", 1, "潮の霊薬をさらに煮詰める"],
-	["wand_tide", "潮の杖", {"draught_abyss": 1, "tearvine": 1, "abyss_ore": 1, "catalyst_quick": 1}, "wand_tide", 1, "深淵の霊薬に希少な鉱を溶かし、水銀で形を留める"],
-	["charm_undine", "水霊の護符", {"draught_abyss": 1, "leviath_core": 1, "catalyst_prima": 1}, "charm_undine", 1, "深淵の霊薬と核を第一質料で結びつける"],
-	["draught_breeze", "微風の霊薬", {"whistlereed": 2, "driftcotton": 1}, "draught_breeze", 2, "薬草だけで作れる、いちばん易しい調合"],
-	["draught_gale", "疾風の霊薬", {"draught_breeze": 1, "galeleaf": 1, "gale_shard": 1}, "draught_gale", 1, "微風の霊薬に薬草と鉱石を重ねる"],
-	["draught_storm", "嵐の霊薬", {"draught_gale": 1, "skyroot": 1, "cloud_stone": 1}, "draught_storm", 1, "疾風の霊薬をさらに煮詰める"],
-	["wand_gale", "疾風の杖", {"draught_storm": 1, "stormpetal": 1, "tempest_ore": 1, "catalyst_quick": 1}, "wand_gale", 1, "嵐の霊薬に希少な鉱を溶かし、水銀で形を留める"],
-	["charm_sylph", "風霊の護符", {"draught_storm": 1, "sylph_core": 1, "catalyst_prima": 1}, "charm_sylph", 1, "嵐の霊薬と核を第一質料で結びつける"],
-	["draught_clay", "土の霊薬", {"clayleaf": 2, "ironbark": 1}, "draught_clay", 2, "薬草だけで作れる、いちばん易しい調合"],
-	["draught_stone", "岩の霊薬", {"draught_clay": 1, "stonefungus": 1, "granite_shard": 1}, "draught_stone", 1, "土の霊薬に薬草と鉱石を重ねる"],
-	["draught_titan", "巨人の霊薬", {"draught_stone": 1, "deeproot": 1, "crystal_stone": 1}, "draught_titan", 1, "岩の霊薬をさらに煮詰める"],
-	["wand_stone", "岩の杖", {"draught_titan": 1, "titan_seed": 1, "adaman_ore": 1, "catalyst_quick": 1}, "wand_stone", 1, "巨人の霊薬に希少な鉱を溶かし、水銀で形を留める"],
-	["charm_golem", "土霊の護符", {"draught_titan": 1, "golem_core": 1, "catalyst_prima": 1}, "charm_golem", 1, "巨人の霊薬と核を第一質料で結びつける"],
-	["draught_dawn", "暁の霊薬", {"sunpetal": 2, "glowmoss": 1}, "draught_dawn", 2, "薬草だけで作れる、いちばん易しい調合"],
-	["draught_radiance", "光輝の霊薬", {"draught_dawn": 1, "dawnthistle": 1, "opal_shard": 1}, "draught_radiance", 1, "暁の霊薬に薬草と鉱石を重ねる"],
-	["draught_seraph", "聖光の霊薬", {"draught_radiance": 1, "halo_bloom": 1, "prism_stone": 1}, "draught_seraph", 1, "光輝の霊薬をさらに煮詰める"],
-	["wand_dawn", "暁の杖", {"draught_seraph": 1, "star_lotus": 1, "radiant_ore": 1, "catalyst_quick": 1}, "wand_dawn", 1, "聖光の霊薬に希少な鉱を溶かし、水銀で形を留める"],
-	["charm_seraph", "光霊の護符", {"draught_seraph": 1, "seraph_core": 1, "catalyst_prima": 1}, "charm_seraph", 1, "聖光の霊薬と核を第一質料で結びつける"],
-	["draught_shade", "陰の霊薬", {"shadeleaf": 2, "nightcap": 1}, "draught_shade", 2, "薬草だけで作れる、いちばん易しい調合"],
-	["draught_gloom", "幽闇の霊薬", {"draught_shade": 1, "gloomvine": 1, "onyx_shard": 1}, "draught_gloom", 1, "陰の霊薬に薬草と鉱石を重ねる"],
-	["draught_eclipse", "蝕の霊薬", {"draught_gloom": 1, "voidbloom": 1, "umbra_stone": 1}, "draught_eclipse", 1, "幽闇の霊薬をさらに煮詰める"],
-	["wand_shade", "陰の杖", {"draught_eclipse": 1, "eclipse_herb": 1, "abyssal_ore": 1, "catalyst_quick": 1}, "wand_shade", 1, "蝕の霊薬に希少な鉱を溶かし、水銀で形を留める"],
-	["charm_nether", "闇霊の護符", {"draught_eclipse": 1, "nether_core": 1, "catalyst_prima": 1}, "charm_nether", 1, "蝕の霊薬と核を第一質料で結びつける"],
+	# --- 熱の系統 ---
+	["draught_ember", "燠の霊薬", ["heat", "heat"], 2, 5, "draught_ember", 2,
+		"熱をふたつ重ねるだけの、いちばんやさしい調合"],
+	["draught_blaze", "烈火の霊薬", ["heat", "heat", "bright"], 6, 11, "draught_blaze", 1,
+		"熱を重ねたあと輝で締める。あいだをつなぐ素材が要る"],
+	["draught_inferno", "業火の霊薬", ["heat", "bright", "heat", "solid"], 14, 24, "draught_inferno", 1,
+		"熱と輝を行き来し、最後に堅で固める"],
+	# --- 潤の系統 ---
+	["draught_dew", "露の霊薬", ["moist", "moist"], 2, 5, "draught_dew", 2,
+		"潤をふたつ重ねるだけの、やさしい調合"],
+	["draught_tide", "潮の霊薬", ["moist", "moist", "solid"], 6, 11, "draught_tide", 1,
+		"潤を重ねたあと堅で受ける"],
+	["draught_abyss", "深淵の霊薬", ["moist", "solid", "moist", "erode"], 14, 24, "draught_abyss", 1,
+		"潤と堅を行き来し、最後に蝕へ沈める"],
+	# --- 疾の系統 ---
+	["draught_breeze", "微風の霊薬", ["swift", "swift"], 2, 5, "draught_breeze", 2,
+		"疾をふたつ重ねるだけの、軽い調合"],
+	["draught_gale", "疾風の霊薬", ["swift", "swift", "moist"], 6, 11, "draught_gale", 1,
+		"疾を重ねたあと潤で湿らせる"],
+	["draught_storm", "嵐の霊薬", ["swift", "moist", "swift", "heat"], 14, 24, "draught_storm", 1,
+		"疾と潤を行き来し、最後に熱で荒れさせる"],
+	# --- 堅の系統 ---
+	["draught_clay", "土の霊薬", ["solid", "solid"], 2, 5, "draught_clay", 2,
+		"堅をふたつ重ねるだけの、素朴な調合"],
+	["draught_stone", "岩の霊薬", ["solid", "solid", "erode"], 6, 11, "draught_stone", 1,
+		"堅を重ねたあと蝕で削る"],
+	["draught_titan", "巨人の霊薬", ["solid", "erode", "solid", "bright"], 14, 24, "draught_titan", 1,
+		"堅と蝕を行き来し、最後に輝を通す"],
+	# --- 輝の系統 ---
+	["draught_dawn", "暁の霊薬", ["bright", "bright"], 2, 5, "draught_dawn", 2,
+		"輝をふたつ重ねるだけの、明るい調合"],
+	["draught_radiance", "光輝の霊薬", ["bright", "bright", "swift"], 6, 11, "draught_radiance", 1,
+		"輝を重ねたあと疾で走らせる"],
+	["draught_seraph", "聖光の霊薬", ["bright", "swift", "bright", "moist"], 14, 24, "draught_seraph", 1,
+		"輝と疾を行き来し、最後に潤で満たす"],
+	# --- 蝕の系統 ---
+	["draught_shade", "陰の霊薬", ["erode", "erode"], 2, 5, "draught_shade", 2,
+		"蝕をふたつ重ねるだけの、暗い調合"],
+	["draught_gloom", "幽闇の霊薬", ["erode", "erode", "moist"], 6, 11, "draught_gloom", 1,
+		"蝕を重ねたあと潤で溶かす"],
+	["draught_eclipse", "蝕の霊薬", ["erode", "moist", "erode", "solid"], 14, 24, "draught_eclipse", 1,
+		"蝕と潤を行き来し、最後に堅で閉じ込める"],
 ]
 
 ## 一度でも作ったことのあるレシピ id
@@ -63,10 +73,12 @@ func _ready() -> void:
 		recipes.append({
 			"id": row[0],
 			"name": row[1],
-			"inputs": row[2],
-			"output_id": row[3],
-			"output_count": row[4],
-			"hint": row[5],
+			"sequence": row[2],
+			"mana_min": int(row[3]),
+			"mana_max": int(row[4]),
+			"output_id": row[5],
+			"output_count": int(row[6]),
+			"hint": row[7],
 		})
 
 func get_recipe(id: String) -> Dictionary:
@@ -75,76 +87,100 @@ func get_recipe(id: String) -> Dictionary:
 			return r
 	return {}
 
-## 釜の中身(空きは "")を {id: 個数} にまとめる。
-func _tally(ingredient_ids: Array) -> Dictionary:
-	var counts := {}
+## 釜の中身から空きを取り除いて、入れた順に並べ直す。
+func compact(ingredient_ids: Array) -> Array:
+	var out: Array = []
 	for id in ingredient_ids:
-		if id == "":
-			continue
-		counts[id] = int(counts.get(id, 0)) + 1
-	return counts
+		if id != "":
+			out.append(id)
+	return out
 
-## 釜の中身と materials がぴったり同じか(過不足なし)。
-func _matches(counts: Dictionary, inputs: Dictionary) -> bool:
-	if counts.size() != inputs.size():
+func total_mana(ingredient_ids: Array) -> int:
+	var total := 0
+	for id in compact(ingredient_ids):
+		total += ManaDB.get_mana(id)
+	return total
+
+## 隣り合う素材が弾き合っていないか調べる。
+## 返り値は弾き合っている位置(0起点、後ろ側の添字)。問題なければ -1。
+func find_clash(ingredient_ids: Array) -> int:
+	var seq := compact(ingredient_ids)
+	for i in range(1, seq.size()):
+		if not ManaDB.resonates(seq[i - 1], seq[i]):
+			return i
+	return -1
+
+## 並びがレシピの性質の並びに沿っているか。
+func _follows_sequence(seq: Array, natures: Array) -> bool:
+	if seq.size() != natures.size():
 		return false
-	for id in inputs.keys():
-		if int(counts.get(id, 0)) != int(inputs[id]):
+	for i in range(seq.size()):
+		if not ManaDB.has_nature(seq[i], natures[i]):
 			return false
 	return true
 
-## 釜の中身に一致するレシピを返す。無ければ空。
+## 釜の中身に当てはまるレシピを返す。無ければ空。
 func find_match(ingredient_ids: Array) -> Dictionary:
-	var counts := _tally(ingredient_ids)
-	if counts.is_empty():
+	var seq := compact(ingredient_ids)
+	if seq.is_empty() or find_clash(ingredient_ids) >= 0:
 		return {}
+	var mana := total_mana(ingredient_ids)
 	for r in recipes:
-		if _matches(counts, r["inputs"]):
-			return r
+		if not _follows_sequence(seq, r["sequence"]):
+			continue
+		if mana < int(r["mana_min"]) or mana > int(r["mana_max"]):
+			continue
+		return r
 	return {}
 
-## 釜の中身を見て、UI に出す実況を返す。
-## { "ready": bool, "recipe": Dictionary, "note": String }
+## 釜の実況。UI はこれを読んで、いま何が起きているかを見せる。
+## { "ready": bool, "recipe": Dictionary, "note": String, "clash": int, "mana": int }
 func preview(ingredient_ids: Array) -> Dictionary:
-	var counts := _tally(ingredient_ids)
-	if counts.is_empty():
-		return {"ready": false, "recipe": {}, "note": "釜が空っぽだ"}
+	var seq := compact(ingredient_ids)
+	var mana := total_mana(ingredient_ids)
+	var clash := find_clash(ingredient_ids)
+
+	if seq.is_empty():
+		return {"ready": false, "recipe": {}, "note": "釜が空っぽだ", "clash": -1, "mana": 0}
+
+	if clash >= 0:
+		return {"ready": false, "recipe": {}, "clash": clash, "mana": mana,
+			"note": "%d番目と%d番目が弾き合っている。あいだをつなぐ素材が要る" % [clash, clash + 1]}
+
 	var r := find_match(ingredient_ids)
 	if r.is_empty():
-		return {"ready": true, "recipe": {},
-			"note": "この組み合わせに心当たりはない。焚けば澱むかもしれない"}
+		# 並びは通っているが結果に届いていない。魔力量のずれなら、そう伝える。
+		for cand in recipes:
+			if _follows_sequence(seq, cand["sequence"]):
+				if mana < int(cand["mana_min"]):
+					return {"ready": true, "recipe": {}, "clash": -1, "mana": mana,
+						"note": "並びは通っている。ただ魔力が足りない(いま%d)" % mana}
+				return {"ready": true, "recipe": {}, "clash": -1, "mana": mana,
+					"note": "並びは通っているが魔力が強すぎる(いま%d)" % mana}
+		return {"ready": true, "recipe": {}, "clash": -1, "mana": mana,
+			"note": "この並びに心当たりはない(魔力%d)" % mana}
+
 	if is_discovered(r["id"]):
-		return {"ready": true, "recipe": r, "note": "%s になりそうだ" % r["name"]}
-	return {"ready": true, "recipe": r, "note": "何かができそうな手応えがある…"}
+		return {"ready": true, "recipe": r, "clash": -1, "mana": mana,
+			"note": "%s になりそうだ(魔力%d)" % [r["name"], mana]}
+	return {"ready": true, "recipe": r, "clash": -1, "mana": mana,
+		"note": "何かができそうな手応えがある…(魔力%d)" % mana}
 
-## 手持ちだけで作れるレシピがあるか(図鑑の「作れる」印に使う)。
-func can_make(id: String) -> bool:
-	var r := get_recipe(id)
-	if r.is_empty():
-		return false
-	for item_id in r["inputs"].keys():
-		if Inventory.get_count(item_id) < int(r["inputs"][item_id]):
-			return false
-	return true
-
-## 釜の中身を消費し、リズムゲームの出来(0.0〜1.0)に応じて成果物を作る。
-## 戻り値は成果物 id。失敗なら FAILURE_ID。
+## 釜の中身を消費して作る。performance はリズムの出来(0.0〜1.0)。
 func brew(ingredient_ids: Array, performance: float) -> String:
 	var r := find_match(ingredient_ids)
 
-	for id in ingredient_ids:
-		if id != "":
-			Inventory.remove_item(id, 1)
+	for id in compact(ingredient_ids):
+		Inventory.remove_item(id, 1)
 
 	if r.is_empty():
-		EventBus.notify.emit("錬成失敗… 組み合わせが噛み合わなかった")
-		EventBus.companion_say.emit("うーん、澱んじゃったね。配合を変えてみよう。")
+		EventBus.notify.emit("調合失敗… 魔力がまとまらなかった")
+		EventBus.companion_say.emit("うーん、澱んじゃったね。並びを見直してみよう。")
 		Inventory.add_item(FAILURE_ID, 1)
 		return FAILURE_ID
 
-	# 拍を外しすぎると魔力が散って澱む
 	if performance < 0.4:
-		EventBus.notify.emit("錬成失敗… 魔力が乱れて散ってしまった")
+		EventBus.notify.emit("調合失敗… 拍が乱れて魔力が散った")
 		EventBus.companion_say.emit("拍がずれちゃった。次はもっと落ち着いて。")
 		Inventory.add_item(FAILURE_ID, 1)
 		return FAILURE_ID
@@ -158,7 +194,7 @@ func brew(ingredient_ids: Array, performance: float) -> String:
 		discovered[r["id"]] = true
 		formula_discovered.emit(r["id"])
 		EventBus.companion_say.emit("新しい調合だ！ 図鑑に書きとめておくね。")
-	EventBus.notify.emit("錬成成功: %s x%d" % [ItemDB.get_display_name(r["output_id"]), amount])
+	EventBus.notify.emit("調合成功: %s x%d" % [ItemDB.get_display_name(r["output_id"]), amount])
 	return r["output_id"]
 
 ## 新規開始用。調合の記録を消す。

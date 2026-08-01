@@ -23,7 +23,8 @@ signal request_open_system_menu()
 signal request_open_chest()
 signal request_open_shop(shop_name: String, stock: PackedStringArray)
 signal request_open_stall()
-signal request_open_crafting()
+## 工房を開く。bench が true なら家の作業台なので道具設計タブが使える。
+signal request_open_workshop(bench: bool)
 signal request_close_menus()
 
 ## 店番(呼び込みミニゲーム)。started/ended は UI とホットバーの切り替えに、

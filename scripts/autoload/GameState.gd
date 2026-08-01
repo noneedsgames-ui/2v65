@@ -110,8 +110,8 @@ func reset_for_new_game() -> void:
 	Inventory.reset()
 	Equipment.reset()
 	Journal.reset()
-	RecipeDB.reset()
 	AlchemyDB.reset()
+	ToolDB.reset()
 	if FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 
@@ -121,8 +121,8 @@ func save_game() -> void:
 		"equipment": Equipment.to_save_data(),
 		"refreshed": refreshed,
 		"journal": Journal.to_save_data(),
-		"recipes": RecipeDB.to_save_data(),
 		"alchemy": AlchemyDB.to_save_data(),
+		"tools": ToolDB.to_save_data(),
 		"hp": player_hp,
 		"chest": chest_items,
 		"stall": stall_items,
@@ -169,10 +169,10 @@ func load_game() -> bool:
 		Equipment.load_save_data(data["equipment"])
 	if data.has("journal"):
 		Journal.load_save_data(data["journal"])
-	if data.has("recipes"):
-		RecipeDB.load_save_data(data["recipes"])
 	if data.has("alchemy"):
 		AlchemyDB.load_save_data(data["alchemy"])
+	if data.has("tools"):
+		ToolDB.load_save_data(data["tools"])
 	refreshed = bool(data.get("refreshed", false))
 	player_hp = clamp(int(data.get("hp", PLAYER_MAX_HP)), 1, PLAYER_MAX_HP)
 	EventBus.player_hp_changed.emit(player_hp, PLAYER_MAX_HP)

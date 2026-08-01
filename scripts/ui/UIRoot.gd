@@ -8,7 +8,7 @@ extends CanvasLayer
 @onready var house_panel: Control = $HouseUI
 @onready var shop_panel = $ShopUI  # set_shop() を呼ぶため型は付けない
 @onready var stall_panel: Control = $StallUI
-@onready var crafting_panel: Control = $CraftingUI
+@onready var workshop_panel = $WorkshopUI  # set_bench_mode() を呼ぶため型は付けない
 @onready var negotiation_panel = $NegotiationUI  # set_request() を呼ぶため型は付けない
 @onready var dialogue_panel = $DialogueUI        # set_resident() を呼ぶため型は付けない
 @onready var journal_panel: Control = $JournalUI
@@ -21,7 +21,7 @@ var tending: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	panels = [inventory_panel, house_panel, shop_panel, stall_panel, crafting_panel,
+	panels = [inventory_panel, house_panel, shop_panel, stall_panel, workshop_panel,
 		negotiation_panel, dialogue_panel, journal_panel, area_panel, system_panel]
 	for p in panels:
 		p.visible = false
@@ -34,7 +34,7 @@ func _ready() -> void:
 	EventBus.request_open_chest.connect(func(): _open(house_panel))
 	EventBus.request_open_shop.connect(_on_request_open_shop)
 	EventBus.request_open_stall.connect(func(): _open(stall_panel))
-	EventBus.request_open_crafting.connect(func(): _open(crafting_panel))
+	EventBus.request_open_workshop.connect(_on_open_workshop)
 	EventBus.request_close_menus.connect(_close_all)
 	EventBus.request_open_negotiation.connect(_on_open_negotiation)
 	EventBus.request_open_dialogue.connect(_on_open_dialogue)
@@ -43,6 +43,11 @@ func _ready() -> void:
 	EventBus.request_open_system_menu.connect(func(): _open(system_panel))
 	EventBus.tending_started.connect(_on_tending_started)
 	EventBus.tending_ended.connect(_on_tending_ended)
+
+## 作業台から開いたときだけ道具設計タブを出す。持ち歩きの工房(C)は調合と図鑑だけ。
+func _on_open_workshop(bench: bool) -> void:
+	workshop_panel.set_bench_mode(bench)
+	_open(workshop_panel)
 
 func _on_open_negotiation(request: Dictionary) -> void:
 	negotiation_panel.set_request(request)
@@ -67,7 +72,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		_toggle(inventory_panel)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("toggle_crafting"):
-		_toggle(crafting_panel)
+		if workshop_panel.visible:
+			_close_all()
+		else:
+			_on_open_workshop(false)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("toggle_journal"):
 		_toggle(journal_panel)
