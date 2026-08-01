@@ -1,182 +1,165 @@
 extends Node
 ## 錬成(魔法研究)の仕組み。
 ##
-## 決まったレシピを覚えるのではなく、素材そのものの性質から結果が決まる。
-##   1. 釜に素材を最大 SLOT_COUNT 個入れる
-##   2. 属性ごとに力を合計する。最も強い属性が「主属性」になる
-##   3. 主属性の合計値が階梯(tier)の帯に入っていれば、その霊薬や魔道具ができる
+## 決まった組み合わせで作る。釜に素材を入れて焚くと、その中身とぴったり一致する
+## レシピがあれば成果物になる。一致しなければ澱(sludge)にしかならない。
 ##
-## つまり図鑑で素材の属性と力を見比べて、狙った属性を狙った強さまで積むのが遊びになる。
-## 触媒(CATALYST)は属性を持たない代わりに、純度(下記)を底上げする。
+## レシピは最初は伏せられていて、図鑑には「？？？」と手がかりだけが載る。
+## 実際に作れたものから順に書き足されていく。
 ##
-## 純度: 主属性の力が全体に占める割合。混ぜ物が多いと下がる。
-##   高いほど成果物の個数が増え、低すぎると失敗して「澱」になる。
+## 上の段の霊薬は下の段の霊薬を材料にするので、
+##   薬草だけの一段目 → 鉱石を足した二段目 → 三段目 → 杖・護符
+## と積み上げていくことになる。
+##
+## 焚くときは魔力の脈にあわせて拍を打つリズムゲームになり、
+## その精度で出来高が変わる(外しすぎると澱む)。
 
 signal formula_discovered(formula_id: String)
 
 const SLOT_COUNT := 4
 const FAILURE_ID := "sludge"
 
-## 純度がこれ未満だと失敗する
-const PURITY_FAIL := 0.5
-## 純度がこれ以上なら1個多くできる
-const PURITY_BONUS := 0.85
-
-## 階梯。主属性の合計がこの範囲なら、その段の成果物になる。
-const TIERS := [
-	{"min": 3, "max": 6, "suffix": 0},
-	{"min": 7, "max": 10, "suffix": 1},
-	{"min": 11, "max": 99, "suffix": 2},
+## 表の並び: id, 名前, 材料, 成果物, 個数, 手がかり
+const RECIPE_TABLE := [
+	["draught_ember", "燠の霊薬", {"emberleaf": 2, "scorchroot": 1}, "draught_ember", 2, "薬草だけで作れる、いちばん易しい調合"],
+	["draught_blaze", "烈火の霊薬", {"draught_ember": 1, "flamecap": 1, "ruby_shard": 1}, "draught_blaze", 1, "燠の霊薬に薬草と鉱石を重ねる"],
+	["draught_inferno", "業火の霊薬", {"draught_blaze": 1, "cinderbloom": 1, "magma_stone": 1}, "draught_inferno", 1, "烈火の霊薬をさらに煮詰める"],
+	["wand_ember", "燠の杖", {"draught_inferno": 1, "phoenix_moss": 1, "sunsteel_ore": 1, "catalyst_quick": 1}, "wand_ember", 1, "業火の霊薬に希少な鉱を溶かし、水銀で形を留める"],
+	["charm_salamander", "火竜の護符", {"draught_inferno": 1, "ifrit_core": 1, "catalyst_prima": 1}, "charm_salamander", 1, "業火の霊薬と核を第一質料で結びつける"],
+	["draught_dew", "露の霊薬", {"dewgrass": 2, "tidefern": 1}, "draught_dew", 2, "薬草だけで作れる、いちばん易しい調合"],
+	["draught_tide", "潮の霊薬", {"draught_dew": 1, "mirror_lily": 1, "aqua_shard": 1}, "draught_tide", 1, "露の霊薬に薬草と鉱石を重ねる"],
+	["draught_abyss", "深淵の霊薬", {"draught_tide": 1, "deepkelp": 1, "frost_stone": 1}, "draught_abyss", 1, "潮の霊薬をさらに煮詰める"],
+	["wand_tide", "潮の杖", {"draught_abyss": 1, "tearvine": 1, "abyss_ore": 1, "catalyst_quick": 1}, "wand_tide", 1, "深淵の霊薬に希少な鉱を溶かし、水銀で形を留める"],
+	["charm_undine", "水霊の護符", {"draught_abyss": 1, "leviath_core": 1, "catalyst_prima": 1}, "charm_undine", 1, "深淵の霊薬と核を第一質料で結びつける"],
+	["draught_breeze", "微風の霊薬", {"whistlereed": 2, "driftcotton": 1}, "draught_breeze", 2, "薬草だけで作れる、いちばん易しい調合"],
+	["draught_gale", "疾風の霊薬", {"draught_breeze": 1, "galeleaf": 1, "gale_shard": 1}, "draught_gale", 1, "微風の霊薬に薬草と鉱石を重ねる"],
+	["draught_storm", "嵐の霊薬", {"draught_gale": 1, "skyroot": 1, "cloud_stone": 1}, "draught_storm", 1, "疾風の霊薬をさらに煮詰める"],
+	["wand_gale", "疾風の杖", {"draught_storm": 1, "stormpetal": 1, "tempest_ore": 1, "catalyst_quick": 1}, "wand_gale", 1, "嵐の霊薬に希少な鉱を溶かし、水銀で形を留める"],
+	["charm_sylph", "風霊の護符", {"draught_storm": 1, "sylph_core": 1, "catalyst_prima": 1}, "charm_sylph", 1, "嵐の霊薬と核を第一質料で結びつける"],
+	["draught_clay", "土の霊薬", {"clayleaf": 2, "ironbark": 1}, "draught_clay", 2, "薬草だけで作れる、いちばん易しい調合"],
+	["draught_stone", "岩の霊薬", {"draught_clay": 1, "stonefungus": 1, "granite_shard": 1}, "draught_stone", 1, "土の霊薬に薬草と鉱石を重ねる"],
+	["draught_titan", "巨人の霊薬", {"draught_stone": 1, "deeproot": 1, "crystal_stone": 1}, "draught_titan", 1, "岩の霊薬をさらに煮詰める"],
+	["wand_stone", "岩の杖", {"draught_titan": 1, "titan_seed": 1, "adaman_ore": 1, "catalyst_quick": 1}, "wand_stone", 1, "巨人の霊薬に希少な鉱を溶かし、水銀で形を留める"],
+	["charm_golem", "土霊の護符", {"draught_titan": 1, "golem_core": 1, "catalyst_prima": 1}, "charm_golem", 1, "巨人の霊薬と核を第一質料で結びつける"],
+	["draught_dawn", "暁の霊薬", {"sunpetal": 2, "glowmoss": 1}, "draught_dawn", 2, "薬草だけで作れる、いちばん易しい調合"],
+	["draught_radiance", "光輝の霊薬", {"draught_dawn": 1, "dawnthistle": 1, "opal_shard": 1}, "draught_radiance", 1, "暁の霊薬に薬草と鉱石を重ねる"],
+	["draught_seraph", "聖光の霊薬", {"draught_radiance": 1, "halo_bloom": 1, "prism_stone": 1}, "draught_seraph", 1, "光輝の霊薬をさらに煮詰める"],
+	["wand_dawn", "暁の杖", {"draught_seraph": 1, "star_lotus": 1, "radiant_ore": 1, "catalyst_quick": 1}, "wand_dawn", 1, "聖光の霊薬に希少な鉱を溶かし、水銀で形を留める"],
+	["charm_seraph", "光霊の護符", {"draught_seraph": 1, "seraph_core": 1, "catalyst_prima": 1}, "charm_seraph", 1, "聖光の霊薬と核を第一質料で結びつける"],
+	["draught_shade", "陰の霊薬", {"shadeleaf": 2, "nightcap": 1}, "draught_shade", 2, "薬草だけで作れる、いちばん易しい調合"],
+	["draught_gloom", "幽闇の霊薬", {"draught_shade": 1, "gloomvine": 1, "onyx_shard": 1}, "draught_gloom", 1, "陰の霊薬に薬草と鉱石を重ねる"],
+	["draught_eclipse", "蝕の霊薬", {"draught_gloom": 1, "voidbloom": 1, "umbra_stone": 1}, "draught_eclipse", 1, "幽闇の霊薬をさらに煮詰める"],
+	["wand_shade", "陰の杖", {"draught_eclipse": 1, "eclipse_herb": 1, "abyssal_ore": 1, "catalyst_quick": 1}, "wand_shade", 1, "蝕の霊薬に希少な鉱を溶かし、水銀で形を留める"],
+	["charm_nether", "闇霊の護符", {"draught_eclipse": 1, "nether_core": 1, "catalyst_prima": 1}, "charm_nether", 1, "蝕の霊薬と核を第一質料で結びつける"],
 ]
 
-## 属性 -> 段ごとの霊薬
-const ELIXIRS := {
-	"fire": ["draught_ember", "draught_blaze", "draught_inferno"],
-	"water": ["draught_dew", "draught_tide", "draught_abyss"],
-	"wind": ["draught_breeze", "draught_gale", "draught_storm"],
-	"earth": ["draught_clay", "draught_stone", "draught_titan"],
-	"light": ["draught_dawn", "draught_radiance", "draught_seraph"],
-	"dark": ["draught_shade", "draught_gloom", "draught_eclipse"],
-}
-
-## 属性 -> 魔道具(杖と護符)。純度が非常に高いときだけ生まれる。
-const ARTIFACTS := {
-	"fire": ["wand_ember", "charm_salamander"],
-	"water": ["wand_tide", "charm_undine"],
-	"wind": ["wand_gale", "charm_sylph"],
-	"earth": ["wand_stone", "charm_golem"],
-	"light": ["wand_dawn", "charm_seraph"],
-	"dark": ["wand_shade", "charm_nether"],
-}
-
-## 魔道具ができる条件: 最上段 + 純度がこれ以上 + 触媒が入っていること。
-## 触媒を要求しないと、純度の高い最上段がすべて魔道具になってしまい、
-## 最上段の霊薬が永久に作れなくなる。
-const ARTIFACT_PURITY := 0.95
-
-## 一度でも作ったことのある成果物 id
+## 一度でも作ったことのあるレシピ id
 var discovered: Dictionary = {}
 
-# ---- 予測 ----
+var recipes: Array = []
 
-## 素材 id の配列から結果を予測する。UI はこれを使って釜の中身を実況する。
-## 返り値: {
-##   "valid": bool, "element": String, "total": int, "purity": float,
-##   "output_id": String, "amount": int, "tier": int, "note": String }
-func preview(ingredient_ids: Array) -> Dictionary:
-	var sums := {}
-	for e in ItemDB.ELEMENTS:
-		sums[e] = 0
-	var catalyst_power := 0
-	var any := false
+func _ready() -> void:
+	for row in RECIPE_TABLE:
+		recipes.append({
+			"id": row[0],
+			"name": row[1],
+			"inputs": row[2],
+			"output_id": row[3],
+			"output_count": row[4],
+			"hint": row[5],
+		})
 
+func get_recipe(id: String) -> Dictionary:
+	for r in recipes:
+		if r["id"] == id:
+			return r
+	return {}
+
+## 釜の中身(空きは "")を {id: 個数} にまとめる。
+func _tally(ingredient_ids: Array) -> Dictionary:
+	var counts := {}
 	for id in ingredient_ids:
 		if id == "":
 			continue
-		any = true
-		var elem := ItemDB.get_element(id)
-		var pot := ItemDB.get_potency(id)
-		if elem == "none":
-			catalyst_power += pot
-		else:
-			sums[elem] = int(sums[elem]) + pot
+		counts[id] = int(counts.get(id, 0)) + 1
+	return counts
 
-	var result := {
-		"valid": false, "element": "none", "total": 0, "purity": 0.0,
-		"output_id": "", "amount": 0, "tier": -1, "note": "",
-	}
-	if not any:
-		result["note"] = "釜が空っぽだ"
-		return result
+## 釜の中身と materials がぴったり同じか(過不足なし)。
+func _matches(counts: Dictionary, inputs: Dictionary) -> bool:
+	if counts.size() != inputs.size():
+		return false
+	for id in inputs.keys():
+		if int(counts.get(id, 0)) != int(inputs[id]):
+			return false
+	return true
 
-	# 主属性を決める
-	var best_elem := ""
-	var best := 0
-	var elemental_total := 0
-	for e in ELIXIRS.keys():
-		var v := int(sums[e])
-		elemental_total += v
-		if v > best:
-			best = v
-			best_elem = e
+## 釜の中身に一致するレシピを返す。無ければ空。
+func find_match(ingredient_ids: Array) -> Dictionary:
+	var counts := _tally(ingredient_ids)
+	if counts.is_empty():
+		return {}
+	for r in recipes:
+		if _matches(counts, r["inputs"]):
+			return r
+	return {}
 
-	if best_elem == "" or best <= 0:
-		result["note"] = "属性を持つ素材が要る"
-		return result
+## 釜の中身を見て、UI に出す実況を返す。
+## { "ready": bool, "recipe": Dictionary, "note": String }
+func preview(ingredient_ids: Array) -> Dictionary:
+	var counts := _tally(ingredient_ids)
+	if counts.is_empty():
+		return {"ready": false, "recipe": {}, "note": "釜が空っぽだ"}
+	var r := find_match(ingredient_ids)
+	if r.is_empty():
+		return {"ready": true, "recipe": {},
+			"note": "この組み合わせに心当たりはない。焚けば澱むかもしれない"}
+	if is_discovered(r["id"]):
+		return {"ready": true, "recipe": r, "note": "%s になりそうだ" % r["name"]}
+	return {"ready": true, "recipe": r, "note": "何かができそうな手応えがある…"}
 
-	result["element"] = best_elem
-	result["total"] = best
+## 手持ちだけで作れるレシピがあるか(図鑑の「作れる」印に使う)。
+func can_make(id: String) -> bool:
+	var r := get_recipe(id)
+	if r.is_empty():
+		return false
+	for item_id in r["inputs"].keys():
+		if Inventory.get_count(item_id) < int(r["inputs"][item_id]):
+			return false
+	return true
 
-	# 純度: 主属性が全体に占める割合。触媒は分母に入らず、下駄をはかせる。
-	var purity := float(best) / float(max(1, elemental_total))
-	purity = min(1.0, purity + 0.06 * float(catalyst_power))
-	result["purity"] = purity
+## 釜の中身を消費し、リズムゲームの出来(0.0〜1.0)に応じて成果物を作る。
+## 戻り値は成果物 id。失敗なら FAILURE_ID。
+func brew(ingredient_ids: Array, performance: float) -> String:
+	var r := find_match(ingredient_ids)
 
-	var tier := _tier_for(best)
-	result["tier"] = tier
-	if tier < 0:
-		result["note"] = "力が足りない(主属性の合計が3以上必要)"
-		result["output_id"] = FAILURE_ID
-		result["amount"] = 1
-		return result
-
-	if purity < PURITY_FAIL:
-		result["note"] = "混ざりすぎて澱む(純度%d%%)" % int(purity * 100.0)
-		result["output_id"] = FAILURE_ID
-		result["amount"] = 1
-		return result
-
-	# 最上段・高純度・触媒ありのときだけ器物になる(触媒が無ければ最上段の霊薬)
-	if tier == TIERS.size() - 1 and purity >= ARTIFACT_PURITY and catalyst_power > 0:
-		var pair: Array = ARTIFACTS[best_elem]
-		# 力が飛び抜けていれば護符、そうでなければ杖
-		var idx := 1 if best >= 14 else 0
-		result["valid"] = true
-		result["output_id"] = pair[idx]
-		result["amount"] = 1
-		result["note"] = "純度が極まっている。器物が生まれそうだ"
-		return result
-
-	result["valid"] = true
-	result["output_id"] = ELIXIRS[best_elem][tier]
-	result["amount"] = 2 if purity >= PURITY_BONUS else 1
-	result["note"] = "純度%d%%" % int(purity * 100.0)
-	return result
-
-func _tier_for(total: int) -> int:
-	for i in range(TIERS.size()):
-		var t: Dictionary = TIERS[i]
-		if total >= int(t["min"]) and total <= int(t["max"]):
-			return i
-	return -1
-
-# ---- 実行 ----
-
-## 釜の中身を消費して成果物を作る。成功なら成果物 id を返し、何もできなければ "" を返す。
-func brew(ingredient_ids: Array) -> String:
-	var result := preview(ingredient_ids)
-	var output: String = result["output_id"]
-	if output == "":
-		return ""
-
-	# 素材を消費する。同じ素材を複数スロットに入れた場合も1つずつ減らす。
 	for id in ingredient_ids:
 		if id != "":
 			Inventory.remove_item(id, 1)
 
-	if output == FAILURE_ID:
-		EventBus.notify.emit("錬成失敗… %s" % result["note"])
+	if r.is_empty():
+		EventBus.notify.emit("錬成失敗… 組み合わせが噛み合わなかった")
 		EventBus.companion_say.emit("うーん、澱んじゃったね。配合を変えてみよう。")
+		Inventory.add_item(FAILURE_ID, 1)
 		return FAILURE_ID
 
-	Inventory.add_item(output, int(result["amount"]))
-	if not discovered.has(output):
-		discovered[output] = true
-		formula_discovered.emit(output)
+	# 拍を外しすぎると魔力が散って澱む
+	if performance < 0.4:
+		EventBus.notify.emit("錬成失敗… 魔力が乱れて散ってしまった")
+		EventBus.companion_say.emit("拍がずれちゃった。次はもっと落ち着いて。")
+		Inventory.add_item(FAILURE_ID, 1)
+		return FAILURE_ID
+
+	var amount := int(r["output_count"])
+	if performance >= 0.95:
+		amount += 1
+
+	Inventory.add_item(r["output_id"], amount)
+	if not discovered.has(r["id"]):
+		discovered[r["id"]] = true
+		formula_discovered.emit(r["id"])
 		EventBus.companion_say.emit("新しい調合だ！ 図鑑に書きとめておくね。")
-	EventBus.notify.emit("錬成成功: %s x%d (%s)" % \
-		[ItemDB.get_display_name(output), int(result["amount"]), result["note"]])
-	return output
+	EventBus.notify.emit("錬成成功: %s x%d" % [ItemDB.get_display_name(r["output_id"]), amount])
+	return r["output_id"]
 
 ## 新規開始用。調合の記録を消す。
 func reset() -> void:
@@ -188,13 +171,8 @@ func is_discovered(id: String) -> bool:
 func discovered_count() -> int:
 	return discovered.size()
 
-## 図鑑に載る成果物の総数(霊薬 + 魔道具)
 func total_outputs() -> int:
-	var n := 0
-	for e in ELIXIRS.keys():
-		n += ELIXIRS[e].size()
-		n += ARTIFACTS[e].size()
-	return n
+	return recipes.size()
 
 func to_save_data() -> Dictionary:
 	return {"discovered": discovered.keys()}

@@ -78,7 +78,8 @@ stock = PackedStringArray("plank", "stone_brick", "iron_ingot", "rope")
 [node name="GeneralShop" parent="." instance=ExtResource("3")]
 position = Vector2(2200, 400)
 shop_name = "雑貨屋"
-stock = PackedStringArray("wood", "stone", "fiber", "iron_ore")
+stock = PackedStringArray("wood", "stone", "fiber", "iron_ore",
+"catalyst_salt", "catalyst_quick", "catalyst_prima")
 
 [node name="Stall" parent="." instance=ExtResource("4")]
 position = Vector2(1300, 400)
