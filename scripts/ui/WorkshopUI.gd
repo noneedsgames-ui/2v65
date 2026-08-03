@@ -39,6 +39,10 @@ var _hits: int = 0
 var _score: float = 0.0
 var _beat_nodes: Array = []
 
+## 図鑑の中身の作り置き。検索のたびに 150 行ぶんを組み立て直さないための控え。
+## 調合を覚えた・道具ができたときだけ捨てる。
+var _codex_cache: Array = []
+
 @onready var tab_brew: Button = $Center/Window/Margin/Content/Tabs/BrewTab
 @onready var tab_tool: Button = $Center/Window/Margin/Content/Tabs/ToolTab
 @onready var tab_codex: Button = $Center/Window/Margin/Content/Tabs/CodexTab
@@ -90,6 +94,8 @@ func _ready() -> void:
 	assemble_button.pressed.connect(_start_circuit)
 	search_edit.text_changed.connect(func(_t): _refresh_codex())
 	Inventory.changed.connect(_on_inventory_changed)
+	AlchemyDB.formula_discovered.connect(func(_id): _codex_cache = [])
+	ToolDB.tool_completed.connect(func(_id): _codex_cache = [])
 	circuit.solved.connect(_on_circuit_solved)
 	circuit.cancelled.connect(func(): refresh())
 	visibility_changed.connect(_on_visibility_changed)
@@ -103,6 +109,9 @@ func set_bench_mode(value: bool) -> void:
 	bench_mode = value
 	if not bench_mode and current_tab == TAB_TOOL:
 		current_tab = TAB_BREW
+	# 開くたびに図鑑の作り置きを捨てる。持ち越すのは開いているあいだだけでよく、
+	# こうしておけばロードなどで中身が変わっても古い版が残らない。
+	_codex_cache = []
 
 ## Esc で閉じると _on_close を通らないので、ここで止める。
 ## そうしないと画面が消えたまま拍だけ進み、勝手に調合が終わってしまう。
@@ -115,9 +124,12 @@ func _on_visibility_changed() -> void:
 	clear_button.disabled = false
 	circuit.visible = false
 
+## 持ち物が変わったときの作り直しは、開いていて、かつ持ち物を見ているタブだけ。
+## 図鑑は持ち物と関係がないので、触ると検索欄のスクロールが戻るだけ損になる。
 func _on_inventory_changed() -> void:
-	if not playing:
-		refresh()
+	if playing or not visible or current_tab == TAB_CODEX:
+		return
+	refresh()
 
 func _set_tab(tab: String) -> void:
 	if tab == TAB_TOOL and not bench_mode:
@@ -499,7 +511,9 @@ func _refresh_codex() -> void:
 		c.queue_free()
 
 	var query := search_edit.text.strip_edges().to_lower()
-	var sections := _build_codex_sections()
+	if _codex_cache.is_empty():
+		_codex_cache = _build_codex_sections()
+	var sections := _codex_cache
 	var shown := 0
 
 	for section in sections:

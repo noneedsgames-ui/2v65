@@ -11,6 +11,7 @@ extends CanvasLayer
 @onready var workshop_panel = $WorkshopUI  # set_bench_mode() を呼ぶため型は付けない
 @onready var negotiation_panel = $NegotiationUI  # set_request() を呼ぶため型は付けない
 @onready var dialogue_panel = $DialogueUI        # set_resident() を呼ぶため型は付けない
+@onready var story_panel = $StoryUI              # set_node() を呼ぶため型は付けない
 @onready var journal_panel: Control = $JournalUI
 @onready var area_panel: Control = $AreaSelectUI
 @onready var system_panel: Control = $SystemMenuUI
@@ -22,7 +23,8 @@ var tending: bool = false
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	panels = [inventory_panel, house_panel, shop_panel, stall_panel, workshop_panel,
-		negotiation_panel, dialogue_panel, journal_panel, area_panel, system_panel]
+		negotiation_panel, dialogue_panel, story_panel, journal_panel, area_panel,
+		system_panel]
 	for p in panels:
 		p.visible = false
 		p.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -38,6 +40,7 @@ func _ready() -> void:
 	EventBus.request_close_menus.connect(_close_all)
 	EventBus.request_open_negotiation.connect(_on_open_negotiation)
 	EventBus.request_open_dialogue.connect(_on_open_dialogue)
+	EventBus.request_open_story.connect(_on_open_story)
 	EventBus.request_open_journal.connect(func(): _open(journal_panel))
 	EventBus.request_open_area_select.connect(func(): _open(area_panel))
 	EventBus.request_open_system_menu.connect(func(): _open(system_panel))
@@ -52,6 +55,14 @@ func _on_open_workshop(bench: bool) -> void:
 func _on_open_negotiation(request: Dictionary) -> void:
 	negotiation_panel.set_request(request)
 	_open(negotiation_panel)
+
+## 物語の会話を開く。route の節はここでは解決せず、StoryUI に任せる。
+func _on_open_story(node_id: String) -> void:
+	story_panel.set_node(node_id)
+	# route の行き先が無いときは開かない(空の窓が出るのを防ぐ)
+	if story_panel.node_id == "":
+		return
+	_open(story_panel)
 
 func _on_open_dialogue(resident_id: String, idle_lines: PackedStringArray) -> void:
 	dialogue_panel.set_resident(resident_id, idle_lines)

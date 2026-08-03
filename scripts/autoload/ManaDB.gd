@@ -99,10 +99,14 @@ const MANA_TABLE := [
 ]
 
 var _table: Dictionary = {}
+## 並べ替え済みの id 一覧。表は変わらないので一度作れば使い回せる。
+var _sorted_ids: Array = []
 
 func _ready() -> void:
 	for row in MANA_TABLE:
 		_table[row[0]] = {"natures": row[1], "mana": int(row[2])}
+	_sorted_ids = _table.keys()
+	_sorted_ids.sort()
 
 ## 魔力を宿しているか(調合・道具設計に使えるか)
 func has_mana(id: String) -> bool:
@@ -143,8 +147,7 @@ func resonates(a: String, b: String) -> bool:
 			return true
 	return false
 
-## 魔力を持つ素材の id を並べて返す(図鑑用)
+## 魔力を持つ素材の id を並べて返す(図鑑用)。
+## 中身を書き換えられると次の呼び出しに響くので、読むだけに使うこと。
 func mana_ids() -> Array:
-	var out: Array = _table.keys()
-	out.sort()
-	return out
+	return _sorted_ids

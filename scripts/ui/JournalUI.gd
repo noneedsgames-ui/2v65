@@ -3,19 +3,23 @@ extends Control
 
 const TAB_QUEST := "quest"
 const TAB_PEOPLE := "people"
+const TAB_STORY := "story"
 
 var current_tab: String = TAB_QUEST
 
 @onready var quest_tab: Button = $Center/Window/Margin/Content/Tabs/QuestTab
 @onready var people_tab: Button = $Center/Window/Margin/Content/Tabs/PeopleTab
+@onready var story_tab: Button = $Center/Window/Margin/Content/Tabs/StoryTab
 @onready var list: VBoxContainer = $Center/Window/Margin/Content/Scroll/List
 
 func _ready() -> void:
 	$Center/Window/Margin/Content/CloseButton.pressed.connect(_on_close)
 	quest_tab.pressed.connect(func(): _set_tab(TAB_QUEST))
 	people_tab.pressed.connect(func(): _set_tab(TAB_PEOPLE))
+	story_tab.pressed.connect(func(): _set_tab(TAB_STORY))
 	Journal.quests_changed.connect(refresh)
 	Journal.residents_changed.connect(refresh)
+	Story.story_changed.connect(refresh)
 
 func _on_close() -> void:
 	EventBus.request_close_menus.emit()
@@ -24,15 +28,21 @@ func _set_tab(tab: String) -> void:
 	current_tab = tab
 	quest_tab.button_pressed = tab == TAB_QUEST
 	people_tab.button_pressed = tab == TAB_PEOPLE
+	story_tab.button_pressed = tab == TAB_STORY
 	refresh()
 
 func refresh() -> void:
+	# 閉じているあいだの作り直しは無駄なので、開いたときにまとめてやる
+	if not visible:
+		return
 	for c in list.get_children():
 		c.queue_free()
 	if current_tab == TAB_QUEST:
 		_build_quests()
-	else:
+	elif current_tab == TAB_PEOPLE:
 		_build_people()
+	else:
+		_build_story()
 
 func _add_heading(text: String) -> void:
 	var l := Label.new()
@@ -99,3 +109,63 @@ func _build_people() -> void:
 			Journal.QuestState.DONE: state_text = "「%s」を達成した" % q["title"]
 		_add_body("   %s" % state_text, Color(0.75, 0.85, 1))
 		_add_separator()
+
+## 物語の進み具合。いま何をすればいいかと、これまでに選んだことを並べる。
+func _build_story() -> void:
+	if Story.chapter <= 0:
+		_add_body("まだ何も始まっていない。町の広場まで行ってみよう。")
+		return
+
+	_add_heading(StoryDB.chapter_title(Story.chapter))
+	_add_body("   %s" % StoryDB.chapter_hint(Story.chapter), Color(0.75, 0.85, 1))
+	_add_separator()
+
+	_add_heading("これまでの道のり")
+	for c in StoryDB.CHAPTERS:
+		var n := int(c["chapter"])
+		if n > Story.chapter:
+			break
+		var mark := "▶" if n == Story.chapter else "✓"
+		_add_body("%s %s" % [mark, c["title"]],
+			Color(1, 1, 1) if n == Story.chapter else Color(0.65, 0.75, 0.65))
+	_add_separator()
+
+	var notes := _story_notes()
+	if notes.is_empty():
+		return
+	_add_heading("選んだこと")
+	for line in notes:
+		_add_body("・%s" % line, Color(0.88, 0.86, 0.8))
+
+## 旗から、記録に残す一文を組み立てる。
+## 旗そのものを見せても意味が伝わらないので、ここで日本語に直す。
+func _story_notes() -> Array:
+	var out: Array = []
+	if Story.has_flag("curious"):
+		out.append("広場の灯をきちんと見た。")
+	if Story.has_flag("nona_gift"):
+		out.append("ノナからの手間賃を受け取らなかった。")
+	if Story.has_flag("nona_paid"):
+		out.append("ノナから手間賃を二百二十受け取った。")
+	if Story.has_flag("heard_voice"):
+		out.append("岩窟の裂け目で、呼ぶ声を聞いた。")
+	if Story.has_flag("told_gordo"):
+		out.append("声のことをゴルドーに話した。")
+	if Story.has_flag("hid_source"):
+		out.append("石の出どころをはぐらかした。")
+	if Story.has_flag("home_talk"):
+		out.append("家で相棒の問いに答えた。")
+	if Story.has_flag("read_lore"):
+		out.append("ヴェスパの記録を読んだ。")
+	var ending := ""
+	if Story.has_flag("ending"):
+		ending = String(Story.get_flag("ending"))
+	match ending:
+		"self":
+			out.append("霊峰の灯に、自分の魔力を通した。")
+		"companion":
+			out.append("霊峰の灯を、相棒に託した。")
+		"carry":
+			out.append("霊峰の灯を外して持ち帰った。")
+	out.append("人に向き合った回数: %d" % Story.count_of("faith"))
+	return out

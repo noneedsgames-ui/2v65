@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/Companion.tscn" id="2"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/UIRoot.tscn" id="4"]
 [ext_resource type="Script" path="res://scripts/WorldRoot.gd" id="5"]
 [ext_resource type="Script" path="res://scripts/WildsGenerator.gd" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/StoryTrigger.tscn" id="7"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
 size = Vector2(40, 600)
@@ -75,6 +76,16 @@ position = Vector2(90, 400)
 target_scene = "res://scenes/Town.tscn"
 spawn_position = Vector2(2530, 380)
 label = "町へ戻る"
+
+[node name="StoryZones" type="Node2D" parent="."]
+
+[node name="CavernWhisper" parent="StoryZones" instance=ExtResource("7")]
+position = Vector2(2000, 400)
+event_id = "cavern_whisper"
+
+[node name="PeakBeacon" parent="StoryZones" instance=ExtResource("7")]
+position = Vector2(4400, 400)
+event_id = "peak_beacon"
 
 [node name="Companion" parent="." instance=ExtResource("2")]
 position = Vector2(60, 390)

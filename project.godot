@@ -24,6 +24,8 @@ AreaDB="*res://scripts/autoload/AreaDB.gd"
 AlchemyDB="*res://scripts/autoload/AlchemyDB.gd"
 ToolDB="*res://scripts/autoload/ToolDB.gd"
 Journal="*res://scripts/autoload/Journal.gd"
+StoryDB="*res://scripts/autoload/StoryDB.gd"
+Story="*res://scripts/autoload/Story.gd"
 GameState="*res://scripts/autoload/GameState.gd"
 
 [display]

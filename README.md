@@ -119,7 +119,22 @@ Space でもう一段跳べます。左右の壁を交互に蹴れば深い谷�
   - 遊び方としては、図鑑で並びと性質を読んで覚え、作業タブに切り替えて自分の持ち物から素材を選び、自分で順番を決める、という往復になります
 - **相棒の参戦**: 近くに敵がいると相棒は追従をやめて割って入り、自分から殴りかかります。体が大きいので敵の噛みつきを肩代わりし、相棒自身はダメージを受けません
 - **村人とクエスト**: 町には決まった場所に立つ村人がいて、話しかけると素材の納品クエストをくれます(`scripts/Villager.gd`)
-- **メモ帳(K)**: 受けたクエストの進捗・必要数・報酬と、出会った住民の情報(役割・好み・関係)を一覧できます(`scripts/ui/JournalUI.gd`)
+- **メモ帳(K)**: 「クエスト」「住民名簿」「物語」の3タブ(`scripts/ui/JournalUI.gd`)
+  - クエスト: 受けた依頼の進捗・必要数・報酬
+  - 住民名簿: 出会った住民の役割・好み・関係
+  - 物語: いまの章とやるべきこと、これまでの道のり、**自分が選んだこと**の記録
+- **物語「消えかけの灯」**: 町の広場に立つ石の柱の灯が弱っている、という一本の長い筋書きです
+  - 台本は `scripts/autoload/StoryDB.gd`、進行状態(章・旗・見た出来事)は `scripts/autoload/Story.gd`
+  - **全7章**。ノナ → ゴルドー → 司書ヴェスパ → 家の作業台 → 陽昇る霊峰 → 町へ、と場所と人をまたいで進みます
+  - **会話イベント**は場所に置いた `StoryTrigger` で起きます。町の広場に初めて着いたとき、家に帰ったとき、岩窟の裂け目のそば、霊峰の頂。同じ場所でも章が変われば別のことが起きます
+  - **選択肢**には条件がつくものがあります。満たしていない選択肢は消えずに、**押せない状態で理由つき**で並びます(「広場の灯をちゃんと見ていない」など)
+  - 条件はゲームの仕組みから直に引いています。〈潤〉の素材を**3種類**持っていること、〈輝〉の素材を**魔力10ぶん**持っていること、調合を**3種類**覚えていること、**坑夫のランプ**を組み上げていること、いまいる探索地が岩窟/霊峰であること
+  - 納品は個数ではなく**性質**で判定するので、何を渡すかはプレイヤーが選べます。消費されるのは手持ちのうち安いものから
+  - **旗(フラグ)**が後の会話に効きます。灯を覗いたか、手間賃を受け取ったか、岩窟の声を聞いたか、それを鍛冶屋に話したか、家で相棒の問いにどう答えたか
+  - 人に向き合うたびに増える隠しの数(faith)があり、これが**4以上**でないと最後の選択肢がひとつ開きません
+  - **結末は3つ**(自分の魔力を通す / 相棒に託す / 灯を持ち帰る)。どれを選んでも完走でき、後日談と報酬が変わります
+  - 司書**ヴェスパ**は二章になるまで町にいません(`appears_from_chapter`)
+  - 物語の世間話は一度見たら引っこむので、その村人の**依頼画面はいつでも開けます**
 
 ## プロジェクト構成
 
@@ -134,6 +149,7 @@ scenes/
   HouseInterior.tscn   家の中
   Player.tscn / Companion.tscn / TownNPC.tscn / Villager.tscn / Enemy.tscn
   House.tscn / Shop.tscn / Stall.tscn / SceneDoor.tscn / CommentZone.tscn
+  StoryTrigger.tscn    物語の出来事が起きる範囲
   Tree.tscn / Rock.tscn / Bush.tscn / IronVein.tscn / FiberPatch.tscn
   ui/                  HUD・ホットバー・升目・各種メニュー
 scripts/
@@ -144,9 +160,11 @@ scripts/
   ResourceNode.gd / House.gd / Shop.gd / Stall.gd / SceneDoor.gd
   Bed.gd / Bath.gd / Workbench.gd / Chest.gd   家の中の設備
   CommentZone.gd        同行者が喋る範囲
+  StoryTrigger.gd       通りかかると物語の出来事が起きる範囲
   UIRowFactory.gd       UI行の共通生成ヘルパー
   autoload/             ItemDB, ManaDB, AlchemyDB, ToolDB, AreaDB, Inventory,
-                        Equipment, Journal, Settings, GameState, EventBus
+                        Equipment, Journal, StoryDB, Story, Settings,
+                        GameState, EventBus
   ui/                   各UIパネルのスクリプト
 ```
 

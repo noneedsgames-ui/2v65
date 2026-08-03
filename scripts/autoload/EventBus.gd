@@ -16,6 +16,8 @@ signal player_hp_changed(hp: int, max_hp: int)
 
 ## 村人との会話。resident_id と雑談候補を渡す。
 signal request_open_dialogue(resident_id: String, idle_lines: PackedStringArray)
+## 物語の会話。StoryDB の節 id を渡す。
+signal request_open_story(node_id: String)
 signal request_open_journal()
 signal request_open_area_select()
 signal request_open_system_menu()

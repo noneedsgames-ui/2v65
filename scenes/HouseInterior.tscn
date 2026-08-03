@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/Companion.tscn" id="2"]
@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://scripts/Workbench.gd" id="8"]
 [ext_resource type="Script" path="res://scripts/Bath.gd" id="9"]
 [ext_resource type="Script" path="res://scripts/Chest.gd" id="10"]
+[ext_resource type="PackedScene" path="res://scenes/StoryTrigger.tscn" id="11"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
 size = Vector2(1400, 40)
@@ -62,6 +63,10 @@ position = Vector2(1380, 200)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="WallRight"]
 shape = SubResource("RectangleShape2D_wall")
+
+[node name="HomeTalk" parent="." instance=ExtResource("11")]
+position = Vector2(400, 400)
+event_id = "home_rest"
 
 [node name="Bed" type="Area2D" parent="."]
 collision_layer = 16

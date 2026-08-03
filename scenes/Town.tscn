@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/Companion.tscn" id="2"]
@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://scenes/CommentZone.tscn" id="9"]
 [ext_resource type="PackedScene" path="res://scenes/Villager.tscn" id="10"]
 [ext_resource type="PackedScene" path="res://scenes/AreaSelectDoor.tscn" id="11"]
+[ext_resource type="PackedScene" path="res://scenes/StoryTrigger.tscn" id="12"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(2800, 40)
@@ -113,6 +114,16 @@ position = Vector2(2500, 400)
 lines = PackedStringArray("町の外れの分かれ道。三つの土地に通じてるんだって。", "行き先で採れるものが違うらしいよ。")
 cooldown_seconds = 40.0
 
+[node name="StoryZones" type="Node2D" parent="."]
+
+[node name="SquareArrival" parent="StoryZones" instance=ExtResource("12")]
+position = Vector2(1300, 400)
+event_id = "town_arrive"
+
+[node name="SquareEnding" parent="StoryZones" instance=ExtResource("12")]
+position = Vector2(1300, 400)
+event_id = "town_ending"
+
 [node name="Villagers" type="Node2D" parent="."]
 
 [node name="Mira" parent="Villagers" instance=ExtResource("10")]
@@ -138,6 +149,13 @@ position = Vector2(2330, 400)
 resident_id = "nona"
 body_color = Color(0.45, 0.65, 0.45, 1)
 idle_lines = PackedStringArray("この草、煎じるとよく効くのよ。", "道端にもいいものは落ちてるものよ。")
+
+[node name="Vespa" parent="Villagers" instance=ExtResource("10")]
+position = Vector2(1480, 400)
+resident_id = "vespa"
+body_color = Color(0.42, 0.38, 0.58, 1)
+appears_from_chapter = 2
+idle_lines = PackedStringArray("この町は記録の残し方が雑ですね。", "椅子が足りません。まだ足りません。")
 
 [node name="Townsfolk" type="Node2D" parent="."]
 

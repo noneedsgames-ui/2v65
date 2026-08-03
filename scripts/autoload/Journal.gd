@@ -57,6 +57,16 @@ func _ready() -> void:
 			"reward_gold": 90,
 			"reward_items": {"berry_pie": 1},
 		})
+	_register_resident("vespa", "ヴェスパ", "司書",
+		"焦げた頁", "灯の記録を追って町に来た。荷物のほとんどが本で、椅子がいつも足りない。",
+		{
+			"id": "vespa_notes",
+			"title": "ヴェスパの写本",
+			"summary": "記録を書き写すのに澱と輝く石が要るという。灯の話のついでに集めよう。",
+			"needs": {"sludge": 4, "opal_shard": 3},
+			"reward_gold": 200,
+			"reward_items": {"catalyst_quick": 2},
+		})
 
 func _register_resident(id: String, display_name: String, role: String,
 		likes: String, about: String, quest: Dictionary) -> void:

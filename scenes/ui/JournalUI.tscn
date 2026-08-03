@@ -59,6 +59,12 @@ layout_mode = 2
 toggle_mode = true
 text = "住民名簿"
 
+[node name="StoryTab" type="Button" parent="Center/Window/Margin/Content/Tabs"]
+custom_minimum_size = Vector2(140, 34)
+layout_mode = 2
+toggle_mode = true
+text = "物語"
+
 [node name="Scroll" type="ScrollContainer" parent="Center/Window/Margin/Content"]
 custom_minimum_size = Vector2(560, 390)
 layout_mode = 2

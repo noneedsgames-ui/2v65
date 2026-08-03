@@ -110,6 +110,7 @@ func reset_for_new_game() -> void:
 	Inventory.reset()
 	Equipment.reset()
 	Journal.reset()
+	Story.reset()
 	AlchemyDB.reset()
 	ToolDB.reset()
 	if FileAccess.file_exists(SAVE_PATH):
@@ -121,6 +122,7 @@ func save_game() -> void:
 		"equipment": Equipment.to_save_data(),
 		"refreshed": refreshed,
 		"journal": Journal.to_save_data(),
+		"story": Story.to_save_data(),
 		"alchemy": AlchemyDB.to_save_data(),
 		"tools": ToolDB.to_save_data(),
 		"hp": player_hp,
@@ -169,6 +171,8 @@ func load_game() -> bool:
 		Equipment.load_save_data(data["equipment"])
 	if data.has("journal"):
 		Journal.load_save_data(data["journal"])
+	if data.has("story"):
+		Story.load_save_data(data["story"])
 	if data.has("alchemy"):
 		AlchemyDB.load_save_data(data["alchemy"])
 	if data.has("tools"):
