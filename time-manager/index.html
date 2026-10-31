@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>刻ノ帳 — 時間管理</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>刻ノ帳 <small>時間管理</small></h1>
+    <p class="today" id="today"></p>
+  </header>
+
+  <main class="layout">
+    <!-- 集中タイマー -->
+    <section class="card timer-card" aria-labelledby="timer-h">
+      <h2 id="timer-h">集中タイマー</h2>
+      <div class="mode-tabs" role="tablist">
+        <button role="tab" data-mode="focus">集中</button>
+        <button role="tab" data-mode="short">小休憩</button>
+        <button role="tab" data-mode="long">長休憩</button>
+      </div>
+      <div class="dial">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="dial-track" cx="60" cy="60" r="54"></circle>
+          <circle class="dial-bar" id="dialBar" cx="60" cy="60" r="54"></circle>
+        </svg>
+        <div class="dial-text">
+          <div class="time" id="timeLeft">25:00</div>
+          <div class="cycle" id="cycleInfo"></div>
+        </div>
+      </div>
+      <p class="current-task">対象: <strong id="currentTask">(タスク未選択)</strong></p>
+      <div class="controls">
+        <button class="primary" id="btnStart">開始</button>
+        <button id="btnSkip" title="現在の区切りを終える(集中は1分以上で記録)">区切る</button>
+        <button id="btnReset">戻す</button>
+      </div>
+      <p class="hint">Space で開始/一時停止</p>
+    </section>
+
+    <!-- タスク -->
+    <section class="card tasks-card" aria-labelledby="tasks-h">
+      <h2 id="tasks-h">タスク</h2>
+      <form id="taskForm" class="task-form">
+        <input id="taskTitle" placeholder="やることを書く" required maxlength="80">
+        <label class="est">見積
+          <input id="taskEst" type="number" min="1" max="20" value="1"> 回
+        </label>
+        <button class="primary" type="submit">追加</button>
+      </form>
+      <ul id="taskList" class="task-list"></ul>
+      <details class="done-wrap">
+        <summary>完了したタスク <span id="doneCount">0</span></summary>
+        <ul id="doneList" class="task-list done"></ul>
+      </details>
+    </section>
+
+    <!-- 記録 -->
+    <section class="card stats-card" aria-labelledby="stats-h">
+      <h2 id="stats-h">記録</h2>
+      <div class="tiles">
+        <div class="tile"><span class="tile-label">今日の集中</span><span class="tile-value" id="statFocus">0分</span></div>
+        <div class="tile"><span class="tile-label">集中回数</span><span class="tile-value" id="statCount">0</span></div>
+        <div class="tile"><span class="tile-label">今日の完了</span><span class="tile-value" id="statDone">0</span></div>
+      </div>
+      <h3>直近7日の集中時間(分)</h3>
+      <div class="chart-wrap">
+        <svg id="weekChart" class="chart" role="img" aria-label="直近7日の集中時間"></svg>
+        <div id="chartTip" class="chart-tip" hidden></div>
+      </div>
+      <details>
+        <summary>表で見る</summary>
+        <table class="week-table" id="weekTable"></table>
+      </details>
+      <h3>今日の履歴</h3>
+      <ul id="sessionList" class="session-list"></ul>
+    </section>
+
+    <!-- 設定 -->
+    <section class="card settings-card" aria-labelledby="settings-h">
+      <h2 id="settings-h">設定</h2>
+      <form id="settingsForm" class="settings">
+        <label>集中 <input type="number" name="focus" min="1" max="180"> 分</label>
+        <label>小休憩 <input type="number" name="short" min="1" max="60"> 分</label>
+        <label>長休憩 <input type="number" name="long" min="1" max="120"> 分</label>
+        <label>長休憩の間隔 <input type="number" name="longEvery" min="2" max="12"> 回ごと</label>
+        <label class="check"><input type="checkbox" name="autoStart"> 次の区切りを自動で始める</label>
+        <label class="check"><input type="checkbox" name="sound"> 終了時に音を鳴らす</label>
+        <label class="check"><input type="checkbox" name="notify"> デスクトップ通知</label>
+      </form>
+      <div class="data-ops">
+        <button id="btnExport">書き出し(JSON)</button>
+        <label class="file-btn">読み込み<input type="file" id="fileImport" accept="application/json" hidden></label>
+        <button id="btnClear" class="danger">全データ消去</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
