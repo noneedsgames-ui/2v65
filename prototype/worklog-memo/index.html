@@ -96,6 +96,8 @@ body.editing .oltools{display:flex}
 body.editing.kb nav.bottom{display:none}
 
 .bul{touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.ol-row{-webkit-touch-callout:none}
+.ol-row.pressing .ol-t{background:var(--surface-2);transition:background .35s}
 .ol-row.dragging{opacity:.3}
 .ol-row.dropin .ol-t{outline:2px solid var(--accent);outline-offset:-2px}
 .ol-row.moved .ol-t{background:color-mix(in srgb,var(--accent) 18%,transparent);transition:background .6s}
@@ -745,32 +747,66 @@ box.addEventListener("click", e => {
 let drag = null, justDragged = false;
 const dropline = document.createElement("div"); dropline.className = "dropline"; document.body.appendChild(dropline);
 const ghost = document.createElement("div"); ghost.className = "dragghost"; document.body.appendChild(ghost);
-box.addEventListener("contextmenu", e => { if (e.target.closest(".bul")) e.preventDefault(); });
+// 行のどこでも長押し(約0.35秒)で持ち上がる。行頭の ▾/• はそのまま動かしても持ち上がる。
+// 普通のタップは書き込み、すぐ動かせばスクロール。いま書いている行の中は文字選択を優先する
+const LONGPRESS_MS = 350;
+box.addEventListener("contextmenu", e => { if (drag || e.target.closest(".bul")) e.preventDefault(); });
 box.addEventListener("pointerdown", e => {
-  const b = e.target.closest(".bul"); if (!b || e.button > 0) return;
-  drag = { id: b.dataset.bul, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, on: false, pid: e.pointerId, el: b, target: null };
+  if (e.button > 0) return;
+  const row = e.target.closest(".ol-row"); if (!row) return;
+  const b = e.target.closest(".bul");
+  const ta = e.target.closest(".ol-t");
+  if (!b && ta && ta === document.activeElement) return;
+  if (!b && e.target.closest(".ol-rel button,.foldcnt")) return;
+  clearTimeout(drag?.timer);
+  drag = { id: row.dataset.id, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, on: false, pid: e.pointerId, el: b || row, viaBul: !!b, target: null };
+  if (!b) {
+    row.classList.add("pressing");
+    drag.timer = setTimeout(() => { if (drag && !drag.on && drag.pid === e.pointerId) { startDrag(); dragOver(); } }, LONGPRESS_MS);
+  }
 });
+function cancelPress() { if (drag && !drag.on) { clearTimeout(drag.timer); box.querySelectorAll(".pressing").forEach(r => r.classList.remove("pressing")); drag = null; } }
 box.addEventListener("pointermove", e => {
   if (!drag || e.pointerId !== drag.pid) return;
   drag.x = e.clientX; drag.y = e.clientY;
-  if (!drag.on) { if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 8) return; startDrag(); }
+  if (!drag.on) {
+    if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 8) return;
+    if (!drag.viaBul) { cancelPress(); return; } // 長押し前に動いた → スクロールや文字選択に任せる
+    startDrag();
+  }
   e.preventDefault(); dragOver();
 });
 box.addEventListener("pointerup", e => {
   if (!drag || e.pointerId !== drag.pid) return;
-  if (!drag.on) { // 動かさずに離した → 畳む/開く
-    const id = drag.id; drag = null;
+  if (!drag.on) {
+    if (!drag.viaBul) { cancelPress(); return; } // ただのタップ → 書き込みへ
+    const id = drag.id; drag = null; // 行頭を動かさずに離した → 畳む/開く
     const n = index[id]?.n; if (!n) return;
     if (n.c.length) doToggle(id); else { focusAt(id, n.t.length); renderOutline(); }
     return;
   }
   endDrag(true);
 });
-box.addEventListener("pointercancel", e => { if (drag && e.pointerId === drag.pid) endDrag(false); });
+box.addEventListener("pointercancel", e => {
+  if (!drag || e.pointerId !== drag.pid) return;
+  if (drag.on) return; // 持ち上げ中は touchend で締める
+  cancelPress();
+});
+// 持ち上げ中は指の動きでスクロールさせない(タッチの座標もこちらで拾う)
+document.addEventListener("touchmove", e => {
+  if (!drag || !drag.on) return;
+  e.preventDefault();
+  const t = e.touches[0]; if (t) { drag.x = t.clientX; drag.y = t.clientY; dragOver(); }
+}, { passive: false });
+document.addEventListener("touchend", () => { if (drag && drag.on) endDrag(true); });
+document.addEventListener("touchcancel", () => { if (drag && drag.on) endDrag(false); });
 function subtreeIds(id) { const out = new Set([id]); const w = n => n.c.forEach(c => { out.add(c.id); w(c); }); w(index[id].n); return out; }
 function startDrag() {
   flushOutline();
+  clearTimeout(drag.timer);
+  box.querySelectorAll(".pressing").forEach(r => r.classList.remove("pressing"));
   drag.on = true; drag.skip = subtreeIds(drag.id);
+  try { getSelection().removeAllRanges(); } catch {}
   try { drag.el.setPointerCapture(drag.pid); } catch {}
   box.querySelectorAll(".ol-row").forEach(r => drag.skip.has(r.dataset.id) && r.classList.add("dragging"));
   const k = countAll(index[drag.id].n);
