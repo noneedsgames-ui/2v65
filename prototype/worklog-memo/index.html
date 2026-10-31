@@ -73,6 +73,28 @@ nav.bottom button.on{color:var(--text-primary);font-weight:600}
 .memobody{flex:1;min-height:0;width:100%;border:0;resize:none;outline:none;background:var(--surface-1);
   padding:10px 14px 40px;line-height:1.75;font-size:16px}
 
+/* outline */
+.outline{flex:1;min-height:0;overflow:auto;background:var(--surface-1);padding:8px 8px 120px}
+.ol-row{display:flex;align-items:flex-start;padding-left:calc(var(--d) * 22px);border-radius:8px;
+  background-image:repeating-linear-gradient(to right,var(--line) 0 1px,transparent 1px 22px);
+  background-size:calc(var(--d) * 22px) 100%;background-repeat:no-repeat;background-position:11px 0}
+.ol-row.cur .ol-t{background:var(--surface-2)}
+.bul{flex:none;width:22px;height:34px;font-size:13px;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;padding:0}
+.bul.leaf{font-size:9px;color:var(--text-muted)}
+.ol-main{flex:1;min-width:0}
+.ol-t{display:block;width:100%;border:0;outline:none;resize:none;background:none;padding:6px 6px;border-radius:6px;
+  font-size:16px;line-height:1.45;overflow:hidden;field-sizing:content;min-height:34px}
+.foldcnt{font-size:11px;color:var(--text-muted);padding:0 6px 4px}
+.ol-rel{display:flex;flex-wrap:wrap;gap:4px;padding:0 6px 6px}
+.ol-crumb{font-size:12px;color:var(--text-muted);padding:2px 6px}
+.ol-crumb button{color:var(--accent);font-size:12px;padding:2px 0}
+.ol-zoomtitle{font-size:19px;font-weight:700;padding:2px 6px 8px}
+.oltools{display:none;gap:2px;padding:4px 6px calc(4px + var(--safe-b));border-top:1px solid var(--line);background:var(--surface-1)}
+.oltools button{flex:1;padding:10px 0;font-size:16px;border-radius:8px;color:var(--text-primary)}
+.oltools button:active{background:var(--surface-2)}
+body.editing .oltools{display:flex}
+body.editing nav.bottom{display:none}
+
 /* generic */
 .card{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
 .card h3{margin:0 0 8px;font-size:14px;color:var(--text-secondary);font-weight:600}
@@ -152,22 +174,23 @@ textarea.inp{line-height:1.6;resize:vertical}
 <main>
   <!-- メモ -->
   <section class="view" id="v-memo">
-    <div class="tabs" id="tabs"></div>
     <div class="toolbar">
-      <button class="tb" id="btnTree" aria-label="ツリーの表示切り替え">▾ ツリー</button>
-      <button class="tb primary" id="addChild">＋子タブ</button>
-      <button class="tb" id="btnTpl">テンプレ</button>
       <button class="tb" id="btnSearch">検索</button>
+      <button class="tb" id="btnTpl">テンプレ</button>
+      <button class="tb" id="btnFold">全部開く/畳む</button>
       <span class="spacer"></span>
       <span class="saved" id="saved"></span>
-      <button class="tb" id="btnManage" aria-label="タブの管理">⋯</button>
     </div>
-    <div class="memohead">
-      <div class="crumb" id="crumb"></div>
-      <input class="memotitle" id="memoTitle" placeholder="タブ名" maxlength="60">
-      <div class="metas" id="metas"></div>
+    <div class="outline" id="outline"></div>
+    <div class="oltools" id="oltools">
+      <button data-op="out" aria-label="一段戻す">←</button>
+      <button data-op="in" aria-label="字下げして子にする">→</button>
+      <button data-op="up" aria-label="上へ移動">↑</button>
+      <button data-op="down" aria-label="下へ移動">↓</button>
+      <button data-op="fold" aria-label="畳む/開く">▾▸</button>
+      <button data-op="child" aria-label="子を追加">＋子</button>
+      <button data-op="more" aria-label="この行の操作">⋯</button>
     </div>
-    <textarea class="memobody" id="memoBody" placeholder="ここに書く。入力は自動で保存されます。" autofocus></textarea>
   </section>
 
   <!-- 記録 -->
@@ -320,13 +343,13 @@ Store.connect = async function (onMerged) {
 
 /* ============================================================
    データモデル
-   memo-<id> : メモ(階層タブ)/ meta : タグ以外の共通設定・予定・関連
+   outline : メモ(入れ子のアウトライン)/ meta : 設定・予定 / memo-<id> : 旧版のメモ(移行元)
    log-YYYY-MM : その月の作業区間・タイマー記録・妨害アプリ使用時間
    ============================================================ */
 const DEFAULT_TPL = {
-  "素材": "【素材名】\n種類:\n入手場所:\n用途:\n見た目のメモ:\n",
-  "アイテム": "【アイテム名】\n分類:\n効果:\n入手方法:\n必要な素材:\n価格:\n説明文:\n",
-  "設定": "【項目名】\n概要:\n詳細:\n関連する要素:\n未決事項:\n"
+  "素材": "【素材名】\n  種類:\n  入手場所:\n  用途:\n  見た目のメモ:",
+  "アイテム": "【アイテム名】\n  分類:\n  効果:\n  入手方法:\n  必要な素材:\n  価格:\n  説明文:",
+  "設定": "【項目名】\n  概要:\n  詳細:\n  関連する要素:\n  未決事項:"
 };
 let memos = {}, meta = null, logs = {};
 function loadAll() {
@@ -341,9 +364,14 @@ function loadAll() {
   meta.links ||= []; meta.events ||= []; meta.apps ||= []; meta.prefs ||= {};
   const p = meta.prefs;
   p.focus ??= 25; p.brk ??= 5; p.goal ??= 0; p.templates ||= { ...DEFAULT_TPL };
+  if (!p.tplV) { // 旧版のテンプレートを字下げ形式に直す
+    for (const k of Object.keys(p.templates)) { const ls = p.templates[k].split("\n").filter(x => x.trim()); if (ls.length > 1 && !ls.slice(1).some(x => /^[\t 　]/.test(x))) p.templates[k] = [ls[0], ...ls.slice(1).map(x => "  " + x)].join("\n"); }
+    p.tplV = 2;
+  }
+  zoomId = meta.zoom || null; focusId = meta.lastFocus || null;
+  loadOutline(docs);
 }
 const saveMeta = () => Store.put("meta", meta);
-const saveMemo = m => { m.updated = Date.now(); Store.put("memo-" + m.id, m); };
 function logOf(key) { return logs[key] ||= { sessions: [], timers: [], usage: {} }; }
 const saveLog = key => Store.put("log-" + key, logs[key]);
 
@@ -434,212 +462,384 @@ function confirmSheet(title, body, okLabel, onOk) {
 }
 
 /* ============================================================
-   メモ
+   メモ:記入欄そのものが入れ子のアウトライン
+   1行=1項目。字下げで親子をつくり、行頭の ▾/▸ で畳む
    ============================================================ */
-const childrenOf = pid => Object.values(memos).filter(m => (m.parent || null) === (pid || null)).sort((a, b) => a.order - b.order || a.created - b.created);
-function pathOf(id) { const p = []; let m = memos[id]; let guard = 0; while (m && guard++ < 50) { p.unshift(m.id); m = memos[m.parent]; } return p; }
-function newMemo(parent, title, body) {
-  const sib = childrenOf(parent);
-  const m = { id: uid(), parent: parent || null, title: title || "無題", body: body || "", tags: [],
-    order: sib.length ? sib[sib.length - 1].order + 1 : 0, created: Date.now(), updated: Date.now() };
-  memos[m.id] = m; saveMemo(m);
-  return m;
+let outline = null;       // { nodes: [{ id, t, c: [], x?: 畳み, l?: [関連先id] }] }
+let zoomId = null;        // 「この項目だけ表示」中の項目
+let focusId = null;       // いま書いている項目
+let index = {};           // id -> { n, parent, list }
+const N = (t = "") => ({ id: uid(), t, c: [] });
+const FIELD_SIZING = typeof CSS !== "undefined" && CSS.supports && CSS.supports("field-sizing", "content");
+
+function reindex() {
+  index = {};
+  const walk = (list, parent) => list.forEach(n => { n.c ||= []; index[n.id] = { n, parent, list }; walk(n.c, n); });
+  walk(outline.nodes, null);
 }
-function ensureMemo() {
-  if (!Object.keys(memos).length) newMemo(null, "メモ", "");
-  if (!meta.current || !memos[meta.current]) meta.current = childrenOf(null)[0].id;
+function loadOutline(docs) {
+  outline = docs.outline ? JSON.parse(JSON.stringify(docs.outline)) : null;
+  if (!outline) {
+    outline = { nodes: migrateMemos() };
+    reindex();
+    for (const [a, b] of meta.links || []) if (index[a] && index[b]) (index[a].n.l ||= []).push(b);
+    if (!outline.nodes.length) outline.nodes.push(N());
+    Store.put("outline", outline);
+  }
+  outline.nodes ||= [];
+  if (!outline.nodes.length) outline.nodes.push(N());
+  reindex();
+  if (focusId && !index[focusId]) focusId = null;
+  if (zoomId && !index[zoomId]) zoomId = null;
 }
-function openMemo(id, focus) {
-  if (!memos[id]) return;
-  flushMemoEdit();
-  meta.current = id; saveMeta();
-  renderMemo();
-  if (focus) $("#memoBody").focus();
+// 旧版(タブ形式)で書いたメモを、同じ親子関係のまま行へ移す
+function migrateMemos() {
+  const kids = pid => Object.values(memos).filter(m => (m.parent || null) === pid).sort((a, b) => a.order - b.order || a.created - b.created);
+  const conv = m => ({ id: m.id, t: [m.title || "無題", ...(m.tags || []).map(t => "#" + t)].join(" "), c: [
+    ...parseIndented(String(m.body || "")),
+    ...kids(m.id).map(conv)] });
+  return kids(null).map(conv);
 }
-function renderTabs() {
-  const cur = meta.current;
-  meta.folded ||= {};
-  for (const id of pathOf(cur).slice(0, -1)) delete meta.folded[id]; // 開いているタブの祖先は必ず展開
+// 字下げ付きテキスト → 項目の木(タブ、全角空白、半角空白2つで1段)
+function parseIndented(text) {
+  const root = []; const stack = [{ c: root, lv: -1 }];
+  for (const raw of String(text).replace(/\r/g, "").split("\n")) {
+    if (!raw.trim()) continue;
+    const m = raw.match(/^[\t 　]*/)[0];
+    const lv = [...m].reduce((t, ch) => t + (ch === " " ? 0.5 : 1), 0) | 0;
+    const node = N(raw.slice(m.length).replace(/^[・•\-*]\s*/, ""));
+    while (stack.length > 1 && stack[stack.length - 1].lv >= lv) stack.pop();
+    stack[stack.length - 1].c.push(node);
+    stack.push({ c: node.c, lv });
+  }
+  return root;
+}
+let outlineTimer = null;
+function saveOutline() {
+  const s = $("#saved"); if (s) s.textContent = "…";
+  clearTimeout(outlineTimer); outlineTimer = setTimeout(flushOutline, 600);
+}
+function flushOutline() {
+  if (outlineTimer === null) return;
+  clearTimeout(outlineTimer); outlineTimer = null;
+  Store.put("outline", outline);
+  const s = $("#saved"); if (s) s.textContent = "保存済み";
+  if (JSON.stringify(outline).length > 220000) toast("メモが大きくなっています(同期の上限は約250KB)");
+}
+function flushMemoEdit() { flushOutline(); }
+
+const roots = () => (zoomId && index[zoomId] ? index[zoomId].n.c : outline.nodes);
+const countAll = n => n.c.reduce((t, c) => t + 1 + countAll(c), 0);
+function flatVisible() {
+  const out = []; const walk = l => l.forEach(n => { out.push(n.id); if (n.c.length && !n.x) walk(n.c); }); walk(roots()); return out;
+}
+function ancestors(id) { const a = []; let p = index[id]?.parent; while (p) { a.unshift(p); p = index[p.id].parent; } return a; }
+function backlinks() {
+  const b = {};
+  for (const { n } of Object.values(index)) for (const t of n.l || []) if (index[t]) (b[t] ||= new Set()).add(n.id);
+  return b;
+}
+const label = id => (index[id]?.n.t || "(空の行)").slice(0, 40);
+
+let pendingCaret = null;
+function renderOutline() {
+  reindex();
+  if (zoomId && !index[zoomId]) zoomId = null;
+  const back = backlinks();
   const rows = [];
-  const walk = (pid, depth) => {
-    for (const k of childrenOf(pid)) {
-      const kids = childrenOf(k.id).length, folded = !!meta.folded[k.id];
-      rows.push(`<div class="node ${k.id === cur ? "sel" : ""}" style="padding-left:${4 + depth * 20}px">
-        <button class="tw ${kids ? "" : "leaf"}" ${kids ? `data-fold="${k.id}" aria-label="${folded ? "開く" : "閉じる"}"` : "tabindex=-1"}>${kids ? (folded ? "▸" : "▾") : "・"}</button>
-        <button class="nm" data-open="${k.id}">${esc(k.title || "無題")}</button>
-        ${kids && folded ? `<span class="cnt">${countDesc(k.id)}</span>` : ""}
-        ${k.id === cur ? `<button class="addc" data-addunder="${k.id}" aria-label="子タブを追加">＋子</button>` : ""}</div>`);
-      if (kids && !folded) walk(k.id, depth + 1);
-    }
-  };
-  walk(null, 0);
-  const t = $("#tabs");
-  t.classList.toggle("closed", meta.treeOpen === false);
-  $("#btnTree").textContent = (meta.treeOpen === false ? "▸" : "▾") + " ツリー";
-  t.innerHTML = rows.join("") + `<button class="addroot" data-addunder="">＋ いちばん上の階層に追加</button>`;
-  const selEl = $(".node.sel", t); selEl && selEl.scrollIntoView({ block: "nearest" });
-}
-$("#tabs").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b) return;
-  if (b.dataset.fold) { meta.folded[b.dataset.fold] = !meta.folded[b.dataset.fold]; if (!meta.folded[b.dataset.fold]) delete meta.folded[b.dataset.fold]; saveMeta(); renderTabs(); }
-  else if (b.dataset.open) openMemo(b.dataset.open);
-  else if ("addunder" in b.dataset) { const m = newMemo(b.dataset.addunder || null, "新しいタブ"); openMemo(m.id); selectTitle(); }
-});
-$("#btnTree").onclick = () => { meta.treeOpen = meta.treeOpen === false; saveMeta(); renderTabs(); };
-function selectTitle() { const t = $("#memoTitle"); t.focus(); t.select(); }
-function renderMemo() {
-  const m = memos[meta.current];
-  renderTabs();
-  const path = pathOf(m.id);
-  $("#crumb").textContent = path.length > 1 ? path.slice(0, -1).map(id => memos[id].title).join(" › ") + " ›" : "";
-  if (document.activeElement !== $("#memoTitle")) $("#memoTitle").value = m.title;
-  if (document.activeElement !== $("#memoBody")) $("#memoBody").value = m.body;
-  renderMetas();
-  $("#saved").textContent = "";
-}
-function linksOf(id) { return meta.links.filter(l => l[0] === id || l[1] === id).map(l => l[0] === id ? l[1] : l[0]).filter(x => memos[x]); }
-function renderMetas() {
-  const m = memos[meta.current];
-  const tags = (m.tags || []).map(t => `<button class="mini tag" data-tag="${esc(t)}">${esc(t)}</button>`).join("");
-  const links = linksOf(m.id).map(id => `<button class="mini link" data-open="${id}">${esc(memos[id].title)}</button>`).join("");
-  $("#metas").innerHTML = tags + links + `<button class="mini" data-edit-meta>＋タグ・関連</button>`;
-}
-$("#metas").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b) return;
-  if (b.dataset.tag) openSearch("#" + b.dataset.tag);
-  else if (b.dataset.open) openMemo(b.dataset.open);
-  else openTagLink();
-});
-let editTimer = null;
-function flushMemoEdit() {
-  if (!editTimer) return;
-  clearTimeout(editTimer); editTimer = null;
-  const m = memos[meta.current]; if (!m) return;
-  saveMemo(m); $("#saved").textContent = "保存済み";
-}
-function onEdit() {
-  const m = memos[meta.current];
-  m.title = $("#memoTitle").value; m.body = $("#memoBody").value;
-  $("#saved").textContent = "…";
-  clearTimeout(editTimer);
-  editTimer = setTimeout(flushMemoEdit, 600);
-}
-$("#memoBody").addEventListener("input", onEdit);
-$("#memoTitle").addEventListener("input", () => { onEdit(); clearTimeout(renderTabs._t); renderTabs._t = setTimeout(renderTabs, 300); });
-$("#memoTitle").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("#memoBody").focus(); } });
-$("#addChild").onclick = () => { const m = newMemo(meta.current, "新しいタブ"); openMemo(m.id); selectTitle(); };
-
-// タブの管理:並べ替え・階層の移動・削除
-$("#btnManage").onclick = () => {
-  flushMemoEdit();
-  const m = memos[meta.current];
-  const sib = childrenOf(m.parent); const idx = sib.findIndex(x => x.id === m.id);
-  const descendants = countDesc(m.id);
-  openSheet(`<h2>「${esc(m.title)}」の管理</h2>
-    <label class="field"><span>タブ名</span><input class="inp" id="mRename" value="${esc(m.title)}" maxlength="60"></label>
-    <div class="card" style="margin-top:12px"><h3>並べ替え</h3>
-      <div class="btns" style="margin-top:0">
-        <button class="btn" id="mLeft" ${idx <= 0 ? "disabled style=opacity:.4" : ""}>← 前へ</button>
-        <button class="btn" id="mRight" ${idx >= sib.length - 1 ? "disabled style=opacity:.4" : ""}>後へ →</button>
-      </div>
-      <div class="btns">
-        <button class="btn" id="mUp" ${m.parent ? "" : "disabled style=opacity:.4"}>一つ上の階層へ</button>
-        <button class="btn" id="mDown" ${idx > 0 ? "" : "disabled style=opacity:.4"}>前のタブの子へ</button>
-      </div>
-    </div>
-    <button class="btn danger block" id="mDel">このタブを削除${descendants ? `(子タブ ${descendants} 件も削除)` : ""}</button>
-    <div class="btns"><button class="btn primary" data-x>閉じる</button></div>`, s => {
-    $("[data-x]", s).onclick = () => { const v = $("#mRename").value.trim(); if (v && v !== m.title) { m.title = v; saveMemo(m); } closeSheet(); renderMemo(); };
-    const swap = d => { const o = sib[idx + d]; [m.order, o.order] = [o.order, m.order]; if (m.order === o.order) m.order += d; saveMemo(m); saveMemo(o); closeSheet(); renderMemo(); };
-    $("#mLeft").onclick = () => idx > 0 && swap(-1);
-    $("#mRight").onclick = () => idx < sib.length - 1 && swap(1);
-    $("#mUp").onclick = () => { if (!m.parent) return; const p = memos[m.parent]; m.parent = p.parent || null; m.order = p.order + 0.5; saveMemo(m); renormalize(m.parent); closeSheet(); renderMemo(); };
-    $("#mDown").onclick = () => { if (idx <= 0) return; const np = sib[idx - 1]; const k = childrenOf(np.id); m.parent = np.id; m.order = k.length ? k[k.length - 1].order + 1 : 0; saveMemo(m); closeSheet(); renderMemo(); };
-    $("#mDel").onclick = () => confirmSheet("タブを削除しますか", `「${m.title}」${descendants ? `と、その下の子タブ ${descendants} 件` : ""}を削除します。元に戻せません。`, "削除する", () => deleteMemo(m.id));
+  const walk = (list, d) => list.forEach(n => {
+    const has = n.c.length > 0, folded = has && n.x;
+    const rel = [...new Set([...(n.l || []).filter(x => index[x]), ...(back[n.id] || [])])];
+    rows.push(`<div class="ol-row${n.id === focusId ? " cur" : ""}" data-id="${n.id}" style="--d:${d}">` +
+      `<button class="bul${has ? "" : " leaf"}" data-bul="${n.id}" tabindex="-1" aria-label="${has ? (folded ? "開く" : "畳む") : "この項目"}">${has ? (folded ? "▸" : "▾") : "•"}</button>` +
+      `<div class="ol-main"><textarea class="ol-t" rows="1" data-t="${n.id}" spellcheck="false">${esc(n.t)}</textarea>` +
+      (folded ? `<button class="foldcnt" data-bul="${n.id}" tabindex="-1">… ${countAll(n)}項目</button>` : "") +
+      (rel.length ? `<div class="ol-rel">${rel.map(r => `<button class="mini link" data-jump="${r}" tabindex="-1">${esc(label(r))}</button>`).join("")}</div>` : "") +
+      `</div></div>`);
+    if (has && !folded) walk(n.c, d + 1);
   });
-};
-function countDesc(id) { return childrenOf(id).reduce((t, c) => t + 1 + countDesc(c.id), 0); }
-function renormalize(pid) { childrenOf(pid).forEach((c, i) => { if (c.order !== i) { c.order = i; saveMemo(c); } }); }
-function deleteMemo(id) {
-  const m = memos[id]; const parent = m.parent;
-  const sib = childrenOf(parent); const idx = sib.findIndex(x => x.id === id);
-  const kill = x => { childrenOf(x).forEach(c => kill(c.id)); delete memos[x]; Store.remove("memo-" + x); };
-  kill(id);
-  meta.links = meta.links.filter(l => memos[l[0]] && memos[l[1]]);
-  const next = sib[idx + 1] || sib[idx - 1] || (parent && memos[parent]);
-  editTimer = null;
-  if (!Object.keys(memos).length) newMemo(null, "メモ", "");
-  meta.current = next ? next.id : childrenOf(null)[0].id;
-  saveMeta(); renderMemo(); toast("削除しました");
+  walk(roots(), 0);
+  let crumb = "";
+  if (zoomId) {
+    const z = index[zoomId].n;
+    crumb = `<div class="ol-crumb"><button data-zoom="">すべて</button>${ancestors(zoomId).map(a => ` › <button data-zoom="${a.id}">${esc(label(a.id))}</button>`).join("")} ›</div>
+      <div class="ol-zoomtitle">${esc(z.t || "(空の行)")}</div>`;
+    if (!z.c.length) rows.push(`<button class="addroot" data-firstchild>＋ この下に書きはじめる</button>`);
+  }
+  const box = $("#outline");
+  box.innerHTML = crumb + rows.join("");
+  const first = $(".ol-t", box);
+  if (first && outline.nodes.length === 1 && !outline.nodes[0].t && !zoomId) first.placeholder = "ここに書く。改行で次の行、→ で字下げして子にする";
+  if (!FIELD_SIZING) box.querySelectorAll(".ol-t").forEach(autosize);
+  if (focusId && pendingCaret != null) {
+    const ta = box.querySelector(`[data-t="${focusId}"]`);
+    if (ta) { ta.focus({ preventScroll: false }); const c = Math.min(pendingCaret, ta.value.length); ta.setSelectionRange(c, c); ta.scrollIntoView({ block: "nearest" }); }
+    pendingCaret = null;
+  }
 }
+function autosize(ta) { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; }
+function focusAt(id, caret) { focusId = id; pendingCaret = caret; }
+function commit() { saveOutline(); renderOutline(); }
 
-// タグと関連付け
-function openTagLink() {
-  flushMemoEdit();
-  const m = memos[meta.current];
-  const allTags = [...new Set(Object.values(memos).flatMap(x => x.tags || []))].sort();
-  const linked = new Set(linksOf(m.id));
-  const others = Object.values(memos).filter(x => x.id !== m.id);
-  const label = x => pathOf(x.id).map(i => memos[i].title).join(" › ");
-  openSheet(`<h2>タグと関連メモ</h2>
-    <label class="field"><span>タグ(読点・空白・カンマで区切る)</span><input class="inp" id="tagInp" value="${esc((m.tags || []).join("、"))}" placeholder="例:武器、序盤"></label>
-    ${allTags.length ? `<div class="metas">${allTags.map(t => `<button class="mini tag" data-addtag="${esc(t)}">${esc(t)}</button>`).join("")}</div>` : ""}
-    <div class="field"><span class="small muted">関連付けるメモ(双方から辿れます)</span></div>
-    <div style="max-height:40dvh;overflow:auto">${others.length ? others.sort((a, b) => label(a).localeCompare(label(b), "ja")).map(x => `
-      <label class="row"><input type="checkbox" data-link="${x.id}" ${linked.has(x.id) ? "checked" : ""}><span class="grow">${esc(label(x))}</span></label>`).join("") : `<div class="empty">ほかのメモがまだありません</div>`}</div>
+// ---- 操作 ----
+function doEnter(id, s, e) {
+  const { n, parent, list } = index[id];
+  if (!n.t && parent && parent.id !== zoomId) return doOutdent(id);        // 空行で改行 → 一段戻す
+  if (s === 0 && e === 0 && n.t) { list.splice(list.indexOf(n), 0, N()); focusAt(id, 0); return commit(); } // 行頭で改行 → 上に空行
+  const after = n.t.slice(e); n.t = n.t.slice(0, s);
+  const m = N(after);
+  if (n.c.length && !n.x) n.c.unshift(m); else list.splice(list.indexOf(n) + 1, 0, m);
+  focusAt(m.id, 0); commit();
+}
+function doIndent(id) {
+  const { n, list } = index[id]; const i = list.indexOf(n);
+  if (i <= 0) { toast("上に同じ階層の行がないので字下げできません"); return; }
+  const p = list[i - 1]; list.splice(i, 1); p.c.push(n); p.x = false;
+  focusAt(id, caretOf(id)); commit();
+}
+function doOutdent(id) {
+  const { n, parent, list } = index[id];
+  if (!parent || parent.id === zoomId) return;
+  const g = index[parent.id].list;
+  list.splice(list.indexOf(n), 1); g.splice(g.indexOf(parent) + 1, 0, n);
+  focusAt(id, caretOf(id)); commit();
+}
+function doMove(id, d) {
+  const { n, list } = index[id]; const i = list.indexOf(n), j = i + d;
+  if (j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  focusAt(id, caretOf(id)); commit();
+}
+function doToggle(id) {
+  const n = index[id]?.n; if (!n || !n.c.length) return;
+  n.x = !n.x; if (!n.x) delete n.x;
+  if (n.x && focusId && ancestors(focusId).some(a => a.id === id)) focusId = id;
+  saveOutline(); renderOutline();
+}
+function doAddChild(id) {
+  const n = index[id].n; const m = N(); n.c.push(m); delete n.x; focusAt(m.id, 0); commit();
+}
+function doBackspace(id) {
+  const { n, list } = index[id];
+  if (n.c.length) return false;
+  const vis = flatVisible(); const i = vis.indexOf(id);
+  if (i <= 0) { if (!n.t && list.length > 1) { list.splice(list.indexOf(n), 1); const nx = flatVisible()[0]; nx && focusAt(nx, 0); commit(); return true; } return false; }
+  const p = index[vis[i - 1]].n;
+  const caret = p.t.length; p.t += n.t;
+  for (const t of n.l || []) { (p.l ||= []).includes(t) || p.l.push(t); }
+  list.splice(list.indexOf(n), 1);
+  focusAt(p.id, caret); commit(); return true;
+}
+function doDelete(id) {
+  const { n, list } = index[id];
+  const vis = flatVisible(); const i = vis.indexOf(id);
+  list.splice(list.indexOf(n), 1);
+  if (!outline.nodes.length) outline.nodes.push(N());
+  reindex();
+  const nx = vis.slice(0, i).reverse().find(x => index[x]) || flatVisible()[0];
+  if (nx) focusAt(nx, index[nx].n.t.length);
+  commit(); toast("削除しました");
+}
+function caretOf(id) { const ta = document.querySelector(`[data-t="${id}"]`); return ta ? ta.selectionStart : 0; }
+// 貼り付けや取りこぼした改行:複数行を項目に分ける
+function splitPasted(id, ta) {
+  const { n, list } = index[id];
+  const v = ta.value; const sel = ta.selectionStart;
+  const lines = v.replace(/\r/g, "").split("\n");
+  n.t = lines[0];
+  const caretLine = v.slice(0, sel).split("\n").length - 1;
+  const lastLineText = v.slice(0, sel).split("\n").pop();
+  let nodes;
+  if (lines.length === 2) nodes = [N(lines[1])]; // 改行一つ(Enter の取りこぼし)なら、後半をそのまま次の項目に
+  else {
+    const all = parseIndented(v);                // 字下げごと読み、1行目の子はこの行の子に
+    nodes = all.slice(1);
+    if (all[0]) { n.t = all[0].t; n.c.push(...all[0].c); if (all[0].c.length) delete n.x; }
+    if (!nodes.length && !all[0]?.c.length) nodes = [N()];
+  }
+  const at = list.indexOf(n) + 1;
+  if (lines.length === 2 && n.c.length && !n.x) n.c.unshift(nodes[0]); else list.splice(at, 0, ...nodes);
+  reindex();
+  const target = caretLine === 0 ? n.id : (lines.length === 2 ? nodes[0].id : (nodes.length ? lastOf(nodes) : lastOf([n])));
+  focusAt(target, caretLine === 0 ? sel : (lines.length === 2 ? lastLineText.length : index[target].n.t.length));
+  commit();
+}
+function lastOf(nodes) { let n = nodes[nodes.length - 1]; while (n.c.length) n = n.c[n.c.length - 1]; return n.id; }
+function reveal(id) {
+  if (!index[id]) return;
+  if (zoomId && !ancestors(id).some(a => a.id === zoomId)) zoomId = null;
+  for (const a of ancestors(id)) delete a.x;
+  focusAt(id, index[id].n.t.length); saveOutline(); show("memo"); renderOutline();
+}
+function zoomTo(id) { flushOutline(); zoomId = id || null; meta.zoom = zoomId; saveMeta(); focusId = null; renderOutline(); $("#outline").scrollTop = 0; }
+
+// ---- 入力イベント ----
+const box = $("#outline");
+box.addEventListener("input", e => {
+  const ta = e.target.closest(".ol-t"); if (!ta) return;
+  const id = ta.dataset.t; if (!index[id]) return;
+  if (ta.value.includes("\n") && !e.isComposing) { splitPasted(id, ta); return; }
+  index[id].n.t = ta.value; saveOutline();
+  if (!FIELD_SIZING) autosize(ta);
+});
+box.addEventListener("compositionend", e => {
+  const ta = e.target.closest(".ol-t"); if (ta && ta.value.includes("\n")) splitPasted(ta.dataset.t, ta);
+});
+box.addEventListener("beforeinput", e => {
+  const ta = e.target.closest(".ol-t"); if (!ta) return;
+  if ((e.inputType === "insertLineBreak" || e.inputType === "insertParagraph") && !e.isComposing) {
+    e.preventDefault(); doEnter(ta.dataset.t, ta.selectionStart, ta.selectionEnd);
+  } else if (e.inputType === "deleteContentBackward" && ta.selectionStart === 0 && ta.selectionEnd === 0) {
+    if (doBackspace(ta.dataset.t)) e.preventDefault();
+  }
+});
+box.addEventListener("keydown", e => {
+  const ta = e.target.closest(".ol-t"); if (!ta) return;
+  const id = ta.dataset.t;
+  if (e.isComposing || e.keyCode === 229) return;
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); doEnter(id, ta.selectionStart, ta.selectionEnd); }
+  else if (e.key === "Tab") { e.preventDefault(); e.shiftKey ? doOutdent(id) : doIndent(id); }
+  else if (e.key === "Backspace" && ta.selectionStart === 0 && ta.selectionEnd === 0) { if (doBackspace(id)) e.preventDefault(); }
+  else if (e.altKey && e.shiftKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) { e.preventDefault(); doMove(id, e.key === "ArrowUp" ? -1 : 1); }
+  else if ((e.key === "ArrowUp" && ta.selectionStart === 0) || (e.key === "ArrowDown" && ta.selectionEnd === ta.value.length)) {
+    const vis = flatVisible(); const j = vis.indexOf(id) + (e.key === "ArrowUp" ? -1 : 1);
+    if (vis[j]) { e.preventDefault(); focusId = vis[j]; const t = box.querySelector(`[data-t="${vis[j]}"]`); t.focus(); const c = e.key === "ArrowUp" ? t.value.length : 0; t.setSelectionRange(c, c); }
+  }
+});
+box.addEventListener("focusin", e => {
+  const ta = e.target.closest(".ol-t"); if (!ta) return;
+  focusId = ta.dataset.t; meta.lastFocus = focusId;
+  box.querySelectorAll(".ol-row.cur").forEach(r => r.classList.remove("cur"));
+  ta.closest(".ol-row").classList.add("cur");
+  document.body.classList.add("editing");
+});
+box.addEventListener("focusout", () => setTimeout(() => {
+  if (!document.activeElement || !document.activeElement.closest || !document.activeElement.closest(".ol-t")) document.body.classList.remove("editing");
+}, 120));
+box.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.bul) { const n = index[b.dataset.bul].n; if (n.c.length) doToggle(n.id); else { focusAt(n.id, n.t.length); renderOutline(); } }
+  else if (b.dataset.jump) reveal(b.dataset.jump);
+  else if ("zoom" in b.dataset) zoomTo(b.dataset.zoom);
+  else if ("firstchild" in b.dataset) doAddChild(zoomId);
+});
+
+// ---- 書いている間だけ出る操作バー ----
+const tools = $("#oltools");
+const keepFocus = e => { if (e.target.closest("button")) e.preventDefault(); };
+tools.addEventListener("pointerdown", keepFocus);
+tools.addEventListener("mousedown", keepFocus);
+tools.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b || !focusId || !index[focusId]) return;
+  const id = focusId;
+  ({ out: () => doOutdent(id), in: () => doIndent(id), up: () => doMove(id, -1), down: () => doMove(id, 1),
+     fold: () => doToggle(id), child: () => doAddChild(id), more: () => lineMenu(id) })[b.dataset.op]?.();
+});
+function lineMenu(id) {
+  flushOutline();
+  const n = index[id].n; const k = countAll(n);
+  openSheet(`<h2>「${esc(label(id))}」</h2>
+    <button class="row" style="width:100%;text-align:left" data-a="zoom"><span class="grow"><b>この項目だけ表示</b><div class="muted small">この行の下の項目だけにしぼって書く</div></span></button>
+    <button class="row" style="width:100%;text-align:left" data-a="link"><span class="grow"><b>ほかの項目と関連付け</b><div class="muted small">双方の行の下にリンクが出る</div></span></button>
+    <button class="row" style="width:100%;text-align:left" data-a="tpl"><span class="grow"><b>テンプレートを子として入れる</b></span></button>
+    <button class="row" style="width:100%;text-align:left;color:var(--danger)" data-a="del"><span class="grow"><b>この行を削除</b>${k ? `<div class="small">下にある ${k} 項目も消えます</div>` : ""}</span></button>`, s => {
+    s.addEventListener("click", e => {
+      const a = e.target.closest("[data-a]")?.dataset.a; if (!a) return;
+      if (a === "zoom") { closeSheet(); zoomTo(id); }
+      else if (a === "link") openLinker(id);
+      else if (a === "tpl") openTemplates(id, true);
+      else if (a === "del") { if (k) confirmSheet("行を削除しますか", `「${label(id)}」と、その下の ${k} 項目を削除します。元に戻せません。`, "削除する", () => doDelete(id)); else { closeSheet(); doDelete(id); } }
+    });
+  });
+}
+function allPaths() {
+  const out = []; const walk = (l, p) => l.forEach(n => { out.push({ id: n.id, t: n.t, path: p }); walk(n.c, p ? p + " › " + (n.t || "…").slice(0, 16) : (n.t || "…").slice(0, 16)); });
+  walk(outline.nodes, ""); return out;
+}
+function openLinker(id) {
+  const n = index[id].n; const back = backlinks();
+  const linked = new Set([...(n.l || []), ...(back[id] || [])]);
+  const items = allPaths().filter(x => x.id !== id && x.t.trim());
+  openSheet(`<h2>関連付け</h2><p class="muted small" style="margin-top:-4px">「${esc(label(id))}」と結ぶ項目を選ぶ</p>
+    <input class="inp" id="lq" placeholder="絞り込み">
+    <div id="lres" style="max-height:48dvh;overflow:auto;margin-top:6px"></div>
     <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
-    s.addEventListener("click", e => { const b = e.target.closest("[data-addtag]"); if (!b) return; const i = $("#tagInp"); const cur = splitTags(i.value); if (!cur.includes(b.dataset.addtag)) i.value = [...cur, b.dataset.addtag].join("、"); });
+    const draw = () => {
+      const q = $("#lq").value.trim().toLowerCase();
+      $("#lres").innerHTML = items.filter(x => !q || x.t.toLowerCase().includes(q)).slice(0, 200).map(x =>
+        `<label class="row"><input type="checkbox" data-link="${x.id}" ${linked.has(x.id) ? "checked" : ""}><span class="grow">${esc(x.t)}${x.path ? `<div class="muted small">${esc(x.path)}</div>` : ""}</span></label>`).join("") || `<div class="empty">項目がありません</div>`;
+    };
+    $("#lq").addEventListener("input", draw); draw();
+    $("#lres").addEventListener("change", e => { const c = e.target.closest("[data-link]"); if (c) c.checked ? linked.add(c.dataset.link) : linked.delete(c.dataset.link); });
     $("[data-ok]", s).onclick = () => {
-      m.tags = splitTags($("#tagInp").value); saveMemo(m);
-      const want = new Set([...s.querySelectorAll("[data-link]")].filter(c => c.checked).map(c => c.dataset.link));
-      meta.links = meta.links.filter(l => !(l[0] === m.id || l[1] === m.id));
-      for (const o of want) meta.links.push([m.id, o]);
-      saveMeta(); closeSheet(); renderMetas();
+      n.l = [...linked].filter(x => index[x]);
+      for (const { n: o } of Object.values(index)) if (o.l && o.id !== id && !linked.has(o.id)) o.l = o.l.filter(x => x !== id);
+      if (!n.l.length) delete n.l;
+      closeSheet(); commit();
     };
   });
 }
-const splitTags = s => [...new Set(s.split(/[、,,\s#]+/).map(x => x.trim()).filter(Boolean))];
 
-// 検索(全タブ横断、#で始めるとタグ検索)
+// ---- 検索(全項目を横断、#で始めるとタグ) ----
 $("#btnSearch").onclick = () => openSearch("");
 function openSearch(q) {
-  flushMemoEdit();
-  openSheet(`<h2>検索</h2><input class="inp" id="q" placeholder="語句、または #タグ" value="${esc(q)}" enterkeyhint="search"><div id="qres" style="margin-top:8px"></div>`, s => {
+  flushOutline();
+  const tags = [...new Set(Object.values(index).flatMap(({ n }) => (n.t.match(/#[^\s#、。,,.]+/g) || [])))].sort();
+  openSheet(`<h2>検索</h2><input class="inp" id="q" placeholder="語句、または #タグ" value="${esc(q)}" enterkeyhint="search">
+    ${tags.length ? `<div class="metas" style="margin-top:8px">${tags.slice(0, 30).map(t => `<button class="mini" data-q="${esc(t)}">${esc(t)}</button>`).join("")}</div>` : ""}
+    <div id="qres" style="margin-top:6px"></div>`, s => {
+    const items = allPaths();
     const run = () => {
-      const v = $("#q").value.trim();
-      if (!v) { $("#qres").innerHTML = `<div class="empty">全タブの名前・本文・タグから探します</div>`; return; }
-      const isTag = v.startsWith("#"); const term = (isTag ? v.slice(1) : v).toLowerCase();
-      const hits = Object.values(memos).filter(m => isTag ? (m.tags || []).some(t => t.toLowerCase() === term)
-        : (m.title + "\n" + m.body + "\n" + (m.tags || []).join(" ")).toLowerCase().includes(term));
-      $("#qres").innerHTML = hits.length ? hits.sort((a, b) => b.updated - a.updated).map(m => {
-        const i = m.body.toLowerCase().indexOf(term);
-        const snip = i >= 0 && !isTag ? (i > 18 ? "…" : "") + m.body.slice(Math.max(0, i - 18), i) + "\u0000" + m.body.slice(i, i + term.length) + "\u0001" + m.body.slice(i + term.length, i + term.length + 40) : m.body.slice(0, 60);
-        const sn = esc(snip.replace(/\n/g, " ")).replace("\u0000", '<span class="hit">').replace("\u0001", "</span>");
-        return `<button class="row" style="width:100%;text-align:left" data-open="${m.id}"><span class="grow"><b>${esc(m.title)}</b>
-          <div class="muted small">${esc(pathOf(m.id).slice(0, -1).map(x => memos[x].title).join(" › "))}</div>
-          <div class="small" style="color:var(--text-secondary);margin-top:2px">${sn || "(本文なし)"}</div></span></button>`;
+      const v = $("#q").value.trim().toLowerCase();
+      if (!v) { $("#qres").innerHTML = `<div class="empty">すべての行から探します。行の中に「#武器」のように書くとタグになります</div>`; return; }
+      const hits = items.filter(x => v.startsWith("#") ? (x.t.toLowerCase().match(/#[^\s#、。,,.]+/g) || []).includes(v) : x.t.toLowerCase().includes(v)).slice(0, 200);
+      $("#qres").innerHTML = hits.length ? hits.map(x => {
+        const i = x.t.toLowerCase().indexOf(v);
+        const hl = i >= 0 ? esc(x.t.slice(0, i)) + `<span class="hit">${esc(x.t.slice(i, i + v.length))}</span>` + esc(x.t.slice(i + v.length)) : esc(x.t);
+        return `<button class="row" style="width:100%;text-align:left" data-open="${x.id}"><span class="grow">${hl}${x.path ? `<div class="muted small">${esc(x.path)}</div>` : ""}</span></button>`;
       }).join("") : `<div class="empty">見つかりませんでした</div>`;
     };
     $("#q").addEventListener("input", run); run(); $("#q").focus();
-    $("#qres").addEventListener("click", e => { const b = e.target.closest("[data-open]"); if (b) { closeSheet(); openMemo(b.dataset.open); } });
+    s.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.q) { $("#q").value = b.dataset.q; run(); }
+      else if (b.dataset.open) { closeSheet(); reveal(b.dataset.open); }
+    });
   });
 }
 
-// テンプレートから作成
-$("#btnTpl").onclick = () => {
-  flushMemoEdit();
+// ---- テンプレート ----
+$("#btnTpl").onclick = () => openTemplates(focusId && index[focusId] ? focusId : null, false);
+function openTemplates(id, asChild) {
+  flushOutline();
   const T = meta.prefs.templates;
-  openSheet(`<h2>テンプレートから作成</h2>
-    <label class="row"><input type="checkbox" id="asChild" checked><span class="grow">いまのタブ「${esc(memos[meta.current].title)}」の子として作る</span></label>
-    ${Object.keys(T).map(k => `<button class="row" style="width:100%;text-align:left" data-tpl="${esc(k)}"><span class="grow"><b>${esc(k)}</b><div class="muted small">${esc(T[k].split("\n").slice(0, 3).join(" / "))}</div></span><span>＋</span></button>`).join("")}
-    <p class="muted small">テンプレートの中身は「設定」で書き換えられます。</p>`, s => {
+  openSheet(`<h2>テンプレートを入れる</h2>
+    ${id ? `<label class="row"><input type="checkbox" id="asChild" ${asChild ? "checked" : ""}><span class="grow">「${esc(label(id))}」の子として入れる</span></label>` : ""}
+    ${Object.keys(T).map(k => `<button class="row" style="width:100%;text-align:left" data-tpl="${esc(k)}"><span class="grow"><b>${esc(k)}</b><div class="muted small">${esc(T[k].split("\n").filter(Boolean).slice(0, 3).map(s => s.trim()).join(" / "))}</div></span><span>＋</span></button>`).join("")}
+    <p class="muted small">中身は「設定」で書き換えられます(行頭の空白2つで1段下げ)。</p>`, s => {
     s.addEventListener("click", e => {
       const b = e.target.closest("[data-tpl]"); if (!b) return;
-      const k = b.dataset.tpl; const parent = $("#asChild").checked ? meta.current : memos[meta.current].parent;
-      const m = newMemo(parent, k, T[k]); closeSheet(); openMemo(m.id); selectTitle();
+      const nodes = parseIndented(T[b.dataset.tpl]); if (!nodes.length) return;
+      const child = id && $("#asChild")?.checked;
+      if (child) { const p = index[id].n; p.c.push(...nodes); delete p.x; }
+      else if (id) { const { n, list } = index[id]; list.splice(list.indexOf(n) + 1, 0, ...nodes); }
+      else roots().push(...nodes);
+      closeSheet(); reindex(); focusAt(nodes[0].id, nodes[0].t.length); commit();
     });
   });
+}
+
+// ---- 全部開く/畳む ----
+$("#btnFold").onclick = () => {
+  const all = Object.values(index).map(x => x.n).filter(n => n.c.length);
+  const anyFolded = all.some(n => n.x);
+  if (anyFolded) all.forEach(n => delete n.x);
+  else roots().forEach(n => n.c.length && (n.x = true));
+  if (!anyFolded) focusId = null;
+  saveOutline(); renderOutline();
+  toast(anyFolded ? "すべて開きました" : "いちばん上の階層まで畳みました");
 };
+function renderMemo() { renderOutline(); }
 
 /* ============================================================
    記録(作業時間 × 妨害アプリ)
@@ -959,8 +1159,8 @@ function renderPrefs() {
         <label class="field" style="flex:1"><span>1日の目標(分)</span><input class="inp" type="number" inputmode="numeric" min="0" max="1440" id="pG" value="${P.goal || ""}" placeholder="なし"></label>
       </div>
     </div>
-    <div class="card"><h3>テンプレート</h3>
-      ${Object.keys(P.templates).map(k => `<label class="field"><span>${esc(k)}</span><textarea class="inp" rows="5" data-tplk="${esc(k)}">${esc(P.templates[k])}</textarea></label>`).join("")}
+    <div class="card"><h3>テンプレート</h3><p class="muted small" style="margin:0">1行目が親、行頭に空白を2つ入れた行がその子になります。</p>
+      ${Object.keys(P.templates).map(k => `<label class="field"><span>${esc(k)}</span><textarea class="inp" rows="6" data-tplk="${esc(k)}">${esc(P.templates[k])}</textarea></label>`).join("")}
       <button class="mini" id="tplReset">初期の内容に戻す</button>
     </div>
     <div class="card"><h3>保存</h3>
@@ -1004,7 +1204,7 @@ function guide() {
     </ul>
     <p class="small" style="line-height:1.8">ネイティブ版で必要になる「使用状況へのアクセス」の許可手順は、「設定」に載せてあります。</p>
     <div class="btns"><button class="btn primary" data-ok>書きはじめる</button></div>`, s => {
-    $("[data-ok]", s).onclick = () => { meta.guideSeen = true; saveMeta(); closeSheet(); show("memo"); $("#memoBody").focus(); };
+    $("[data-ok]", s).onclick = () => { meta.guideSeen = true; saveMeta(); closeSheet(); show("memo"); focusStart(); };
   });
 }
 
@@ -1021,23 +1221,26 @@ document.addEventListener("visibilitychange", () => {
 });
 addEventListener("pagehide", () => { flushMemoEdit(); Work.stop(); Store.flushAll(); });
 
+function focusStart() { // 起動直後にすぐ書けるよう、前回の行(なければ最後の行)へ
+  const vis = flatVisible(); const id = focusId && vis.includes(focusId) ? focusId : vis[vis.length - 1];
+  if (id) { focusAt(id, index[id].n.t.length); renderOutline(); }
+}
 function boot() {
-  loadAll(); Timer.load(); Work.recover(); ensureMemo();
+  loadAll(); Timer.load(); Work.recover();
   Work.start();
   renderMemo();
   show(location.hash.slice(1) || "memo", false);
   refreshLive();
-  if (!meta.guideSeen) guide(); else if (view === "memo") $("#memoBody").focus();
+  if (!meta.guideSeen) guide(); else if (view === "memo") focusStart();
   setInterval(() => { Work.beat(); refreshLive(); }, 10000);
   setInterval(() => { Timer.tick(); updateClock(); }, 1000);
   setInterval(checkEventNotices, 15000);
   setTimeout(checkEventNotices, 1500);
   Store.connect(() => {
     // 他端末の内容が新しかったときは読み直す(編集中の本文は保つ)
-    const cur = meta.current;
-    loadAll(); ensureMemo();
-    if (cur && memos[cur]) meta.current = cur;
-    renderMemo(); if (view !== "memo") show(view, false); refreshLive();
+    const f = focusId, z = zoomId;
+    loadAll(); if (f && index[f]) focusId = f; zoomId = z && index[z] ? z : null;
+    if (!document.activeElement?.closest?.(".ol-t")) renderMemo(); if (view !== "memo") show(view, false); refreshLive();
   });
 }
 boot();
