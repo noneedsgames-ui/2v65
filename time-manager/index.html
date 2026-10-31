@@ -64,6 +64,7 @@
         <div class="tile"><span class="tile-label">今日の集中</span><span class="tile-value" id="statFocus">0分</span></div>
         <div class="tile"><span class="tile-label">集中回数</span><span class="tile-value" id="statCount">0</span></div>
         <div class="tile"><span class="tile-label">今日の完了</span><span class="tile-value" id="statDone">0</span></div>
+        <div class="tile"><span class="tile-label">今日のメモ</span><span class="tile-value" id="statMemo">0分</span></div>
       </div>
       <h3>直近7日の集中時間(分)</h3>
       <div class="chart-wrap">
@@ -78,6 +79,25 @@
       <ul id="sessionList" class="session-list"></ul>
     </section>
 
+    <!-- メモ帳 -->
+    <section class="card memo-card" id="memoCard" aria-labelledby="memo-h">
+      <div class="memo-head">
+        <h2 id="memo-h">メモ帳</h2>
+        <span class="memo-status" id="memoStatus" aria-live="polite"></span>
+        <span class="memo-time" id="memoTime"></span>
+      </div>
+      <div class="memo-tabs" id="memoTabs" role="tablist" aria-label="メモのタブ"></div>
+      <ul class="memo-list" id="memoList"></ul>
+      <div class="memo-foot">
+        <p class="hint">Enter で次の行 ・ Tab / Shift+Tab で字下げ ・ Alt+↑↓ で行の入れ替え ・ タブはダブルクリックで改名</p>
+        <div class="memo-ops">
+          <button id="memoCopy">テキストでコピー</button>
+          <button id="memoRename">名前を変える</button>
+          <button id="memoDelete" class="danger">このタブを削除</button>
+        </div>
+      </div>
+    </section>
+
     <!-- 設定 -->
     <section class="card settings-card" aria-labelledby="settings-h">
       <h2 id="settings-h">設定</h2>
@@ -89,6 +109,7 @@
         <label class="check"><input type="checkbox" name="autoStart"> 次の区切りを自動で始める</label>
         <label class="check"><input type="checkbox" name="sound"> 終了時に音を鳴らす</label>
         <label class="check"><input type="checkbox" name="notify"> デスクトップ通知</label>
+        <label class="check"><input type="checkbox" name="trackMemo"> メモ帳を使っている時間を記録する</label>
       </form>
       <div class="data-ops">
         <button id="btnExport">書き出し(JSON)</button>

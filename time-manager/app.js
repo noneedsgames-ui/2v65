@@ -12,7 +12,10 @@
   const DEFAULT_STATE = {
     tasks: [],      // {id, title, estimate, done, createdAt, doneAt}
     sessions: [],   // {id, taskId, title, start, end}  ※集中した区切りのみ
-    settings: { focus: 25, short: 5, long: 15, longEvery: 4, autoStart: false, sound: true, notify: false },
+    memos: [],        // {id, title, items:[{id, text, indent}], createdAt}
+    activeMemoId: null,
+    memoSessions: [], // {id, memoId, title, start, end}  ※メモ帳を使っていた時間
+    settings: { focus: 25, short: 5, long: 15, longEvery: 4, autoStart: false, sound: true, notify: false, trackMemo: true },
     timer: { mode: 'focus', running: false, endAt: 0, remaining: 25 * MIN, duration: 25 * MIN, taskId: null, startedAt: 0, cycle: 0 },
   };
 
@@ -24,6 +27,9 @@
       return {
         tasks: Array.isArray(raw.tasks) ? raw.tasks : [],
         sessions: Array.isArray(raw.sessions) ? raw.sessions : [],
+        memos: Array.isArray(raw.memos) ? raw.memos : [],
+        activeMemoId: raw.activeMemoId ?? null,
+        memoSessions: Array.isArray(raw.memoSessions) ? raw.memoSessions : [],
         settings: { ...DEFAULT_STATE.settings, ...raw.settings },
         timer: { ...DEFAULT_STATE.timer, ...raw.timer },
       };
@@ -233,18 +239,25 @@
     $('statFocus').textContent = fmtMin(todays.reduce((a, s) => a + (s.end - s.start), 0));
     $('statCount').textContent = todays.length;
     $('statDone').textContent = state.tasks.filter((t) => t.done && t.doneAt >= today).length;
+    renderMemoStat();
 
-    // 今日の履歴
-    const list = todays.slice().reverse().map((s) => {
+    // 今日の履歴(集中とメモ帳の使用をまとめて新しい順に。記録中のメモは閉じてから載せる)
+    const memoToday = state.memoSessions.filter((s) => s.end >= today && s !== memoTrack.session);
+    const all = [
+      ...todays.map((s) => ({ s, kind: 'focus', label: s.title })),
+      ...memoToday.map((s) => ({ s, kind: 'memo', label: `メモ「${memoTitle(s)}」` })),
+    ].sort((a, b) => b.s.end - a.s.end);
+    const list = all.map(({ s, kind, label }) => {
       const del = el('button', { className: 'icon-btn', textContent: '✕', title: 'この記録を消す' });
       del.addEventListener('click', () => {
         if (!confirm('この記録を消しますか?')) return;
-        state.sessions = state.sessions.filter((x) => x.id !== s.id);
+        if (kind === 'focus') state.sessions = state.sessions.filter((x) => x.id !== s.id);
+        else state.memoSessions = state.memoSessions.filter((x) => x.id !== s.id);
         save(); renderAll();
       });
-      return el('li', {},
+      return el('li', { className: kind },
         el('span', { className: 'when', textContent: `${hhmm(s.start)}–${hhmm(s.end)}` }),
-        el('span', { textContent: s.title }),
+        el('span', { textContent: label }),
         el('span', { className: 'dur', textContent: fmtMin(s.end - s.start) }),
         del);
     });
@@ -258,11 +271,12 @@
     const days = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
-      days.push({ key: dayKey(d), date: d, min: 0 });
+      days.push({ key: dayKey(d), date: d, min: 0, memo: 0 });
     }
     const byKey = Object.fromEntries(days.map((d) => [d.key, d]));
     state.sessions.forEach((s) => { const d = byKey[dayKey(s.end)]; if (d) d.min += (s.end - s.start) / MIN; });
-    days.forEach((d) => { d.min = Math.round(d.min); });
+    state.memoSessions.forEach((s) => { const d = byKey[dayKey(s.end)]; if (d) d.memo += (s.end - s.start) / MIN; });
+    days.forEach((d) => { d.min = Math.round(d.min); d.memo = Math.round(d.memo); });
     return days;
   }
 
@@ -331,8 +345,10 @@
 
     const rows = data.map((d) => el('tr', {},
       el('td', { textContent: d.date.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' }) }),
-      el('td', { textContent: `${d.min}分` })));
-    $('weekTable').replaceChildren(el('tr', {}, el('th', { textContent: '日付' }), el('th', { textContent: '集中時間' })), ...rows);
+      el('td', { textContent: `${d.min}分` }),
+      el('td', { textContent: `${d.memo}分` })));
+    $('weekTable').replaceChildren(el('tr', {},
+      el('th', { textContent: '日付' }), el('th', { textContent: '集中時間' }), el('th', { textContent: 'メモ帳' })), ...rows);
   }
 
   function renderSettings() {
@@ -346,7 +362,296 @@
 
   function renderAll() {
     $('today').textContent = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
-    renderTimer(); renderTasks(); renderStats();
+    renderTimer(); renderTasks(); renderStats(); renderMemo();
+  }
+
+  // ---------- メモ帳(箇条書き・タブ) ----------
+  const MAX_INDENT = 5;
+  const MEMO_IDLE = 3 * MIN;      // 最後の操作からこれだけ経つと記録を止める
+  const MEMO_MERGE = 60 * 1000;   // 直前の記録とこの間隔以内なら一続きとみなす
+  const MEMO_MIN_KEEP = 5 * 1000; // これより短い記録は残さない
+
+  const newItem = (text = '', indent = 0) => ({ id: uid(), text, indent });
+  function ensureMemo() {
+    if (!state.memos.length) {
+      state.memos.push({ id: uid(), title: 'メモ1', items: [newItem()], createdAt: Date.now() });
+    }
+    if (!state.memos.some((m) => m.id === state.activeMemoId)) state.activeMemoId = state.memos[0].id;
+    const m = activeMemo();
+    if (!m.items.length) m.items.push(newItem());
+  }
+  const activeMemo = () => state.memos.find((m) => m.id === state.activeMemoId);
+  const memoTitle = (s) => state.memos.find((m) => m.id === s.memoId)?.title ?? s.title;
+  const memoMs = (memoId, since = 0) => state.memoSessions
+    .filter((s) => s.memoId === memoId && s.end >= since)
+    .reduce((a, s) => a + (s.end - s.start), 0);
+
+  // --- 使用時間の記録 ---
+  const memoTrack = { session: null, lastActivity: 0, lastSave: 0 };
+
+  function closeMemoSession(at) {
+    const s = memoTrack.session;
+    if (!s) return;
+    s.end = Math.max(s.start, Math.min(at, Date.now()));
+    if (s.end - s.start < MEMO_MIN_KEEP) state.memoSessions = state.memoSessions.filter((x) => x !== s);
+    memoTrack.session = null;
+    save();
+    renderStats();
+    renderMemoClock();
+  }
+
+  function memoActivity() {
+    if (!state.settings.trackMemo || document.hidden) return;
+    const memo = activeMemo();
+    if (!memo) return;
+    const now = Date.now();
+    memoTrack.lastActivity = now;
+    if (memoTrack.session?.memoId === memo.id) { memoTrack.session.end = now; return; }
+    closeMemoSession(now);
+    // 少し前に同じタブを使っていたなら、その記録を延ばす
+    const last = state.memoSessions.at(-1);
+    if (last && last.memoId === memo.id && now - last.end <= MEMO_MERGE) {
+      memoTrack.session = last;
+      last.end = now;
+    } else {
+      memoTrack.session = { id: uid(), memoId: memo.id, title: memo.title, start: now, end: now };
+      state.memoSessions.push(memoTrack.session);
+    }
+    save();
+    renderMemoClock();
+  }
+
+  function memoTick() {
+    const s = memoTrack.session;
+    if (!s) return;
+    const now = Date.now();
+    const card = $('memoCard');
+    const away = document.hidden || !document.hasFocus() || !card.contains(document.activeElement);
+    if (away) { closeMemoSession(now); return; }
+    if (now - memoTrack.lastActivity > MEMO_IDLE) { closeMemoSession(memoTrack.lastActivity); return; }
+    s.end = now;
+    if (now - memoTrack.lastSave > 5000) { memoTrack.lastSave = now; save(); }
+    renderMemoClock();
+  }
+
+  function renderMemoClock() {
+    const memo = activeMemo();
+    if (!memo) return;
+    const on = !!memoTrack.session;
+    const st = $('memoStatus');
+    st.classList.toggle('on', on);
+    st.textContent = !state.settings.trackMemo ? '○ 記録しない設定です'
+      : on ? '● 記録中' : '○ 停止中(書き始めると記録します)';
+    $('memoTime').textContent =
+      `このタブ: 今日 ${fmtMin(memoMs(memo.id, startOfDay(Date.now())))} ・ 累計 ${fmtMin(memoMs(memo.id))}`;
+    renderMemoStat();
+  }
+
+  function renderMemoStat() {
+    const today = startOfDay(Date.now());
+    $('statMemo').textContent = fmtMin(state.memoSessions
+      .filter((s) => s.end >= today).reduce((a, s) => a + (s.end - s.start), 0));
+  }
+
+  // --- タブ ---
+  function renderMemoTabs() {
+    const tabs = state.memos.map((m) => {
+      const b = el('button', { className: 'memo-tab', textContent: m.title, title: 'ダブルクリックで名前を変える' });
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', String(m.id === state.activeMemoId));
+      b.addEventListener('click', () => switchMemo(m.id));
+      b.addEventListener('dblclick', () => renameMemo(m.id));
+      return b;
+    });
+    const add = el('button', { className: 'memo-tab add', textContent: '+', title: '新しいタブ' });
+    add.setAttribute('aria-label', '新しいタブを追加');
+    add.addEventListener('click', addMemo);
+    $('memoTabs').replaceChildren(...tabs, add);
+  }
+
+  function switchMemo(id) {
+    if (id === state.activeMemoId) return;
+    closeMemoSession(Date.now());
+    state.activeMemoId = id;
+    save();
+    renderMemo();
+    focusItem(activeMemo().items.at(-1).id, Infinity);
+  }
+
+  function addMemo() {
+    const n = state.memos.length + 1;
+    const m = { id: uid(), title: `メモ${n}`, items: [newItem()], createdAt: Date.now() };
+    state.memos.push(m);
+    switchMemo(m.id);
+  }
+
+  function renameMemo(id) {
+    const m = state.memos.find((x) => x.id === id);
+    const title = prompt('タブの名前', m.title)?.trim();
+    if (!title) return;
+    m.title = title.slice(0, 40);
+    save(); renderMemo(); renderStats();
+  }
+
+  function deleteMemo() {
+    const m = activeMemo();
+    if (!confirm(`タブ「${m.title}」を削除しますか?(使用時間の記録は残ります)`)) return;
+    closeMemoSession(Date.now());
+    const i = state.memos.indexOf(m);
+    state.memos.splice(i, 1);
+    // 消したタブの記録には、その時点の名前を残しておく
+    state.memoSessions.forEach((s) => { if (s.memoId === m.id) s.title = m.title; });
+    state.activeMemoId = state.memos[Math.max(0, i - 1)]?.id ?? null;
+    save(); renderMemo(); renderStats();
+  }
+
+  // --- 箇条書きの本体 ---
+  function renderMemo() {
+    ensureMemo();
+    renderMemoTabs();
+    const memo = activeMemo();
+    $('memoList').replaceChildren(...memo.items.map((it) => {
+      const input = el('input', { className: 'memo-input', value: it.text, placeholder: '…' });
+      input.dataset.id = it.id;
+      input.setAttribute('aria-label', `箇条書き(段 ${it.indent + 1})`);
+      const li = el('li', {}, input);
+      li.style.setProperty('--indent', it.indent);
+      li.dataset.indent = it.indent;
+      return li;
+    }));
+    renderMemoClock();
+  }
+
+  function focusItem(id, caret = 0) {
+    const input = $('memoList').querySelector(`input[data-id="${id}"]`);
+    if (!input) return;
+    input.focus();
+    const pos = Math.min(caret, input.value.length);
+    input.setSelectionRange(pos, pos);
+  }
+
+  // 構造を変えたあとは描き直して、カーソルを戻す
+  function commit(focusId, caret) {
+    save();
+    renderMemo();
+    focusItem(focusId, caret);
+  }
+
+  function itemOf(input) {
+    const items = activeMemo().items;
+    const i = items.findIndex((x) => x.id === input.dataset.id);
+    return { items, i, it: items[i] };
+  }
+
+  function onMemoKey(e) {
+    const input = e.target;
+    if (!input.classList.contains('memo-input')) return;
+    if (e.isComposing || e.keyCode === 229) return; // 日本語の変換中は触らない
+    const { items, i, it } = itemOf(input);
+    const caret = input.selectionStart;
+    const collapsed = input.selectionStart === input.selectionEnd;
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      // 空の行で Enter を押したら一段浅くする
+      if (!it.text && it.indent > 0) { it.indent -= 1; commit(it.id, 0); return; }
+      const after = it.text.slice(input.selectionEnd);
+      it.text = it.text.slice(0, caret);
+      const n = newItem(after, it.indent);
+      items.splice(i + 1, 0, n);
+      commit(n.id, 0);
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      if (e.shiftKey) it.indent = Math.max(0, it.indent - 1);
+      else it.indent = Math.min(MAX_INDENT, i === 0 ? 0 : items[i - 1].indent + 1, it.indent + 1);
+      commit(it.id, caret);
+    } else if (e.key === 'Backspace' && collapsed && caret === 0) {
+      if (it.indent > 0) { e.preventDefault(); it.indent -= 1; commit(it.id, 0); return; }
+      if (i === 0) return;
+      e.preventDefault();
+      const prev = items[i - 1];
+      const at = prev.text.length;
+      prev.text += it.text;
+      items.splice(i, 1);
+      commit(prev.id, at);
+    } else if (e.key === 'Delete' && collapsed && caret === it.text.length && i < items.length - 1) {
+      e.preventDefault();
+      it.text += items[i + 1].text;
+      items.splice(i + 1, 1);
+      commit(it.id, caret);
+    } else if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.altKey) {
+      // Alt+↑↓ で行を入れ替える
+      e.preventDefault();
+      const j = e.key === 'ArrowUp' ? i - 1 : i + 1;
+      if (j < 0 || j >= items.length) return;
+      [items[i], items[j]] = [items[j], items[i]];
+      commit(it.id, caret);
+    } else if (e.key === 'ArrowUp' && i > 0) {
+      e.preventDefault(); focusItem(items[i - 1].id, caret);
+    } else if (e.key === 'ArrowDown' && i < items.length - 1) {
+      e.preventDefault(); focusItem(items[i + 1].id, caret);
+    }
+  }
+
+  // 複数行の貼り付けは、行ごとの箇条書きに分ける(先頭の空白2つで一段)
+  function onMemoPaste(e) {
+    const input = e.target;
+    if (!input.classList.contains('memo-input')) return;
+    const text = e.clipboardData.getData('text/plain');
+    if (!text.includes('\n')) return;
+    e.preventDefault();
+    const { items, i, it } = itemOf(input);
+    const lines = text.replace(/\r/g, '').split('\n').filter((l) => l.trim());
+    if (!lines.length) return;
+    const parsed = lines.map((l) => {
+      const lead = l.match(/^[ \t　]*/)[0].replace(/\t/g, '  ').replace(/　/g, '  ').length;
+      const body = l.trim().replace(/^([-*+・•]|\d+[.)])\s*/, '');
+      return { indent: Math.min(MAX_INDENT, it.indent + Math.floor(lead / 2)), body };
+    });
+    const head = it.text.slice(0, input.selectionStart);
+    const tail = it.text.slice(input.selectionEnd);
+    it.text = head + parsed[0].body;
+    const extra = parsed.slice(1).map((p) => newItem(p.body, p.indent));
+    items.splice(i + 1, 0, ...extra);
+    const last = extra.at(-1) ?? it;
+    const caret = last.text.length;
+    last.text += tail;
+    commit(last.id, caret);
+  }
+
+  function memoAsText() {
+    return activeMemo().items.map((it) => `${'  '.repeat(it.indent)}- ${it.text}`).join('\n');
+  }
+
+  function bindMemo() {
+    const card = $('memoCard');
+    const list = $('memoList');
+    list.addEventListener('keydown', onMemoKey);
+    list.addEventListener('paste', onMemoPaste);
+    list.addEventListener('input', (e) => {
+      if (!e.target.classList.contains('memo-input')) return;
+      itemOf(e.target).it.text = e.target.value;
+      save();
+    });
+    // 空いているところをクリックしたら、最後の行に入る
+    list.addEventListener('click', (e) => {
+      if (e.target === list) focusItem(activeMemo().items.at(-1).id, Infinity);
+    });
+    ['focusin', 'input', 'keydown', 'pointerdown', 'wheel'].forEach((ev) =>
+      card.addEventListener(ev, memoActivity, { passive: true }));
+    $('memoDelete').addEventListener('click', deleteMemo);
+    $('memoRename').addEventListener('click', () => renameMemo(state.activeMemoId));
+    $('memoCopy').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(memoAsText());
+        $('memoCopy').textContent = 'コピーしました';
+        setTimeout(() => { $('memoCopy').textContent = 'テキストでコピー'; }, 1500);
+      } catch { alert('コピーできませんでした。'); }
+    });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) closeMemoSession(Date.now()); });
+    window.addEventListener('blur', () => closeMemoSession(Date.now()));
+    window.addEventListener('pagehide', () => closeMemoSession(Date.now()));
+    setInterval(memoTick, 1000);
   }
 
   // ---------- イベント ----------
@@ -380,6 +685,7 @@
     const k = input.name;
     if (input.type === 'checkbox') {
       state.settings[k] = input.checked;
+      if (k === 'trackMemo') { if (!input.checked) closeMemoSession(Date.now()); renderMemoClock(); }
       if (k === 'notify' && input.checked && 'Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
       }
@@ -409,6 +715,7 @@
       if (!Array.isArray(data.tasks) || !Array.isArray(data.sessions)) throw new Error('形式が違います');
       if (!confirm('今のデータを読み込んだ内容で置き換えますか?')) return;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      memoTrack.session = null;
       state = load();
       T().running = false;
       save(); renderSettings(); renderAll();
@@ -419,6 +726,7 @@
 
   $('btnClear').addEventListener('click', () => {
     if (!confirm('タスク・記録・設定をすべて消去します。よろしいですか?')) return;
+    memoTrack.session = null;
     state = structuredClone(DEFAULT_STATE);
     save(); renderSettings(); renderAll();
   });
@@ -436,6 +744,7 @@
   // ---------- 起動 ----------
   // 閉じている間に時間が尽きていた区切りは、満了として処理する
   if (T().running && remainingNow() <= 0) finishSegment(true);
+  bindMemo();
   renderSettings();
   renderAll();
 })();
