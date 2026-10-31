@@ -93,7 +93,7 @@ nav.bottom button.on{color:var(--text-primary);font-weight:600}
 .oltools button{flex:1;padding:10px 0;font-size:16px;border-radius:8px;color:var(--text-primary)}
 .oltools button:active{background:var(--surface-2)}
 body.editing .oltools{display:flex}
-body.editing nav.bottom{display:none}
+body.editing.kb nav.bottom{display:none}
 
 /* generic */
 .card{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
@@ -104,7 +104,7 @@ body.editing nav.bottom{display:none}
 .periodnav{display:flex;align-items:center;justify-content:space-between;margin:10px 0}
 .periodnav .lbl{font-weight:600}
 .periodnav button{padding:6px 12px;font-size:18px;color:var(--text-secondary)}
-.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.tiles{display:grid;grid-template-columns:1.55fr 1fr 1fr;gap:8px;margin-bottom:12px}
 .tile{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:10px}
 .tile .k{font-size:11px;color:var(--text-secondary);display:flex;align-items:center;gap:5px}
 .tile .v{font-size:16px;white-space:nowrap;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
@@ -246,6 +246,11 @@ function fmtDur(ms) {
   if (m < 1) return ms > 0 ? "1分未満" : "0分";
   const h = Math.floor(m / 60);
   return h ? `${h}時間${pad(m % 60)}分` : `${m}分`;
+}
+// 作業時間は秒まで出す
+function fmtSec(ms) {
+  const t = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, s = t % 60;
+  return h ? `${h}時間${pad(m)}分${pad(s)}秒` : m ? `${m}分${pad(s)}秒` : `${s}秒`;
 }
 function fmtClock(ms) {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -844,6 +849,7 @@ function renderMemo() { renderOutline(); }
 /* ============================================================
    記録(作業時間 × 妨害アプリ)
    ============================================================ */
+let logLive = null;
 let logMode = "day", logAnchor = startOfDay(new Date());
 function periodRange() {
   const a = logAnchor;
@@ -866,12 +872,13 @@ function renderLog() {
     return { d, k, work: workMs(a, b), dist: distMs(k), timer: timerMs(a, b) }; });
   const sum = f => rows.reduce((t, r) => t + r[f], 0);
   const W = sum("work"), D = sum("dist"), T = sum("timer");
+  { const a0 = days[0].getTime(), b0 = addDays(days[days.length - 1], 1).getTime(); logLive = Date.now() >= a0 && Date.now() < b0 ? { a: a0, b: b0 } : null; }
   const goal = meta.prefs.goal * 60000 * days.length;
   const isToday = logMode === "day" && ymd(days[0]) === ymd(new Date());
   let html = `<div class="seg" id="logSeg">${[["day", "日別"], ["week", "週別"], ["month", "月別"]].map(([k, l]) => `<button data-m="${k}" class="${logMode === k ? "on" : ""}">${l}</button>`).join("")}</div>
     <div class="periodnav"><button data-sh="-1" aria-label="前へ">‹</button><span class="lbl">${label}</span><button data-sh="1" aria-label="次へ">›</button></div>
     <div class="tiles">
-      <div class="tile"><div class="k"><i class="sw" style="background:var(--series-work)"></i>作業(自動)</div><div class="v">${fmtDur(W)}</div><div class="s">${goal ? `目標比 ${Math.round(W / goal * 100)}%` : isToday ? "計測中" : "&nbsp;"}</div></div>
+      <div class="tile"><div class="k"><i class="sw" style="background:var(--series-work)"></i>作業(自動)</div><div class="v" id="tileWork">${fmtSec(W)}</div><div class="s">${goal ? `目標比 ${Math.round(W / goal * 100)}%` : isToday ? "計測中" : "&nbsp;"}</div></div>
       <div class="tile"><div class="k"><i class="sw" style="background:var(--series-dist)"></i>妨害アプリ</div><div class="v">${fmtDur(D)}</div><div class="s">${W >= 300000 && D ? `作業の ${(D / W).toFixed(1)} 倍` : "&nbsp;"}</div></div>
       <div class="tile"><div class="k">タイマー</div><div class="v">${fmtDur(T)}</div><div class="s">別集計</div></div>
     </div>`;
@@ -900,7 +907,7 @@ function dayDetail(r) {
   const max = Math.max(r.work, ...meta.apps.map(a => distMs(r.k, a.id)), 60000);
   const bar = (ms, color) => `<div style="height:10px;border-radius:0 4px 4px 0;background:${color};width:${Math.max(ms ? 1.5 : 0, ms / max * 100)}%"></div>`;
   let h = `<div class="card"><h3>作業時間と妨害アプリ</h3>
-    <div class="row"><span style="width:7em" class="small">作業(自動)</span><span class="grow">${bar(r.work, "var(--series-work)")}</span><span class="num small" style="width:5.5em;text-align:right">${fmtDur(r.work)}</span></div>`;
+    <div class="row"><span style="width:7em" class="small">作業(自動)</span><span class="grow">${bar(r.work, "var(--series-work)")}</span><span class="num small" style="width:7.5em;text-align:right" id="rowWork">${fmtSec(r.work)}</span></div>`;
   if (!meta.apps.length) h += `<p class="muted small">妨害アプリがまだ指定されていません。<button class="mini" data-goapps>設定で指定する</button></p>`;
   for (const a of meta.apps) {
     const ms = distMs(r.k, a.id);
@@ -914,7 +921,7 @@ function dayDetail(r) {
   for (const k of monthKeysBetween(a, b)) for (const [s, e] of (logs[k]?.sessions || [])) if (overlap(s, e, a, b)) ss.push([Math.max(s, a), Math.min(e, b)]);
   if (Work.live && overlap(Work.live.s, Date.now(), a, b)) ss.push([Math.max(Work.live.s, a), Date.now(), true]);
   ss.sort((x, y) => x[0] - y[0]);
-  h += `<div class="card"><h3>アプリを開いていた区間</h3>${ss.length ? ss.slice().reverse().map(([s, e, live]) => `<div class="row small num"><span class="grow">${hm(s)} 〜 ${live ? "いま" : hm(e)}</span><span>${fmtDur(e - s)}</span></div>`).join("") : `<div class="empty">記録はまだありません</div>`}</div>`;
+  h += `<div class="card"><h3>アプリを開いていた区間</h3>${ss.length ? ss.slice().reverse().map(([s, e, live]) => `<div class="row small num"><span class="grow">${hm(s)} 〜 ${live ? "いま" : hm(e)}</span><span ${live ? 'id="liveSess"' : ""}>${fmtSec(e - s)}</span></div>`).join("") : `<div class="empty">記録はまだありません</div>`}</div>`;
   const tr = [];
   for (const k of monthKeysBetween(a, b)) for (const t of (logs[k]?.timers || [])) if (overlap(t.s, t.e, a, b)) tr.push(t);
   if (tr.length) h += `<div class="card"><h3>タイマーの記録</h3>${tr.sort((x, y) => y.s - x.s).map(t => `<div class="row small"><span class="grow">${esc(t.label || "(ラベルなし)")} <span class="muted">${t.mode === "pomodoro" ? "ポモドーロ" : "ストップウォッチ"}</span></span><span class="num">${hm(t.s)}〜${hm(t.e)} ${fmtDur(t.e - t.s)}</span></div>`).join("")}</div>`;
@@ -944,7 +951,7 @@ function periodChart(rows) {
     <div class="legend"><span><i class="sw" style="background:var(--series-work)"></i>作業(自動)</span><span><i class="sw" style="background:var(--series-dist)"></i>妨害アプリ</span><span class="muted">棒をタップで詳細</span></div>
     <div class="chart" id="chart"><svg viewBox="0 0 ${Wd} ${H}" role="img" aria-label="日ごとの作業時間と妨害アプリの使用時間">${g}</svg><div class="tip" id="tip"></div></div>
     <button class="mini" data-table style="margin-top:8px">${showTable ? "表を隠す" : "表で見る"}</button>`;
-  if (showTable) h += `<div style="margin-top:8px">${rows.map(r => `<button class="row small num" style="width:100%" data-gotoday="${r.k}"><span style="width:5em;text-align:left">${r.d.getMonth() + 1}/${r.d.getDate()}(${WD[r.d.getDay()]})</span><span class="grow" style="text-align:right">作業 ${fmtDur(r.work)}</span><span style="width:7.5em;text-align:right">妨害 ${fmtDur(r.dist)}</span></button>`).join("")}</div>`;
+  if (showTable) h += `<div style="margin-top:8px">${rows.map(r => `<button class="row small num" style="width:100%" data-gotoday="${r.k}"><span style="width:5em;text-align:left">${r.d.getMonth() + 1}/${r.d.getDate()}(${WD[r.d.getDay()]})</span><span class="grow" style="text-align:right">作業 ${fmtSec(r.work)}</span><span style="width:7.5em;text-align:right">妨害 ${fmtDur(r.dist)}</span></button>`).join("")}</div>`;
   return h + `</div>`;
 }
 let chartRows = [];
@@ -954,7 +961,7 @@ function bindChart() {
   const showTip = el => {
     const r = chartRows[+el.dataset.i]; if (!r) return;
     const box = el.getBoundingClientRect(), cb = c.getBoundingClientRect();
-    tip.innerHTML = `<b>${r.d.getMonth() + 1}/${r.d.getDate()}(${WD[r.d.getDay()]})</b><br>作業 ${fmtDur(r.work)}<br>妨害 ${fmtDur(r.dist)}${r.timer ? `<br>タイマー ${fmtDur(r.timer)}` : ""}`;
+    tip.innerHTML = `<b>${r.d.getMonth() + 1}/${r.d.getDate()}(${WD[r.d.getDay()]})</b><br>作業 ${fmtSec(r.work)}<br>妨害 ${fmtDur(r.dist)}${r.timer ? `<br>タイマー ${fmtDur(r.timer)}` : ""}`;
     tip.style.display = "block";
     tip.style.left = Math.min(cb.width - 60, Math.max(60, box.left - cb.left + box.width / 2)) + "px";
     tip.style.top = "6px";
@@ -1213,7 +1220,12 @@ function guide() {
    ============================================================ */
 function refreshLive() {
   const a = startOfDay(new Date()).getTime();
-  $("#liveToday").textContent = fmtDur(workMs(a, a + 864e5));
+  $("#liveToday").textContent = fmtSec(workMs(a, a + 864e5));
+  if (view === "log" && logLive) { // 記録画面に今日が入っていれば、作業時間を秒で進める
+    const tw = $("#tileWork"); if (tw) tw.textContent = fmtSec(workMs(logLive.a, logLive.b));
+    const rw = $("#rowWork"); if (rw) rw.textContent = fmtSec(workMs(logLive.a, logLive.b));
+    const ls = $("#liveSess"); if (ls && Work.live) ls.textContent = fmtSec(Date.now() - Math.max(Work.live.s, logLive.a));
+  }
 }
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") { Work.start(); Timer.tick(); checkEventNotices(); refreshLive(); if (view === "log") renderLog(); }
@@ -1221,6 +1233,18 @@ document.addEventListener("visibilitychange", () => {
 });
 addEventListener("pagehide", () => { flushMemoEdit(); Work.stop(); Store.flushAll(); });
 
+// 画面下の切り替えを隠すのは、キーボードが出ている間だけ
+(() => {
+  let maxH = 0;
+  const check = () => {
+    const h = window.visualViewport ? visualViewport.height : innerHeight;
+    if (h > maxH) maxH = h;
+    document.body.classList.toggle("kb", h < maxH - 150);
+  };
+  (window.visualViewport || window).addEventListener("resize", check);
+  addEventListener("orientationchange", () => { maxH = 0; setTimeout(check, 300); });
+  check();
+})();
 function focusStart() { // 起動直後にすぐ書けるよう、前回の行(なければ最後の行)へ
   const vis = flatVisible(); const id = focusId && vis.includes(focusId) ? focusId : vis[vis.length - 1];
   if (id) { focusAt(id, index[id].n.t.length); renderOutline(); }
@@ -1232,7 +1256,8 @@ function boot() {
   show(location.hash.slice(1) || "memo", false);
   refreshLive();
   if (!meta.guideSeen) guide(); else if (view === "memo") focusStart();
-  setInterval(() => { Work.beat(); refreshLive(); }, 10000);
+  setInterval(() => Work.beat(), 10000);
+  setInterval(refreshLive, 1000);
   setInterval(() => { Timer.tick(); updateClock(); }, 1000);
   setInterval(checkEventNotices, 15000);
   setTimeout(checkEventNotices, 1500);
