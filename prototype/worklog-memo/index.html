@@ -722,8 +722,10 @@ box.addEventListener("keydown", e => {
     if (vis[j]) { e.preventDefault(); focusId = vis[j]; const t = box.querySelector(`[data-t="${vis[j]}"]`); t.focus(); const c = e.key === "ArrowUp" ? t.value.length : 0; t.setSelectionRange(c, c); }
   }
 });
+let noFocusUntil = 0; // ドラッグ直後に、長押しの名残でキーボードが開かないように
 box.addEventListener("focusin", e => {
   const ta = e.target.closest(".ol-t"); if (!ta) return;
+  if ((drag && drag.on) || Date.now() < noFocusUntil) { ta.blur(); return; }
   focusId = ta.dataset.t; meta.lastFocus = focusId;
   box.querySelectorAll(".ol-row.cur").forEach(r => r.classList.remove("cur"));
   ta.closest(".ol-row").classList.add("cur");
@@ -812,7 +814,10 @@ function startDrag() {
   const k = countAll(index[drag.id].n);
   ghost.textContent = label(drag.id) + (k ? `(+${k})` : ""); ghost.style.display = "block";
   document.body.classList.add("dragging");
+  // 持ち上げたら全行を読み取り専用に:長押しで入力欄にフォーカスが入ってもキーボードは出ない
+  box.querySelectorAll(".ol-t").forEach(t => { t.readOnly = true; });
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  document.body.classList.remove("editing");
   try { navigator.vibrate && navigator.vibrate(12); } catch {}
   const loop = () => { // 端に寄せると自動で送る
     if (!drag || !drag.on) return;
@@ -868,7 +873,8 @@ function endDrag(drop) {
   dropline.style.display = "none"; ghost.style.display = "none";
   document.body.classList.remove("dragging");
   box.querySelectorAll(".dragging,.dropin").forEach(r => r.classList.remove("dragging", "dropin"));
-  if (!drop || !d.target || d.skip.has(d.target.id)) return;
+  noFocusUntil = Date.now() + 700;
+  if (!drop || !d.target || d.skip.has(d.target.id)) { renderOutline(); return; } // 入力欄を作り直して読み取り専用を解く
   const src = index[d.id], tgt = index[d.target.id];
   src.list.splice(src.list.indexOf(src.n), 1);
   const { zone } = d.target;
