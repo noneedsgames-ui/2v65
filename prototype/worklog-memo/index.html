@@ -95,6 +95,15 @@ nav.bottom button.on{color:var(--text-primary);font-weight:600}
 body.editing .oltools{display:flex}
 body.editing.kb nav.bottom{display:none}
 
+.bul{touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.ol-row.dragging{opacity:.3}
+.ol-row.dropin .ol-t{outline:2px solid var(--accent);outline-offset:-2px}
+.ol-row.moved .ol-t{background:color-mix(in srgb,var(--accent) 18%,transparent);transition:background .6s}
+.dropline{position:fixed;height:3px;background:var(--accent);border-radius:2px;pointer-events:none;z-index:15;display:none}
+.dragghost{position:fixed;display:none;pointer-events:none;z-index:16;background:var(--surface-1);border:1px solid var(--line);
+  box-shadow:0 4px 14px #0003;border-radius:8px;padding:6px 10px;font-size:14px;max-width:60vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
+
 /* generic */
 .card{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
 .card h3{margin:0 0 8px;font-size:14px;color:var(--text-secondary);font-weight:600}
@@ -723,11 +732,118 @@ box.addEventListener("focusout", () => setTimeout(() => {
 }, 120));
 box.addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
+  if (justDragged) return;
+  if (b.dataset.bul && e.detail !== 0 && b.classList.contains("bul")) return; // 指・マウスでの行頭タップは pointerup で処理済み
   if (b.dataset.bul) { const n = index[b.dataset.bul].n; if (n.c.length) doToggle(n.id); else { focusAt(n.id, n.t.length); renderOutline(); } }
   else if (b.dataset.jump) reveal(b.dataset.jump);
   else if ("zoom" in b.dataset) zoomTo(b.dataset.zoom);
   else if ("firstchild" in b.dataset) doAddChild(zoomId);
 });
+
+// ---- 行頭の ▾ / • をつまんで、項目をドラッグで動かす ----
+// 行の上 3割=その前へ、下 3割=その後へ、真ん中=その行の子へ
+let drag = null, justDragged = false;
+const dropline = document.createElement("div"); dropline.className = "dropline"; document.body.appendChild(dropline);
+const ghost = document.createElement("div"); ghost.className = "dragghost"; document.body.appendChild(ghost);
+box.addEventListener("contextmenu", e => { if (e.target.closest(".bul")) e.preventDefault(); });
+box.addEventListener("pointerdown", e => {
+  const b = e.target.closest(".bul"); if (!b || e.button > 0) return;
+  drag = { id: b.dataset.bul, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, on: false, pid: e.pointerId, el: b, target: null };
+});
+box.addEventListener("pointermove", e => {
+  if (!drag || e.pointerId !== drag.pid) return;
+  drag.x = e.clientX; drag.y = e.clientY;
+  if (!drag.on) { if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 8) return; startDrag(); }
+  e.preventDefault(); dragOver();
+});
+box.addEventListener("pointerup", e => {
+  if (!drag || e.pointerId !== drag.pid) return;
+  if (!drag.on) { // 動かさずに離した → 畳む/開く
+    const id = drag.id; drag = null;
+    const n = index[id]?.n; if (!n) return;
+    if (n.c.length) doToggle(id); else { focusAt(id, n.t.length); renderOutline(); }
+    return;
+  }
+  endDrag(true);
+});
+box.addEventListener("pointercancel", e => { if (drag && e.pointerId === drag.pid) endDrag(false); });
+function subtreeIds(id) { const out = new Set([id]); const w = n => n.c.forEach(c => { out.add(c.id); w(c); }); w(index[id].n); return out; }
+function startDrag() {
+  flushOutline();
+  drag.on = true; drag.skip = subtreeIds(drag.id);
+  try { drag.el.setPointerCapture(drag.pid); } catch {}
+  box.querySelectorAll(".ol-row").forEach(r => drag.skip.has(r.dataset.id) && r.classList.add("dragging"));
+  const k = countAll(index[drag.id].n);
+  ghost.textContent = label(drag.id) + (k ? `(+${k})` : ""); ghost.style.display = "block";
+  document.body.classList.add("dragging");
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  try { navigator.vibrate && navigator.vibrate(12); } catch {}
+  const loop = () => { // 端に寄せると自動で送る
+    if (!drag || !drag.on) return;
+    const r = box.getBoundingClientRect();
+    const dy = drag.y < r.top + 48 ? -10 : drag.y > r.bottom - 48 ? 10 : 0;
+    if (dy) { box.scrollTop += dy; dragOver(); }
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+}
+function dragOver() {
+  ghost.style.left = Math.min(innerWidth - 80, drag.x + 14) + "px"; ghost.style.top = (drag.y - 34) + "px";
+  box.querySelectorAll(".ol-row.dropin").forEach(r => r.classList.remove("dropin"));
+  const rows = [...box.querySelectorAll(".ol-row")].filter(r => !drag.skip.has(r.dataset.id));
+  drag.target = null; dropline.style.display = "none";
+  if (!rows.length) return;
+  let row = rows.find(r => { const b = r.getBoundingClientRect(); return drag.y >= b.top && drag.y < b.bottom; });
+  let zone;
+  if (!row) {
+    const first = rows[0].getBoundingClientRect(), last = rows[rows.length - 1];
+    if (drag.y < first.top) { row = rows[0]; zone = "before"; } else { row = last; zone = "after"; }
+  } else {
+    const b = row.getBoundingClientRect(); const rel = (drag.y - b.top) / b.height;
+    zone = rel < 0.3 ? "before" : rel > 0.7 ? "after" : "child";
+  }
+  let t = index[row.dataset.id].n;
+  if (zone === "after" && t.c.length && !t.x) zone = "first"; // 開いた親の下 → 最初の子
+  if (zone === "after") { // その階層の最後なら、指を左へ寄せるほど浅い階層の後ろへ
+    const left = box.getBoundingClientRect().left + 8;
+    const want = Math.max(0, Math.floor((drag.x - left) / 22));
+    let depth = +row.style.getPropertyValue("--d");
+    while (depth > want) {
+      const it = index[t.id]; if (!it.parent || it.parent.id === zoomId) break;
+      const tail = it.list.filter(x => !drag.skip.has(x.id));
+      if (tail[tail.length - 1] !== t) break;
+      t = it.parent; depth--;
+    }
+    drag.depthShift = +row.style.getPropertyValue("--d") - depth;
+  } else drag.depthShift = 0;
+  drag.target = { id: t.id, zone };
+  const main = row.querySelector(".ol-main").getBoundingClientRect(), rb = row.getBoundingClientRect();
+  if (zone === "child") { row.classList.add("dropin"); return; }
+  const indent = zone === "first" ? 22 : -22 * (drag.depthShift || 0);
+  dropline.style.display = "block";
+  dropline.style.left = (main.left + indent) + "px";
+  dropline.style.width = Math.max(40, main.right - main.left - indent) + "px";
+  dropline.style.top = ((zone === "before" ? rb.top : rb.bottom) - 1.5) + "px";
+}
+function endDrag(drop) {
+  const d = drag; drag = null;
+  if (!d || !d.on) return;
+  justDragged = true; setTimeout(() => justDragged = false, 80);
+  dropline.style.display = "none"; ghost.style.display = "none";
+  document.body.classList.remove("dragging");
+  box.querySelectorAll(".dragging,.dropin").forEach(r => r.classList.remove("dragging", "dropin"));
+  if (!drop || !d.target || d.skip.has(d.target.id)) return;
+  const src = index[d.id], tgt = index[d.target.id];
+  src.list.splice(src.list.indexOf(src.n), 1);
+  const { zone } = d.target;
+  if (zone === "before") tgt.list.splice(tgt.list.indexOf(tgt.n), 0, src.n);
+  else if (zone === "after") tgt.list.splice(tgt.list.indexOf(tgt.n) + 1, 0, src.n);
+  else if (zone === "first") tgt.n.c.unshift(src.n);
+  else { tgt.n.c.push(src.n); delete tgt.n.x; }
+  focusId = d.id; saveOutline(); renderOutline();
+  const r = box.querySelector(`.ol-row[data-id="${d.id}"]`);
+  if (r) { r.classList.add("moved"); r.scrollIntoView({ block: "nearest" }); setTimeout(() => r.classList.remove("moved"), 700); }
+}
 
 // ---- 書いている間だけ出る操作バー ----
 const tools = $("#oltools");
