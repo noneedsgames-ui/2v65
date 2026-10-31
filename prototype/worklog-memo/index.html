@@ -771,7 +771,7 @@ box.addEventListener("click", e => {
 });
 
 // ---- 行頭の ▾ / • をつまんで、項目をドラッグで動かす ----
-// 行の上 3割=その前へ、下 3割=その後へ、真ん中=その行の子へ
+// 行の上 3割=その前へ、下 3割=その後へ、真ん中=その行の子へ。左右に寄せると深さが変わる
 let drag = null, justDragged = false;
 const dropline = document.createElement("div"); dropline.className = "dropline"; document.body.appendChild(dropline);
 const ghost = document.createElement("div"); ghost.className = "dragghost"; document.body.appendChild(ghost);
@@ -854,43 +854,46 @@ function startDrag() {
   };
   requestAnimationFrame(loop);
 }
+// 落とし先は「行と行のすき間」+「深さ」。深さは指を左右に寄せて決める(右へ約32pxで一段深く=子、左で浅く)
+const STEP_X = 32;
+const depthOf = r => +r.style.getPropertyValue("--d");
 function dragOver() {
   ghost.style.left = Math.min(innerWidth - 80, drag.x + 14) + "px"; ghost.style.top = (drag.y - 34) + "px";
   box.querySelectorAll(".ol-row.dropin").forEach(r => r.classList.remove("dropin"));
   const rows = [...box.querySelectorAll(".ol-row")].filter(r => !drag.skip.has(r.dataset.id));
   drag.target = null; dropline.style.display = "none";
   if (!rows.length) return;
-  let row = rows.find(r => { const b = r.getBoundingClientRect(); return drag.y >= b.top && drag.y < b.bottom; });
-  let zone;
-  if (!row) {
-    const first = rows[0].getBoundingClientRect(), last = rows[rows.length - 1];
-    if (drag.y < first.top) { row = rows[0]; zone = "before"; } else { row = last; zone = "after"; }
+  const i = rows.findIndex(r => { const b = r.getBoundingClientRect(); return drag.y >= b.top && drag.y < b.bottom; });
+  let A, B, fromBelowOf = false;
+  if (i < 0) {
+    if (drag.y < rows[0].getBoundingClientRect().top) { A = null; B = rows[0]; }
+    else { A = rows[rows.length - 1]; B = null; fromBelowOf = true; }
   } else {
-    const b = row.getBoundingClientRect(); const rel = (drag.y - b.top) / b.height;
-    zone = rel < 0.3 ? "before" : rel > 0.7 ? "after" : "child";
-  }
-  let t = index[row.dataset.id].n;
-  if (zone === "after" && t.c.length && !t.x) zone = "first"; // 開いた親の下 → 最初の子
-  if (zone === "after") { // その階層の最後なら、指を左へ寄せるほど浅い階層の後ろへ
-    const left = box.getBoundingClientRect().left + 8;
-    const want = Math.max(0, Math.floor((drag.x - left) / 22));
-    let depth = +row.style.getPropertyValue("--d");
-    while (depth > want) {
-      const it = index[t.id]; if (!it.parent || it.parent.id === zoomId) break;
-      const tail = it.list.filter(x => !drag.skip.has(x.id));
-      if (tail[tail.length - 1] !== t) break;
-      t = it.parent; depth--;
+    const r = rows[i], b = r.getBoundingClientRect(), rel = (drag.y - b.top) / b.height;
+    if (rel >= 0.3 && rel <= 0.7) { // 行の真ん中 → その行の子(末尾)
+      drag.target = { id: r.dataset.id, zone: "child" }; r.classList.add("dropin"); tick("c" + r.dataset.id); return;
     }
-    drag.depthShift = +row.style.getPropertyValue("--d") - depth;
-  } else drag.depthShift = 0;
-  drag.target = { id: t.id, zone };
-  const main = row.querySelector(".ol-main").getBoundingClientRect(), rb = row.getBoundingClientRect();
-  if (zone === "child") { row.classList.add("dropin"); return; }
-  const indent = zone === "first" ? 22 : -22 * (drag.depthShift || 0);
+    if (rel < 0.3) { A = rows[i - 1] || null; B = r; } else { A = r; B = rows[i + 1] || null; fromBelowOf = true; }
+  }
+  const dA = A ? depthOf(A) : -1, dB = B ? depthOf(B) : 0;
+  const min = B ? dB : 0, max = A ? dA + 1 : 0;
+  const def = !A ? dB : !B ? dA : fromBelowOf ? (dB > dA ? dB : dA) : dB;
+  const shift = Math.trunc((drag.x - drag.x0) / STEP_X);
+  const depth = Math.max(min, Math.min(max, def + shift));
+  if (!A) drag.target = { zone: "start" };
+  else if (depth === dA + 1) drag.target = { id: A.dataset.id, zone: "first" };
+  else { let x = index[A.dataset.id].n, k = dA; while (k > depth) { x = index[x.id].parent; k--; } drag.target = { id: x.id, zone: "after" }; }
+  const ref = A || B, main = ref.querySelector(".ol-main").getBoundingClientRect();
+  const left = main.left + (depth - depthOf(ref)) * 22;
   dropline.style.display = "block";
-  dropline.style.left = (main.left + indent) + "px";
-  dropline.style.width = Math.max(40, main.right - main.left - indent) + "px";
-  dropline.style.top = ((zone === "before" ? rb.top : rb.bottom) - 1.5) + "px";
+  dropline.style.left = left + "px";
+  dropline.style.width = Math.max(40, box.getBoundingClientRect().right - 8 - left) + "px";
+  dropline.style.top = ((A ? A.getBoundingClientRect().bottom : B.getBoundingClientRect().top) - 1.5) + "px";
+  tick((A ? A.dataset.id : "-") + ":" + depth);
+}
+function tick(key) { // 落とし先が変わったら、軽く震えて知らせる
+  if (drag.lastKey === key) return; drag.lastKey = key;
+  try { navigator.vibrate && navigator.vibrate(6); } catch {}
 }
 function endDrag(drop) {
   const d = drag; drag = null;
@@ -900,13 +903,13 @@ function endDrag(drop) {
   document.body.classList.remove("dragging");
   box.querySelectorAll(".dragging,.dropin").forEach(r => r.classList.remove("dragging", "dropin"));
   noFocusUntil = Date.now() + 700;
-  if (!drop || !d.target || d.skip.has(d.target.id)) { renderOutline(); return; } // 入力欄を作り直して読み取り専用を解く
-  const src = index[d.id], tgt = index[d.target.id];
+  if (!drop || !d.target || (d.target.id && d.skip.has(d.target.id))) { renderOutline(); return; } // 入力欄を作り直して読み取り専用を解く
+  const src = index[d.id], tgt = d.target.id ? index[d.target.id] : null;
   src.list.splice(src.list.indexOf(src.n), 1);
   const { zone } = d.target;
-  if (zone === "before") tgt.list.splice(tgt.list.indexOf(tgt.n), 0, src.n);
+  if (zone === "start") roots().unshift(src.n);
   else if (zone === "after") tgt.list.splice(tgt.list.indexOf(tgt.n) + 1, 0, src.n);
-  else if (zone === "first") tgt.n.c.unshift(src.n);
+  else if (zone === "first") { tgt.n.c.unshift(src.n); delete tgt.n.x; }
   else { tgt.n.c.push(src.n); delete tgt.n.x; }
   focusId = d.id; saveOutline(); renderOutline();
   const r = box.querySelector(`.ol-row[data-id="${d.id}"]`);
