@@ -46,20 +46,23 @@ nav.bottom button.on{color:var(--text-primary);font-weight:600}
 
 /* memo */
 .tabs{background:var(--surface-1);border-bottom:1px solid var(--line)}
-.tabrow{display:flex;gap:6px;overflow-x:auto;padding:6px 10px;scrollbar-width:none}
-.tabrow::-webkit-scrollbar{display:none}
-.tabrow+.tabrow{border-top:1px dashed var(--line)}
-.tabrow .lv{flex:none;font-size:10px;color:var(--text-muted);align-self:center;width:14px}
-.chip{flex:none;padding:6px 12px;border-radius:999px;background:var(--surface-2);font-size:14px;white-space:nowrap;max-width:12em;overflow:hidden;text-overflow:ellipsis}
-.chip.sel{background:var(--tab-sel);color:var(--tab-sel-ink);font-weight:600}
-.chip.path{outline:1.5px solid var(--text-secondary)}
-.chip.add{background:none;border:1px dashed var(--text-muted);color:var(--text-secondary);padding:5px 11px}
+.tabs{max-height:36dvh;overflow:auto;padding:4px 0 6px}
+.tabs.closed{display:none}
+.node{display:flex;align-items:center;min-height:38px;padding-right:8px}
+.node.sel{background:var(--surface-2)}
+.node .tw{flex:none;width:30px;height:34px;font-size:14px;color:var(--text-secondary)}
+.node .tw.leaf{color:var(--text-muted);font-size:10px}
+.node .nm{flex:1;min-width:0;text-align:left;padding:7px 4px;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.node.sel .nm{font-weight:700}
+.node .cnt{font-size:11px;color:var(--text-muted);margin-right:6px}
+.node .addc{flex:none;font-size:12px;padding:5px 9px;border-radius:999px;border:1px dashed var(--text-muted);color:var(--text-secondary)}
+.addroot{display:block;margin:4px 0 0 12px;font-size:13px;color:var(--text-secondary);padding:6px 4px}
 .toolbar{display:flex;gap:4px;padding:6px 8px;border-bottom:1px solid var(--line);background:var(--surface-1);align-items:center}
-.tb{padding:7px 10px;border-radius:8px;font-size:13px;color:var(--text-secondary);display:flex;gap:4px;align-items:center}
+.tb{white-space:nowrap;flex:none;padding:7px 9px;border-radius:8px;font-size:13px;color:var(--text-secondary);display:flex;gap:4px;align-items:center}
 .tb:active{background:var(--surface-2)}
 .tb.primary{background:var(--accent);color:var(--accent-ink);font-weight:600}
 .spacer{flex:1}
-.saved{font-size:11px;color:var(--text-muted);padding:0 6px}
+.saved{white-space:nowrap;font-size:11px;color:var(--text-muted);padding:0 6px}
 .memohead{padding:8px 14px 0;background:var(--surface-1)}
 .memotitle{width:100%;border:0;background:none;font-size:20px;font-weight:700;padding:4px 0;outline:none}
 .crumb{font-size:11px;color:var(--text-muted);min-height:14px}
@@ -151,6 +154,7 @@ textarea.inp{line-height:1.6;resize:vertical}
   <section class="view" id="v-memo">
     <div class="tabs" id="tabs"></div>
     <div class="toolbar">
+      <button class="tb" id="btnTree" aria-label="ツリーの表示切り替え">▾ ツリー</button>
       <button class="tb primary" id="addChild">＋子タブ</button>
       <button class="tb" id="btnTpl">テンプレ</button>
       <button class="tb" id="btnSearch">検索</button>
@@ -453,25 +457,35 @@ function openMemo(id, focus) {
   if (focus) $("#memoBody").focus();
 }
 function renderTabs() {
-  const cur = meta.current; const path = pathOf(cur);
-  let html = "";
-  const levels = [null, ...path];
-  levels.forEach((pid, i) => {
-    const kids = childrenOf(pid);
-    if (!kids.length && i > 0) return; // 子がまだない層は出さない
-    const sel = path[i];
-    html += `<div class="tabrow">${i ? `<span class="lv">${"›".repeat(Math.min(i, 3))}</span>` : ""}` +
-      kids.map(k => `<button class="chip ${k.id === cur ? "sel" : k.id === sel ? "path" : ""}" data-open="${k.id}">${esc(k.title || "無題")}</button>`).join("") +
-      `<button class="chip add" data-addunder="${pid || ""}" aria-label="この階層にタブを追加">＋</button></div>`;
-  });
-  $("#tabs").innerHTML = html;
-  const selEl = $("#tabs .chip.sel"); selEl && selEl.scrollIntoView({ block: "nearest", inline: "center" });
+  const cur = meta.current;
+  meta.folded ||= {};
+  for (const id of pathOf(cur).slice(0, -1)) delete meta.folded[id]; // 開いているタブの祖先は必ず展開
+  const rows = [];
+  const walk = (pid, depth) => {
+    for (const k of childrenOf(pid)) {
+      const kids = childrenOf(k.id).length, folded = !!meta.folded[k.id];
+      rows.push(`<div class="node ${k.id === cur ? "sel" : ""}" style="padding-left:${4 + depth * 20}px">
+        <button class="tw ${kids ? "" : "leaf"}" ${kids ? `data-fold="${k.id}" aria-label="${folded ? "開く" : "閉じる"}"` : "tabindex=-1"}>${kids ? (folded ? "▸" : "▾") : "・"}</button>
+        <button class="nm" data-open="${k.id}">${esc(k.title || "無題")}</button>
+        ${kids && folded ? `<span class="cnt">${countDesc(k.id)}</span>` : ""}
+        ${k.id === cur ? `<button class="addc" data-addunder="${k.id}" aria-label="子タブを追加">＋子</button>` : ""}</div>`);
+      if (kids && !folded) walk(k.id, depth + 1);
+    }
+  };
+  walk(null, 0);
+  const t = $("#tabs");
+  t.classList.toggle("closed", meta.treeOpen === false);
+  $("#btnTree").textContent = (meta.treeOpen === false ? "▸" : "▾") + " ツリー";
+  t.innerHTML = rows.join("") + `<button class="addroot" data-addunder="">＋ いちばん上の階層に追加</button>`;
+  const selEl = $(".node.sel", t); selEl && selEl.scrollIntoView({ block: "nearest" });
 }
 $("#tabs").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
-  if (b.dataset.open) openMemo(b.dataset.open);
+  if (b.dataset.fold) { meta.folded[b.dataset.fold] = !meta.folded[b.dataset.fold]; if (!meta.folded[b.dataset.fold]) delete meta.folded[b.dataset.fold]; saveMeta(); renderTabs(); }
+  else if (b.dataset.open) openMemo(b.dataset.open);
   else if ("addunder" in b.dataset) { const m = newMemo(b.dataset.addunder || null, "新しいタブ"); openMemo(m.id); selectTitle(); }
 });
+$("#btnTree").onclick = () => { meta.treeOpen = meta.treeOpen === false; saveMeta(); renderTabs(); };
 function selectTitle() { const t = $("#memoTitle"); t.focus(); t.select(); }
 function renderMemo() {
   const m = memos[meta.current];
