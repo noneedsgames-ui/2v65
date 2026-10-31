@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#1a1a19">
+<title>作業記録メモ帳(試作)</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f4f3ef; --surface-1:#fcfcfb; --surface-2:#ecebe6; --line:#d9d7cf;
+  --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#7a7873;
+  --accent:#2a78d6; --accent-ink:#fff; --danger:#c4302f;
+  --series-work:#2a78d6; --series-dist:#eb6834;
+  --tab-sel:#0b0b0b; --tab-sel-ink:#fcfcfb;
+  --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --bg:#121211; --surface-1:#1a1a19; --surface-2:#252523; --line:#3a3936;
+    --text-primary:#f0efec; --text-secondary:#c3c2b7; --text-muted:#8f8d86;
+    --accent:#3987e5; --danger:#e66767;
+    --series-work:#3987e5; --series-dist:#d95926;
+    --tab-sel:#f0efec; --tab-sel-ink:#121211;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text-primary);
+  font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP","Yu Gothic UI",sans-serif;font-size:16px}
+body{display:flex;flex-direction:column;height:100dvh;padding-top:var(--safe-t);overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input,textarea,select{font:inherit;color:inherit}
+main{flex:1;min-height:0;display:flex;flex-direction:column}
+.view{display:none;flex:1;min-height:0;flex-direction:column}
+.view.on{display:flex}
+.scroll{flex:1;min-height:0;overflow:auto;padding:12px 14px 24px}
+
+/* nav */
+nav.bottom{display:flex;border-top:1px solid var(--line);background:var(--surface-1);padding-bottom:var(--safe-b)}
+nav.bottom button{flex:1;padding:8px 0 7px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--text-muted)}
+nav.bottom button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav.bottom button.on{color:var(--text-primary);font-weight:600}
+.livebar{font-size:11px;color:var(--text-muted);text-align:center;padding:3px 0;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.livebar b{color:var(--text-primary);font-variant-numeric:tabular-nums}
+
+/* memo */
+.tabs{background:var(--surface-1);border-bottom:1px solid var(--line)}
+.tabrow{display:flex;gap:6px;overflow-x:auto;padding:6px 10px;scrollbar-width:none}
+.tabrow::-webkit-scrollbar{display:none}
+.tabrow+.tabrow{border-top:1px dashed var(--line)}
+.tabrow .lv{flex:none;font-size:10px;color:var(--text-muted);align-self:center;width:14px}
+.chip{flex:none;padding:6px 12px;border-radius:999px;background:var(--surface-2);font-size:14px;white-space:nowrap;max-width:12em;overflow:hidden;text-overflow:ellipsis}
+.chip.sel{background:var(--tab-sel);color:var(--tab-sel-ink);font-weight:600}
+.chip.path{outline:1.5px solid var(--text-secondary)}
+.chip.add{background:none;border:1px dashed var(--text-muted);color:var(--text-secondary);padding:5px 11px}
+.toolbar{display:flex;gap:4px;padding:6px 8px;border-bottom:1px solid var(--line);background:var(--surface-1);align-items:center}
+.tb{padding:7px 10px;border-radius:8px;font-size:13px;color:var(--text-secondary);display:flex;gap:4px;align-items:center}
+.tb:active{background:var(--surface-2)}
+.tb.primary{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.spacer{flex:1}
+.saved{font-size:11px;color:var(--text-muted);padding:0 6px}
+.memohead{padding:8px 14px 0;background:var(--surface-1)}
+.memotitle{width:100%;border:0;background:none;font-size:20px;font-weight:700;padding:4px 0;outline:none}
+.crumb{font-size:11px;color:var(--text-muted);min-height:14px}
+.metas{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 8px}
+.mini{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--surface-2);color:var(--text-secondary)}
+.mini.tag::before{content:"#"}
+.mini.link::before{content:"↔ "}
+.memobody{flex:1;min-height:0;width:100%;border:0;resize:none;outline:none;background:var(--surface-1);
+  padding:10px 14px 40px;line-height:1.75;font-size:16px}
+
+/* generic */
+.card{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.card h3{margin:0 0 8px;font-size:14px;color:var(--text-secondary);font-weight:600}
+.seg{display:inline-flex;background:var(--surface-2);border-radius:10px;padding:3px}
+.seg button{padding:6px 14px;border-radius:8px;font-size:14px;color:var(--text-secondary)}
+.seg button.on{background:var(--surface-1);color:var(--text-primary);font-weight:600;box-shadow:0 1px 2px #0002}
+.periodnav{display:flex;align-items:center;justify-content:space-between;margin:10px 0}
+.periodnav .lbl{font-weight:600}
+.periodnav button{padding:6px 12px;font-size:18px;color:var(--text-secondary)}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.tile{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:10px}
+.tile .k{font-size:11px;color:var(--text-secondary);display:flex;align-items:center;gap:5px}
+.tile .v{font-size:16px;white-space:nowrap;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.tile .s{font-size:11px;color:var(--text-muted);margin-top:2px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px}
+.row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .grow{flex:1;min-width:0}
+.muted{color:var(--text-muted);font-size:13px}
+.small{font-size:12px}
+.num{font-variant-numeric:tabular-nums}
+.field{display:block;margin:10px 0}
+.field>span{display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px}
+.inp{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-1);outline:none}
+.inp:focus{border-color:var(--accent)}
+textarea.inp{line-height:1.6;resize:vertical}
+.btn{padding:10px 16px;border-radius:10px;background:var(--surface-2);font-weight:600;font-size:15px}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--danger)}
+.btn.block{width:100%}
+.btns{display:flex;gap:8px;margin-top:14px}
+.btns .btn{flex:1}
+.empty{color:var(--text-muted);font-size:14px;text-align:center;padding:24px 0}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--text-secondary);margin:2px 0 8px;flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:5px}
+.chart{position:relative}
+.chart svg{display:block;width:100%;overflow:visible}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .axis{fill:var(--text-muted);font-size:10px}
+.tip{position:absolute;pointer-events:none;background:var(--text-primary);color:var(--surface-1);font-size:12px;
+  padding:6px 9px;border-radius:8px;white-space:nowrap;transform:translate(-50%,-100%);display:none;line-height:1.5}
+.note{font-size:12px;color:var(--text-secondary);background:var(--surface-2);border-radius:10px;padding:9px 11px;line-height:1.6}
+
+/* timer */
+.clock{font-size:64px;font-weight:300;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:1px;margin:18px 0 4px}
+.phase{text-align:center;font-size:14px;color:var(--text-secondary);min-height:20px}
+.ring{display:block;margin:6px auto 0}
+.bigbtn{display:block;margin:18px auto 6px;width:150px;padding:14px;border-radius:999px;font-size:18px;font-weight:700;background:var(--accent);color:var(--accent-ink)}
+.bigbtn.stop{background:var(--danger)}
+
+/* plan */
+.daygroup{font-size:13px;font-weight:700;color:var(--text-secondary);margin:14px 0 4px}
+.daygroup.today{color:var(--accent)}
+.ev{display:flex;gap:10px;padding:10px 12px;background:var(--surface-1);border:1px solid var(--line);border-radius:10px;margin-bottom:6px;text-align:left;width:100%}
+.ev .t{font-size:13px;color:var(--text-secondary);width:88px;flex:none;font-variant-numeric:tabular-nums}
+.ev .ti{font-weight:600}
+.fab{position:absolute;right:16px;bottom:16px;width:54px;height:54px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:28px;box-shadow:0 3px 10px #0004}
+
+/* sheet */
+.veil{position:fixed;inset:0;background:#0007;display:none;z-index:20;align-items:flex-end;justify-content:center}
+.veil.on{display:flex}
+.sheet{background:var(--surface-1);width:100%;max-width:560px;max-height:88dvh;overflow:auto;border-radius:16px 16px 0 0;
+  padding:14px 16px calc(18px + var(--safe-b))}
+.sheet h2{font-size:17px;margin:4px 0 10px}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 8px}
+.banner{position:fixed;left:10px;right:10px;top:calc(8px + var(--safe-t));z-index:30;background:var(--text-primary);color:var(--surface-1);
+  border-radius:12px;padding:12px 14px;display:none;box-shadow:0 4px 16px #0005;font-size:14px}
+.banner.on{display:block}
+.toast{position:fixed;left:50%;bottom:calc(76px + var(--safe-b));transform:translateX(-50%);background:var(--text-primary);color:var(--surface-1);
+  padding:8px 14px;border-radius:999px;font-size:13px;z-index:31;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+.hit{background:#ffd54a55;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="livebar" id="livebar">作業時間 自動記録中 <b id="liveToday">0分</b>(今日)</div>
+<main>
+  <!-- メモ -->
+  <section class="view" id="v-memo">
+    <div class="tabs" id="tabs"></div>
+    <div class="toolbar">
+      <button class="tb primary" id="addChild">＋子タブ</button>
+      <button class="tb" id="btnTpl">テンプレ</button>
+      <button class="tb" id="btnSearch">検索</button>
+      <span class="spacer"></span>
+      <span class="saved" id="saved"></span>
+      <button class="tb" id="btnManage" aria-label="タブの管理">⋯</button>
+    </div>
+    <div class="memohead">
+      <div class="crumb" id="crumb"></div>
+      <input class="memotitle" id="memoTitle" placeholder="タブ名" maxlength="60">
+      <div class="metas" id="metas"></div>
+    </div>
+    <textarea class="memobody" id="memoBody" placeholder="ここに書く。入力は自動で保存されます。" autofocus></textarea>
+  </section>
+
+  <!-- 記録 -->
+  <section class="view" id="v-log">
+    <div class="scroll" id="logScroll"></div>
+  </section>
+
+  <!-- タイマー -->
+  <section class="view" id="v-timer">
+    <div class="scroll" id="timerScroll"></div>
+  </section>
+
+  <!-- 予定 -->
+  <section class="view" id="v-plan" style="position:relative">
+    <div class="scroll" id="planScroll"></div>
+    <button class="fab" id="addEvent" aria-label="予定を追加">＋</button>
+  </section>
+
+  <!-- 設定 -->
+  <section class="view" id="v-prefs">
+    <div class="scroll" id="prefsScroll"></div>
+  </section>
+</main>
+<nav class="bottom" id="nav">
+  <button data-v="memo"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5z"/><path d="M9 11h6M9 15h6M9 7h3"/></svg>メモ</button>
+  <button data-v="log"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>記録</button>
+  <button data-v="timer"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>タイマー</button>
+  <button data-v="plan"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>予定</button>
+  <button data-v="prefs"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>設定</button>
+</nav>
+<div class="veil" id="veil"><div class="sheet" id="sheet"></div></div>
+<div class="banner" id="banner"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   ユーティリティ
+   ============================================================ */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const pad = n => String(n).padStart(2, "0");
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const ym = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+const hm = t => { const d = new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const parseYmd = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const WD = ["日", "月", "火", "水", "木", "金", "土"];
+function fmtDur(ms) {
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return ms > 0 ? "1分未満" : "0分";
+  const h = Math.floor(m / 60);
+  return h ? `${h}時間${pad(m % 60)}分` : `${m}分`;
+}
+function fmtClock(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, ss = s % 60;
+  return h ? `${h}:${pad(m)}:${pad(ss)}` : `${pad(m)}:${pad(ss)}`;
+}
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("on"), 1800);
+}
+
+/* ============================================================
+   保存層:端末内(localStorage)を即時の正とし、
+   claude.ai の個人用ストア(db)へ追って同期する
+   ============================================================ */
+const LS = {
+  get(k) { try { const v = localStorage.getItem("wm:" + k); return v ? JSON.parse(v) : null; } catch { return null; } },
+  set(k, v) { try { localStorage.setItem("wm:" + k, JSON.stringify(v)); return true; } catch { return false; } },
+  del(k) { try { localStorage.removeItem("wm:" + k); } catch {} },
+  keys() { try { return Object.keys(localStorage).filter(k => k.startsWith("wm:")).map(k => k.slice(3)); } catch { return []; } }
+};
+const Store = {
+  col: null, status: "端末内のみ", pending: new Map(), inflight: new Set(),
+  // 書き込み:端末内へ即時、リモートへは間をおいて一件ずつ
+  put(id, data) {
+    data._ts = Date.now();
+    LS.set("doc:" + id, data);
+    this.schedule(id);
+  },
+  remove(id) {
+    LS.del("doc:" + id);
+    this.pending.delete(id);
+    if (this.col) this.col.doc(id).delete().catch(() => {});
+  },
+  schedule(id) {
+    if (!this.col) return;
+    clearTimeout(this.pending.get(id));
+    this.pending.set(id, setTimeout(() => this.flush(id), 1200));
+  },
+  async flush(id) {
+    this.pending.delete(id);
+    if (!this.col) return;
+    if (this.inflight.has(id)) { this.schedule(id); return; }
+    const data = LS.get("doc:" + id); if (!data) return;
+    this.inflight.add(id);
+    try { await this.col.doc(id).set(data); }
+    catch (e) {
+      if (e && e.code === "unavailable") setTimeout(() => this.schedule(id), 2000 + Math.random() * 2000);
+      else if (e && e.code === "quota_exceeded") toast("保存容量の上限に達しました");
+      else if (e && (e.code === "invalid_argument" || e.code === "revoked")) { this.col = null; this.status = "端末内のみ(同期不可)"; }
+    } finally { this.inflight.delete(id); }
+  },
+  flushAll() { for (const id of [...this.pending.keys()]) { clearTimeout(this.pending.get(id)); this.flush(id); } },
+  localDocs() {
+    const out = {};
+    for (const k of LS.keys()) if (k.startsWith("doc:")) { const v = LS.get(k); if (v) out[k.slice(4)] = v; }
+    return out;
+  }
+};
+// 起動後に、リモートの内容と突き合わせる(新しい方を採る)
+Store.connect = async function (onMerged) {
+  const api = window.claude && typeof window.claude.use === "function" ? window.claude : null;
+  if (!api) return;
+  let db, user, id;
+  try {
+    [db, user] = await Promise.all([api.use("db"), api.use("user")]);
+    if (!db || !user) return;
+    id = await user.id();
+    if (!id) return;
+  } catch { return; }
+  const col = db.collection("data/users/" + id); // 3区切り=自分専用のコレクション
+  this.status = "同期を確認中…";
+  let snap;
+  const timer = setTimeout(() => { this.status = "同期先に届きません(端末内に保存中)"; renderPrefsIfOpen(); }, 10000);
+  try { snap = await col.get(); }
+  catch (e) { clearTimeout(timer); this.status = "端末内のみ(同期不可)"; renderPrefsIfOpen(); return; }
+  clearTimeout(timer);
+  this.col = col;
+  this.status = "claude.ai に同期中";
+  flushMemoEdit();
+  const local = this.localDocs();
+  const remoteIds = new Set();
+  let changed = false;
+  for (const d of snap.docs) {
+    if (!d.exists) continue;
+    remoteIds.add(d.id);
+    const r = d.data(); const l = local[d.id];
+    if (!l || (r._ts || 0) > (l._ts || 0)) { LS.set("doc:" + d.id, JSON.parse(JSON.stringify(r))); changed = true; }
+    else if ((l._ts || 0) > (r._ts || 0)) this.schedule(d.id);
+  }
+  for (const k of Object.keys(local)) if (!remoteIds.has(k)) this.schedule(k);
+  if (changed) onMerged();
+  renderPrefsIfOpen();
+};
+
+/* ============================================================
+   データモデル
+   memo-<id> : メモ(階層タブ)/ meta : タグ以外の共通設定・予定・関連
+   log-YYYY-MM : その月の作業区間・タイマー記録・妨害アプリ使用時間
+   ============================================================ */
+const DEFAULT_TPL = {
+  "素材": "【素材名】\n種類:\n入手場所:\n用途:\n見た目のメモ:\n",
+  "アイテム": "【アイテム名】\n分類:\n効果:\n入手方法:\n必要な素材:\n価格:\n説明文:\n",
+  "設定": "【項目名】\n概要:\n詳細:\n関連する要素:\n未決事項:\n"
+};
+let memos = {}, meta = null, logs = {};
+function loadAll() {
+  memos = {}; logs = {};
+  const docs = Store.localDocs();
+  for (const [id, v] of Object.entries(docs)) {
+    if (id.startsWith("memo-")) memos[v.id] = v;
+    else if (id.startsWith("log-")) logs[id.slice(4)] = v;
+  }
+  meta = docs.meta || null;
+  if (!meta) meta = { links: [], events: [], apps: [], prefs: {}, guideSeen: false, current: null };
+  meta.links ||= []; meta.events ||= []; meta.apps ||= []; meta.prefs ||= {};
+  const p = meta.prefs;
+  p.focus ??= 25; p.brk ??= 5; p.goal ??= 0; p.templates ||= { ...DEFAULT_TPL };
+}
+const saveMeta = () => Store.put("meta", meta);
+const saveMemo = m => { m.updated = Date.now(); Store.put("memo-" + m.id, m); };
+function logOf(key) { return logs[key] ||= { sessions: [], timers: [], usage: {} }; }
+const saveLog = key => Store.put("log-" + key, logs[key]);
+
+/* ============================================================
+   作業時間の自動記録:画面が前面にある間だけ数える
+   ============================================================ */
+const Work = {
+  live: null,
+  start() {
+    if (this.live || document.visibilityState !== "visible") return;
+    const now = Date.now();
+    this.live = { s: now, beat: now };
+    LS.set("live", this.live);
+  },
+  beat() { if (this.live) { this.live.beat = Date.now(); LS.set("live", this.live); } },
+  stop(at) {
+    if (!this.live) return;
+    const e = at || Date.now();
+    const s = this.live.s;
+    this.live = null; LS.del("live");
+    if (e - s < 2000) return;
+    const key = ym(new Date(s));
+    logOf(key).sessions.push([s, e]);
+    saveLog(key);
+  },
+  recover() { // 前回、閉じ方が不意だった区間を最後の鼓動で閉じる
+    const old = LS.get("live");
+    if (old && old.s) { this.live = old; this.stop(old.beat || old.s); }
+  }
+};
+function overlap(s, e, a, b) { return Math.max(0, Math.min(e, b) - Math.max(s, a)); }
+function monthKeysBetween(a, b) {
+  const out = []; let d = new Date(new Date(a).getFullYear(), new Date(a).getMonth() - 1, 1);
+  while (d.getTime() <= b) { out.push(ym(d)); d = new Date(d.getFullYear(), d.getMonth() + 1, 1); }
+  return out;
+}
+function workMs(a, b) {
+  let t = 0;
+  for (const k of monthKeysBetween(a, b)) for (const [s, e] of (logs[k]?.sessions || [])) t += overlap(s, e, a, b);
+  if (Work.live) t += overlap(Work.live.s, Date.now(), a, b);
+  return t;
+}
+function timerMs(a, b) {
+  let t = 0;
+  for (const k of monthKeysBetween(a, b)) for (const r of (logs[k]?.timers || [])) t += overlap(r.s, r.e, a, b);
+  const live = Timer.liveSegment(); if (live) t += overlap(live.s, Date.now(), a, b);
+  return t;
+}
+function distMs(dateStr, appId) {
+  const u = logs[dateStr.slice(0, 7)]?.usage?.[dateStr] || {};
+  if (appId) return u[appId] || 0;
+  return meta.apps.reduce((t, a) => t + (u[a.id] || 0), 0);
+}
+
+/* ============================================================
+   画面切り替え(#memo #log #timer #plan #prefs)
+   ============================================================ */
+const VIEWS = ["memo", "log", "timer", "plan", "prefs"];
+let view = "memo";
+function show(v, push = true) {
+  if (!VIEWS.includes(v)) v = "memo";
+  view = v;
+  for (const x of VIEWS) $("#v-" + x).classList.toggle("on", x === v);
+  for (const b of $("#nav").children) b.classList.toggle("on", b.dataset.v === v);
+  if (push && location.hash !== "#" + v) { try { history.replaceState(null, "", "#" + v); } catch { location.hash = v; } }
+  if (v === "log") renderLog();
+  if (v === "timer") renderTimer();
+  if (v === "plan") renderPlan();
+  if (v === "prefs") renderPrefs();
+}
+$("#nav").addEventListener("click", e => { const b = e.target.closest("button"); if (b) show(b.dataset.v); });
+addEventListener("hashchange", () => show(location.hash.slice(1), false));
+
+/* ============================================================
+   シート(ダイアログ)
+   ============================================================ */
+function openSheet(html, mount) {
+  $("#sheet").innerHTML = `<div class="grab"></div>${html}`;
+  $("#veil").classList.add("on");
+  mount && mount($("#sheet"));
+}
+function closeSheet() { $("#veil").classList.remove("on"); $("#sheet").innerHTML = ""; }
+$("#veil").addEventListener("click", e => { if (e.target.id === "veil") closeSheet(); });
+function confirmSheet(title, body, okLabel, onOk) {
+  openSheet(`<h2>${esc(title)}</h2><p class="muted">${esc(body)}</p>
+    <div class="btns"><button class="btn" data-x>やめる</button><button class="btn primary" style="background:var(--danger)" data-ok>${esc(okLabel)}</button></div>`,
+    s => { $("[data-x]", s).onclick = closeSheet; $("[data-ok]", s).onclick = () => { closeSheet(); onOk(); }; });
+}
+
+/* ============================================================
+   メモ
+   ============================================================ */
+const childrenOf = pid => Object.values(memos).filter(m => (m.parent || null) === (pid || null)).sort((a, b) => a.order - b.order || a.created - b.created);
+function pathOf(id) { const p = []; let m = memos[id]; let guard = 0; while (m && guard++ < 50) { p.unshift(m.id); m = memos[m.parent]; } return p; }
+function newMemo(parent, title, body) {
+  const sib = childrenOf(parent);
+  const m = { id: uid(), parent: parent || null, title: title || "無題", body: body || "", tags: [],
+    order: sib.length ? sib[sib.length - 1].order + 1 : 0, created: Date.now(), updated: Date.now() };
+  memos[m.id] = m; saveMemo(m);
+  return m;
+}
+function ensureMemo() {
+  if (!Object.keys(memos).length) newMemo(null, "メモ", "");
+  if (!meta.current || !memos[meta.current]) meta.current = childrenOf(null)[0].id;
+}
+function openMemo(id, focus) {
+  if (!memos[id]) return;
+  flushMemoEdit();
+  meta.current = id; saveMeta();
+  renderMemo();
+  if (focus) $("#memoBody").focus();
+}
+function renderTabs() {
+  const cur = meta.current; const path = pathOf(cur);
+  let html = "";
+  const levels = [null, ...path];
+  levels.forEach((pid, i) => {
+    const kids = childrenOf(pid);
+    if (!kids.length && i > 0) return; // 子がまだない層は出さない
+    const sel = path[i];
+    html += `<div class="tabrow">${i ? `<span class="lv">${"›".repeat(Math.min(i, 3))}</span>` : ""}` +
+      kids.map(k => `<button class="chip ${k.id === cur ? "sel" : k.id === sel ? "path" : ""}" data-open="${k.id}">${esc(k.title || "無題")}</button>`).join("") +
+      `<button class="chip add" data-addunder="${pid || ""}" aria-label="この階層にタブを追加">＋</button></div>`;
+  });
+  $("#tabs").innerHTML = html;
+  const selEl = $("#tabs .chip.sel"); selEl && selEl.scrollIntoView({ block: "nearest", inline: "center" });
+}
+$("#tabs").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.open) openMemo(b.dataset.open);
+  else if ("addunder" in b.dataset) { const m = newMemo(b.dataset.addunder || null, "新しいタブ"); openMemo(m.id); selectTitle(); }
+});
+function selectTitle() { const t = $("#memoTitle"); t.focus(); t.select(); }
+function renderMemo() {
+  const m = memos[meta.current];
+  renderTabs();
+  const path = pathOf(m.id);
+  $("#crumb").textContent = path.length > 1 ? path.slice(0, -1).map(id => memos[id].title).join(" › ") + " ›" : "";
+  if (document.activeElement !== $("#memoTitle")) $("#memoTitle").value = m.title;
+  if (document.activeElement !== $("#memoBody")) $("#memoBody").value = m.body;
+  renderMetas();
+  $("#saved").textContent = "";
+}
+function linksOf(id) { return meta.links.filter(l => l[0] === id || l[1] === id).map(l => l[0] === id ? l[1] : l[0]).filter(x => memos[x]); }
+function renderMetas() {
+  const m = memos[meta.current];
+  const tags = (m.tags || []).map(t => `<button class="mini tag" data-tag="${esc(t)}">${esc(t)}</button>`).join("");
+  const links = linksOf(m.id).map(id => `<button class="mini link" data-open="${id}">${esc(memos[id].title)}</button>`).join("");
+  $("#metas").innerHTML = tags + links + `<button class="mini" data-edit-meta>＋タグ・関連</button>`;
+}
+$("#metas").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.tag) openSearch("#" + b.dataset.tag);
+  else if (b.dataset.open) openMemo(b.dataset.open);
+  else openTagLink();
+});
+let editTimer = null;
+function flushMemoEdit() {
+  if (!editTimer) return;
+  clearTimeout(editTimer); editTimer = null;
+  const m = memos[meta.current]; if (!m) return;
+  saveMemo(m); $("#saved").textContent = "保存済み";
+}
+function onEdit() {
+  const m = memos[meta.current];
+  m.title = $("#memoTitle").value; m.body = $("#memoBody").value;
+  $("#saved").textContent = "…";
+  clearTimeout(editTimer);
+  editTimer = setTimeout(flushMemoEdit, 600);
+}
+$("#memoBody").addEventListener("input", onEdit);
+$("#memoTitle").addEventListener("input", () => { onEdit(); clearTimeout(renderTabs._t); renderTabs._t = setTimeout(renderTabs, 300); });
+$("#memoTitle").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("#memoBody").focus(); } });
+$("#addChild").onclick = () => { const m = newMemo(meta.current, "新しいタブ"); openMemo(m.id); selectTitle(); };
+
+// タブの管理:並べ替え・階層の移動・削除
+$("#btnManage").onclick = () => {
+  flushMemoEdit();
+  const m = memos[meta.current];
+  const sib = childrenOf(m.parent); const idx = sib.findIndex(x => x.id === m.id);
+  const descendants = countDesc(m.id);
+  openSheet(`<h2>「${esc(m.title)}」の管理</h2>
+    <label class="field"><span>タブ名</span><input class="inp" id="mRename" value="${esc(m.title)}" maxlength="60"></label>
+    <div class="card" style="margin-top:12px"><h3>並べ替え</h3>
+      <div class="btns" style="margin-top:0">
+        <button class="btn" id="mLeft" ${idx <= 0 ? "disabled style=opacity:.4" : ""}>← 前へ</button>
+        <button class="btn" id="mRight" ${idx >= sib.length - 1 ? "disabled style=opacity:.4" : ""}>後へ →</button>
+      </div>
+      <div class="btns">
+        <button class="btn" id="mUp" ${m.parent ? "" : "disabled style=opacity:.4"}>一つ上の階層へ</button>
+        <button class="btn" id="mDown" ${idx > 0 ? "" : "disabled style=opacity:.4"}>前のタブの子へ</button>
+      </div>
+    </div>
+    <button class="btn danger block" id="mDel">このタブを削除${descendants ? `(子タブ ${descendants} 件も削除)` : ""}</button>
+    <div class="btns"><button class="btn primary" data-x>閉じる</button></div>`, s => {
+    $("[data-x]", s).onclick = () => { const v = $("#mRename").value.trim(); if (v && v !== m.title) { m.title = v; saveMemo(m); } closeSheet(); renderMemo(); };
+    const swap = d => { const o = sib[idx + d]; [m.order, o.order] = [o.order, m.order]; if (m.order === o.order) m.order += d; saveMemo(m); saveMemo(o); closeSheet(); renderMemo(); };
+    $("#mLeft").onclick = () => idx > 0 && swap(-1);
+    $("#mRight").onclick = () => idx < sib.length - 1 && swap(1);
+    $("#mUp").onclick = () => { if (!m.parent) return; const p = memos[m.parent]; m.parent = p.parent || null; m.order = p.order + 0.5; saveMemo(m); renormalize(m.parent); closeSheet(); renderMemo(); };
+    $("#mDown").onclick = () => { if (idx <= 0) return; const np = sib[idx - 1]; const k = childrenOf(np.id); m.parent = np.id; m.order = k.length ? k[k.length - 1].order + 1 : 0; saveMemo(m); closeSheet(); renderMemo(); };
+    $("#mDel").onclick = () => confirmSheet("タブを削除しますか", `「${m.title}」${descendants ? `と、その下の子タブ ${descendants} 件` : ""}を削除します。元に戻せません。`, "削除する", () => deleteMemo(m.id));
+  });
+};
+function countDesc(id) { return childrenOf(id).reduce((t, c) => t + 1 + countDesc(c.id), 0); }
+function renormalize(pid) { childrenOf(pid).forEach((c, i) => { if (c.order !== i) { c.order = i; saveMemo(c); } }); }
+function deleteMemo(id) {
+  const m = memos[id]; const parent = m.parent;
+  const sib = childrenOf(parent); const idx = sib.findIndex(x => x.id === id);
+  const kill = x => { childrenOf(x).forEach(c => kill(c.id)); delete memos[x]; Store.remove("memo-" + x); };
+  kill(id);
+  meta.links = meta.links.filter(l => memos[l[0]] && memos[l[1]]);
+  const next = sib[idx + 1] || sib[idx - 1] || (parent && memos[parent]);
+  editTimer = null;
+  if (!Object.keys(memos).length) newMemo(null, "メモ", "");
+  meta.current = next ? next.id : childrenOf(null)[0].id;
+  saveMeta(); renderMemo(); toast("削除しました");
+}
+
+// タグと関連付け
+function openTagLink() {
+  flushMemoEdit();
+  const m = memos[meta.current];
+  const allTags = [...new Set(Object.values(memos).flatMap(x => x.tags || []))].sort();
+  const linked = new Set(linksOf(m.id));
+  const others = Object.values(memos).filter(x => x.id !== m.id);
+  const label = x => pathOf(x.id).map(i => memos[i].title).join(" › ");
+  openSheet(`<h2>タグと関連メモ</h2>
+    <label class="field"><span>タグ(読点・空白・カンマで区切る)</span><input class="inp" id="tagInp" value="${esc((m.tags || []).join("、"))}" placeholder="例:武器、序盤"></label>
+    ${allTags.length ? `<div class="metas">${allTags.map(t => `<button class="mini tag" data-addtag="${esc(t)}">${esc(t)}</button>`).join("")}</div>` : ""}
+    <div class="field"><span class="small muted">関連付けるメモ(双方から辿れます)</span></div>
+    <div style="max-height:40dvh;overflow:auto">${others.length ? others.sort((a, b) => label(a).localeCompare(label(b), "ja")).map(x => `
+      <label class="row"><input type="checkbox" data-link="${x.id}" ${linked.has(x.id) ? "checked" : ""}><span class="grow">${esc(label(x))}</span></label>`).join("") : `<div class="empty">ほかのメモがまだありません</div>`}</div>
+    <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
+    s.addEventListener("click", e => { const b = e.target.closest("[data-addtag]"); if (!b) return; const i = $("#tagInp"); const cur = splitTags(i.value); if (!cur.includes(b.dataset.addtag)) i.value = [...cur, b.dataset.addtag].join("、"); });
+    $("[data-ok]", s).onclick = () => {
+      m.tags = splitTags($("#tagInp").value); saveMemo(m);
+      const want = new Set([...s.querySelectorAll("[data-link]")].filter(c => c.checked).map(c => c.dataset.link));
+      meta.links = meta.links.filter(l => !(l[0] === m.id || l[1] === m.id));
+      for (const o of want) meta.links.push([m.id, o]);
+      saveMeta(); closeSheet(); renderMetas();
+    };
+  });
+}
+const splitTags = s => [...new Set(s.split(/[、,,\s#]+/).map(x => x.trim()).filter(Boolean))];
+
+// 検索(全タブ横断、#で始めるとタグ検索)
+$("#btnSearch").onclick = () => openSearch("");
+function openSearch(q) {
+  flushMemoEdit();
+  openSheet(`<h2>検索</h2><input class="inp" id="q" placeholder="語句、または #タグ" value="${esc(q)}" enterkeyhint="search"><div id="qres" style="margin-top:8px"></div>`, s => {
+    const run = () => {
+      const v = $("#q").value.trim();
+      if (!v) { $("#qres").innerHTML = `<div class="empty">全タブの名前・本文・タグから探します</div>`; return; }
+      const isTag = v.startsWith("#"); const term = (isTag ? v.slice(1) : v).toLowerCase();
+      const hits = Object.values(memos).filter(m => isTag ? (m.tags || []).some(t => t.toLowerCase() === term)
+        : (m.title + "\n" + m.body + "\n" + (m.tags || []).join(" ")).toLowerCase().includes(term));
+      $("#qres").innerHTML = hits.length ? hits.sort((a, b) => b.updated - a.updated).map(m => {
+        const i = m.body.toLowerCase().indexOf(term);
+        const snip = i >= 0 && !isTag ? (i > 18 ? "…" : "") + m.body.slice(Math.max(0, i - 18), i) + "\u0000" + m.body.slice(i, i + term.length) + "\u0001" + m.body.slice(i + term.length, i + term.length + 40) : m.body.slice(0, 60);
+        const sn = esc(snip.replace(/\n/g, " ")).replace("\u0000", '<span class="hit">').replace("\u0001", "</span>");
+        return `<button class="row" style="width:100%;text-align:left" data-open="${m.id}"><span class="grow"><b>${esc(m.title)}</b>
+          <div class="muted small">${esc(pathOf(m.id).slice(0, -1).map(x => memos[x].title).join(" › "))}</div>
+          <div class="small" style="color:var(--text-secondary);margin-top:2px">${sn || "(本文なし)"}</div></span></button>`;
+      }).join("") : `<div class="empty">見つかりませんでした</div>`;
+    };
+    $("#q").addEventListener("input", run); run(); $("#q").focus();
+    $("#qres").addEventListener("click", e => { const b = e.target.closest("[data-open]"); if (b) { closeSheet(); openMemo(b.dataset.open); } });
+  });
+}
+
+// テンプレートから作成
+$("#btnTpl").onclick = () => {
+  flushMemoEdit();
+  const T = meta.prefs.templates;
+  openSheet(`<h2>テンプレートから作成</h2>
+    <label class="row"><input type="checkbox" id="asChild" checked><span class="grow">いまのタブ「${esc(memos[meta.current].title)}」の子として作る</span></label>
+    ${Object.keys(T).map(k => `<button class="row" style="width:100%;text-align:left" data-tpl="${esc(k)}"><span class="grow"><b>${esc(k)}</b><div class="muted small">${esc(T[k].split("\n").slice(0, 3).join(" / "))}</div></span><span>＋</span></button>`).join("")}
+    <p class="muted small">テンプレートの中身は「設定」で書き換えられます。</p>`, s => {
+    s.addEventListener("click", e => {
+      const b = e.target.closest("[data-tpl]"); if (!b) return;
+      const k = b.dataset.tpl; const parent = $("#asChild").checked ? meta.current : memos[meta.current].parent;
+      const m = newMemo(parent, k, T[k]); closeSheet(); openMemo(m.id); selectTitle();
+    });
+  });
+};
+
+/* ============================================================
+   記録(作業時間 × 妨害アプリ)
+   ============================================================ */
+let logMode = "day", logAnchor = startOfDay(new Date());
+function periodRange() {
+  const a = logAnchor;
+  if (logMode === "day") return { days: [a], label: `${a.getMonth() + 1}月${a.getDate()}日(${WD[a.getDay()]})` };
+  if (logMode === "week") {
+    const s = addDays(a, -((a.getDay() + 6) % 7)); const days = [...Array(7)].map((_, i) => addDays(s, i));
+    return { days, label: `${s.getMonth() + 1}/${s.getDate()} 〜 ${days[6].getMonth() + 1}/${days[6].getDate()}` };
+  }
+  const s = new Date(a.getFullYear(), a.getMonth(), 1); const n = new Date(a.getFullYear(), a.getMonth() + 1, 0).getDate();
+  return { days: [...Array(n)].map((_, i) => addDays(s, i)), label: `${a.getFullYear()}年${a.getMonth() + 1}月` };
+}
+function shiftPeriod(d) {
+  const a = logAnchor;
+  logAnchor = logMode === "day" ? addDays(a, d) : logMode === "week" ? addDays(a, 7 * d) : new Date(a.getFullYear(), a.getMonth() + d, 1);
+  renderLog();
+}
+function renderLog() {
+  const { days, label } = periodRange();
+  const rows = days.map(d => { const a = d.getTime(), b = addDays(d, 1).getTime(), k = ymd(d);
+    return { d, k, work: workMs(a, b), dist: distMs(k), timer: timerMs(a, b) }; });
+  const sum = f => rows.reduce((t, r) => t + r[f], 0);
+  const W = sum("work"), D = sum("dist"), T = sum("timer");
+  const goal = meta.prefs.goal * 60000 * days.length;
+  const isToday = logMode === "day" && ymd(days[0]) === ymd(new Date());
+  let html = `<div class="seg" id="logSeg">${[["day", "日別"], ["week", "週別"], ["month", "月別"]].map(([k, l]) => `<button data-m="${k}" class="${logMode === k ? "on" : ""}">${l}</button>`).join("")}</div>
+    <div class="periodnav"><button data-sh="-1" aria-label="前へ">‹</button><span class="lbl">${label}</span><button data-sh="1" aria-label="次へ">›</button></div>
+    <div class="tiles">
+      <div class="tile"><div class="k"><i class="sw" style="background:var(--series-work)"></i>作業(自動)</div><div class="v">${fmtDur(W)}</div><div class="s">${goal ? `目標比 ${Math.round(W / goal * 100)}%` : isToday ? "計測中" : "&nbsp;"}</div></div>
+      <div class="tile"><div class="k"><i class="sw" style="background:var(--series-dist)"></i>妨害アプリ</div><div class="v">${fmtDur(D)}</div><div class="s">${W >= 300000 && D ? `作業の ${(D / W).toFixed(1)} 倍` : "&nbsp;"}</div></div>
+      <div class="tile"><div class="k">タイマー</div><div class="v">${fmtDur(T)}</div><div class="s">別集計</div></div>
+    </div>`;
+  if (logMode === "day") html += dayDetail(rows[0]);
+  else html += periodChart(rows);
+  $("#logScroll").innerHTML = html;
+  bindChart();
+}
+$("#logScroll").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.m) { logMode = b.dataset.m; renderLog(); }
+  else if (b.dataset.sh) shiftPeriod(+b.dataset.sh);
+  else if (b.dataset.gotoday) { logMode = "day"; logAnchor = parseYmd(b.dataset.gotoday); renderLog(); }
+  else if (b.dataset.table != null) { showTable = !showTable; renderLog(); }
+  else if (b.dataset.goapps != null) show("prefs");
+});
+$("#logScroll").addEventListener("change", e => {
+  const i = e.target.closest("[data-usage]"); if (!i) return;
+  const [k, app] = i.dataset.usage.split("|");
+  const L = logOf(k.slice(0, 7)); L.usage[k] ||= {};
+  const min = Math.max(0, Math.min(1440, Math.round(+i.value || 0)));
+  L.usage[k][app] = min * 60000; saveLog(k.slice(0, 7)); renderLog();
+});
+let showTable = false;
+function dayDetail(r) {
+  const max = Math.max(r.work, ...meta.apps.map(a => distMs(r.k, a.id)), 60000);
+  const bar = (ms, color) => `<div style="height:10px;border-radius:0 4px 4px 0;background:${color};width:${Math.max(ms ? 1.5 : 0, ms / max * 100)}%"></div>`;
+  let h = `<div class="card"><h3>作業時間と妨害アプリ</h3>
+    <div class="row"><span style="width:7em" class="small">作業(自動)</span><span class="grow">${bar(r.work, "var(--series-work)")}</span><span class="num small" style="width:5.5em;text-align:right">${fmtDur(r.work)}</span></div>`;
+  if (!meta.apps.length) h += `<p class="muted small">妨害アプリがまだ指定されていません。<button class="mini" data-goapps>設定で指定する</button></p>`;
+  for (const a of meta.apps) {
+    const ms = distMs(r.k, a.id);
+    h += `<div class="row"><span style="width:7em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" class="small">${esc(a.name)}</span><span class="grow">${bar(ms, "var(--series-dist)")}</span>
+      <input class="inp num" style="width:5.5em;padding:6px 8px;text-align:right" type="number" inputmode="numeric" min="0" max="1440" value="${Math.round(ms / 60000) || ""}" placeholder="分" data-usage="${r.k}|${a.id}" aria-label="${esc(a.name)}の使用時間(分)"></div>`;
+  }
+  if (meta.apps.length) h += `<p class="note" style="margin-top:8px">Web試作ではほかのアプリの使用時間を自動で取得できません。端末の「Digital Wellbeing」などで見た分数を入力してください。ネイティブ版では使用状況データから自動で取り込みます。</p>`;
+  h += `</div>`;
+  const a = r.d.getTime(), b = addDays(r.d, 1).getTime();
+  const ss = [];
+  for (const k of monthKeysBetween(a, b)) for (const [s, e] of (logs[k]?.sessions || [])) if (overlap(s, e, a, b)) ss.push([Math.max(s, a), Math.min(e, b)]);
+  if (Work.live && overlap(Work.live.s, Date.now(), a, b)) ss.push([Math.max(Work.live.s, a), Date.now(), true]);
+  ss.sort((x, y) => x[0] - y[0]);
+  h += `<div class="card"><h3>アプリを開いていた区間</h3>${ss.length ? ss.slice().reverse().map(([s, e, live]) => `<div class="row small num"><span class="grow">${hm(s)} 〜 ${live ? "いま" : hm(e)}</span><span>${fmtDur(e - s)}</span></div>`).join("") : `<div class="empty">記録はまだありません</div>`}</div>`;
+  const tr = [];
+  for (const k of monthKeysBetween(a, b)) for (const t of (logs[k]?.timers || [])) if (overlap(t.s, t.e, a, b)) tr.push(t);
+  if (tr.length) h += `<div class="card"><h3>タイマーの記録</h3>${tr.sort((x, y) => y.s - x.s).map(t => `<div class="row small"><span class="grow">${esc(t.label || "(ラベルなし)")} <span class="muted">${t.mode === "pomodoro" ? "ポモドーロ" : "ストップウォッチ"}</span></span><span class="num">${hm(t.s)}〜${hm(t.e)} ${fmtDur(t.e - t.s)}</span></div>`).join("")}</div>`;
+  return h;
+}
+function periodChart(rows) {
+  const n = rows.length, Wd = 340, H = 170, top = 10, bottom = 22, left = 34;
+  const maxV = Math.max(...rows.map(r => Math.max(r.work, r.dist)), 30 * 60000);
+  const stepH = maxV <= 2 * 3600000 ? 1800000 : maxV <= 6 * 3600000 ? 3600000 : 7200000;
+  const yMax = Math.ceil(maxV / stepH) * stepH;
+  const ph = H - top - bottom, pw = Wd - left - 4, gw = pw / n;
+  const bw = Math.max(2, Math.min(14, (gw - 4) / 2 - 1));
+  const y = v => top + ph - v / yMax * ph;
+  let g = "";
+  for (let v = 0; v <= yMax; v += stepH) g += `<line class="grid" x1="${left}" x2="${Wd - 4}" y1="${y(v)}" y2="${y(v)}"/><text class="axis" x="${left - 5}" y="${y(v) + 3}" text-anchor="end">${v / 3600000}h</text>`;
+  const barPath = (x, v, color) => { if (!v) return ""; const h = Math.max(1, y(0) - y(v)); const r = Math.min(4, h, bw / 2);
+    return `<path d="M${x},${y(0)} V${y(0) - h + r} Q${x},${y(0) - h} ${x + r},${y(0) - h} H${x + bw - r} Q${x + bw},${y(0) - h} ${x + bw},${y(0) - h + r} V${y(0)} Z" fill="${color}"/>`; };
+  rows.forEach((r, i) => {
+    const cx = left + gw * i + gw / 2;
+    g += barPath(cx - bw - 1, r.work, "var(--series-work)") + barPath(cx + 1, r.dist, "var(--series-dist)");
+    const lbl = n <= 7 ? `${WD[r.d.getDay()]}` : (r.d.getDate() === 1 || r.d.getDate() % 5 === 0 ? r.d.getDate() : "");
+    if (lbl !== "") g += `<text class="axis" x="${cx}" y="${H - 6}" text-anchor="middle">${lbl}</text>`;
+    g += `<rect x="${left + gw * i}" y="${top}" width="${gw}" height="${ph + bottom}" fill="transparent" data-i="${i}"/>`;
+  });
+  chartRows = rows;
+  let h = `<div class="card"><h3>日ごとの作業時間と妨害アプリ</h3>
+    <div class="legend"><span><i class="sw" style="background:var(--series-work)"></i>作業(自動)</span><span><i class="sw" style="background:var(--series-dist)"></i>妨害アプリ</span><span class="muted">棒をタップで詳細</span></div>
+    <div class="chart" id="chart"><svg viewBox="0 0 ${Wd} ${H}" role="img" aria-label="日ごとの作業時間と妨害アプリの使用時間">${g}</svg><div class="tip" id="tip"></div></div>
+    <button class="mini" data-table style="margin-top:8px">${showTable ? "表を隠す" : "表で見る"}</button>`;
+  if (showTable) h += `<div style="margin-top:8px">${rows.map(r => `<button class="row small num" style="width:100%" data-gotoday="${r.k}"><span style="width:5em;text-align:left">${r.d.getMonth() + 1}/${r.d.getDate()}(${WD[r.d.getDay()]})</span><span class="grow" style="text-align:right">作業 ${fmtDur(r.work)}</span><span style="width:7.5em;text-align:right">妨害 ${fmtDur(r.dist)}</span></button>`).join("")}</div>`;
+  return h + `</div>`;
+}
+let chartRows = [];
+function bindChart() {
+  const c = $("#chart"); if (!c) return;
+  const tip = $("#tip");
+  const showTip = el => {
+    const r = chartRows[+el.dataset.i]; if (!r) return;
+    const box = el.getBoundingClientRect(), cb = c.getBoundingClientRect();
+    tip.innerHTML = `<b>${r.d.getMonth() + 1}/${r.d.getDate()}(${WD[r.d.getDay()]})</b><br>作業 ${fmtDur(r.work)}<br>妨害 ${fmtDur(r.dist)}${r.timer ? `<br>タイマー ${fmtDur(r.timer)}` : ""}`;
+    tip.style.display = "block";
+    tip.style.left = Math.min(cb.width - 60, Math.max(60, box.left - cb.left + box.width / 2)) + "px";
+    tip.style.top = "6px";
+  };
+  c.addEventListener("pointermove", e => { const el = e.target.closest("[data-i]"); el ? showTip(el) : (tip.style.display = "none"); });
+  c.addEventListener("pointerleave", () => tip.style.display = "none");
+  c.addEventListener("click", e => { const el = e.target.closest("[data-i]"); if (el) showTip(el); });
+}
+
+/* ============================================================
+   タイマー(ストップウォッチ/ポモドーロ)。作業時間とは別集計
+   ============================================================ */
+const Timer = {
+  st: null,
+  load() { this.st = LS.get("timer") || { mode: "stopwatch", label: "", running: false }; },
+  save() { LS.set("timer", this.st); },
+  liveSegment() { const s = this.st; if (!s || !s.running) return null; if (s.mode === "pomodoro" && s.phase === "break") return null; return { s: s.segStart }; },
+  record(s, e) {
+    if (e - s < 5000) return;
+    const key = ym(new Date(s));
+    logOf(key).timers.push({ id: uid(), label: this.st.label, mode: this.st.mode, s, e });
+    saveLog(key);
+  },
+  start() {
+    const now = Date.now(); const s = this.st;
+    s.running = true; s.segStart = now; s.phaseStart = now; s.phase = "focus"; s.cycle = 1;
+    this.save(); unlockAudio();
+  },
+  stop() {
+    const s = this.st; if (!s.running) return;
+    if (!(s.mode === "pomodoro" && s.phase === "break")) this.record(s.segStart, Date.now());
+    s.running = false; this.save();
+  },
+  // ポモドーロの区切りを、閉じていた間の分も含めて追いつかせる
+  tick() {
+    const s = this.st; if (!s.running || s.mode !== "pomodoro") return;
+    const P = meta.prefs; let changed = false, guard = 0;
+    while (guard++ < 200) {
+      const len = (s.phase === "focus" ? P.focus : P.brk) * 60000;
+      const end = s.phaseStart + len;
+      if (Date.now() < end) break;
+      if (s.phase === "focus") { this.record(s.segStart, end); s.phase = "break"; }
+      else { s.phase = "focus"; s.segStart = end; s.cycle = (s.cycle || 1) + 1; }
+      s.phaseStart = end; changed = true;
+    }
+    if (changed) { this.save(); chime(s.phase === "break" ? "休憩に入ります" : "集中を再開します"); }
+  }
+};
+function renderTimer() {
+  const s = Timer.st, P = meta.prefs;
+  const todayA = startOfDay(new Date()).getTime();
+  const recent = [];
+  for (const k of monthKeysBetween(todayA - 6 * 864e5, Date.now())) for (const t of (logs[k]?.timers || [])) if (t.e > todayA - 6 * 864e5) recent.push(t);
+  const labels = [...new Set(recent.map(t => t.label).filter(Boolean))].slice(0, 8);
+  $("#timerScroll").innerHTML = `
+    <div style="text-align:center"><div class="seg" id="tSeg">${[["stopwatch", "ストップウォッチ"], ["pomodoro", "ポモドーロ"]].map(([k, l]) => `<button data-mode="${k}" class="${s.mode === k ? "on" : ""}" ${s.running ? "disabled" : ""}>${l}</button>`).join("")}</div></div>
+    <div class="clock" id="clock">00:00</div>
+    <div class="phase" id="phase"></div>
+    <button class="bigbtn ${s.running ? "stop" : ""}" id="tGo">${s.running ? "停止" : "開始"}</button>
+    <label class="field"><span>作業内容のラベル</span><input class="inp" id="tLabel" value="${esc(s.label)}" placeholder="例:マップ制作、敵AI" maxlength="40"></label>
+    ${labels.length ? `<div class="metas">${labels.map(l => `<button class="mini" data-lbl="${esc(l)}">${esc(l)}</button>`).join("")}</div>` : ""}
+    <div class="card"><h3>今日のタイマー合計 <span class="num" style="float:right;color:var(--text-primary)" id="tToday"></span></h3>
+      ${recent.filter(t => t.e > todayA).sort((a, b) => b.s - a.s).map(t => `<div class="row small"><span class="grow">${esc(t.label || "(ラベルなし)")} <span class="muted">${t.mode === "pomodoro" ? "ポモドーロ" : "ストップウォッチ"}</span></span><span class="num">${hm(t.s)}〜${hm(t.e)} ${fmtDur(t.e - t.s)}</span></div>`).join("") || `<div class="empty">まだ記録はありません</div>`}
+    </div>
+    <p class="note">タイマーの時間は、自動記録の作業時間には加算しません(要件書の現行前提)。ポモドーロは集中 ${P.focus} 分/休憩 ${P.brk} 分。長さは「設定」で変えられます。</p>`;
+  updateClock();
+}
+$("#timerScroll").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.mode && !Timer.st.running) { Timer.st.mode = b.dataset.mode; Timer.save(); renderTimer(); }
+  else if (b.id === "tGo") { Timer.st.running ? Timer.stop() : Timer.start(); renderTimer(); }
+  else if (b.dataset.lbl) { Timer.st.label = b.dataset.lbl; Timer.save(); $("#tLabel").value = b.dataset.lbl; }
+});
+$("#timerScroll").addEventListener("input", e => { if (e.target.id === "tLabel") { Timer.st.label = e.target.value; Timer.save(); } });
+function updateClock() {
+  const c = $("#clock"); if (!c || view !== "timer") return;
+  const s = Timer.st, P = meta.prefs, now = Date.now();
+  if (s.mode === "stopwatch") { c.textContent = fmtClock(s.running ? now - s.segStart : 0); $("#phase").textContent = s.running ? "計測中" : ""; }
+  else {
+    if (!s.running) { c.textContent = fmtClock(P.focus * 60000); $("#phase").textContent = "集中 → 休憩 を繰り返します"; }
+    else { const len = (s.phase === "focus" ? P.focus : P.brk) * 60000; c.textContent = fmtClock(s.phaseStart + len - now); $("#phase").textContent = `${s.phase === "focus" ? "集中" : "休憩"}中 · ${s.cycle || 1} 本目`; }
+  }
+  const a = startOfDay(new Date()).getTime(); const t = $("#tToday"); if (t) t.textContent = fmtDur(timerMs(a, a + 864e5));
+}
+
+/* ============================================================
+   音と通知
+   ============================================================ */
+let actx = null;
+function unlockAudio() { try { actx ||= new (window.AudioContext || window.webkitAudioContext)(); actx.resume && actx.resume(); } catch {} }
+document.addEventListener("pointerdown", unlockAudio, { once: true });
+function chime(msg) {
+  try {
+    if (actx) { [0, 0.25].forEach((d, i) => { const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = i ? 1320 : 880; g.gain.setValueAtTime(0.0001, actx.currentTime + d); g.gain.exponentialRampToValueAtTime(0.25, actx.currentTime + d + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + d + 0.4); o.connect(g).connect(actx.destination); o.start(actx.currentTime + d); o.stop(actx.currentTime + d + 0.45); }); }
+  } catch {}
+  try { navigator.vibrate && navigator.vibrate([120, 80, 120]); } catch {}
+  if (msg) banner(msg);
+}
+function banner(msg) {
+  const b = $("#banner"); b.innerHTML = `${esc(msg)}<span style="float:right;opacity:.7">✕</span>`; b.classList.add("on");
+  b.onclick = () => b.classList.remove("on");
+  clearTimeout(banner._t); banner._t = setTimeout(() => b.classList.remove("on"), 12000);
+}
+function checkEventNotices() {
+  const now = Date.now(); const done = LS.get("notified") || {};
+  let dirty = false;
+  for (const ev of meta.events) {
+    if (ev.notify == null || ev.notify < 0) continue;
+    const st = parseYmd(ev.date).getTime() + toMin(ev.start) * 60000;
+    const at = st - ev.notify * 60000;
+    const key = ev.id + "@" + st + "-" + ev.notify;
+    if (now >= at && now < st + 10 * 60000 && !done[key]) {
+      done[key] = now; dirty = true;
+      chime(`予定:${ev.title}(${ev.start} 開始${ev.notify ? `、${ev.notify}分前` : ""})`);
+      try { if ("Notification" in window && Notification.permission === "granted") new Notification(ev.title, { body: `${ev.start} 開始` }); } catch {}
+    }
+  }
+  if (dirty) { for (const k of Object.keys(done)) if (now - done[k] > 7 * 864e5) delete done[k]; LS.set("notified", done); }
+}
+const toMin = t => { const [h, m] = (t || "0:0").split(":").map(Number); return h * 60 + (m || 0); };
+
+/* ============================================================
+   予定
+   ============================================================ */
+let planMode = "day", planAnchor = startOfDay(new Date());
+function renderPlan() {
+  const a = planAnchor;
+  const days = planMode === "day" ? [a] : (() => { const s = addDays(a, -((a.getDay() + 6) % 7)); return [...Array(7)].map((_, i) => addDays(s, i)); })();
+  const label = planMode === "day" ? `${a.getMonth() + 1}月${a.getDate()}日(${WD[a.getDay()]})` : `${days[0].getMonth() + 1}/${days[0].getDate()} 〜 ${days[6].getMonth() + 1}/${days[6].getDate()}`;
+  const today = ymd(new Date());
+  let h = `<div class="seg">${[["day", "日別"], ["week", "週別"]].map(([k, l]) => `<button data-pm="${k}" class="${planMode === k ? "on" : ""}">${l}</button>`).join("")}</div>
+    <button class="mini" data-ptoday style="margin-left:8px">今日</button>
+    <div class="periodnav"><button data-psh="-1" aria-label="前へ">‹</button><span class="lbl">${label}</span><button data-psh="1" aria-label="次へ">›</button></div>`;
+  let any = false;
+  for (const d of days) {
+    const k = ymd(d);
+    const evs = meta.events.filter(e => e.date === k).sort((x, y) => toMin(x.start) - toMin(y.start));
+    h += `<div class="daygroup ${k === today ? "today" : ""}">${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]})${k === today ? " 今日" : ""}</div>`;
+    if (!evs.length) { h += `<div class="muted small" style="padding:2px 2px 6px">予定なし</div>`; continue; }
+    any = true;
+    h += evs.map(e => `<button class="ev" data-ev="${e.id}"><span class="t">${esc(e.start)}〜${esc(e.end || "")}</span><span class="grow"><span class="ti">${esc(e.title)}</span>
+      ${e.note ? `<div class="muted small">${esc(e.note)}</div>` : ""}<div class="muted small">${e.notify >= 0 && e.notify != null ? `🔔 ${e.notify ? e.notify + "分前" : "開始時"}に通知` : "通知なし"}</div></span></button>`).join("");
+  }
+  h += `<p class="note" style="margin-top:14px">Web試作の通知は、このページを開いている間だけ音と表示で知らせます。閉じていても届く通知は、ネイティブ版(AlarmManager)で実装します。</p><div style="height:64px"></div>`;
+  $("#planScroll").innerHTML = h;
+}
+$("#planScroll").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.pm) { planMode = b.dataset.pm; renderPlan(); }
+  else if (b.dataset.psh) { planAnchor = addDays(planAnchor, (planMode === "day" ? 1 : 7) * +b.dataset.psh); renderPlan(); }
+  else if (b.dataset.ptoday != null) { planAnchor = startOfDay(new Date()); renderPlan(); }
+  else if (b.dataset.ev) editEvent(meta.events.find(x => x.id === b.dataset.ev));
+});
+$("#addEvent").onclick = () => editEvent(null);
+function editEvent(ev) {
+  const now = new Date(); const nextH = `${pad((now.getHours() + 1) % 24)}:00`;
+  const e = ev ? { ...ev } : { id: uid(), title: "", date: ymd(planAnchor), start: nextH, end: `${pad((now.getHours() + 2) % 24)}:00`, note: "", notify: 10 };
+  openSheet(`<h2>${ev ? "予定を編集" : "予定を追加"}</h2>
+    <label class="field"><span>タイトル</span><input class="inp" id="eT" value="${esc(e.title)}" placeholder="例:ボス戦の調整" maxlength="60"></label>
+    <label class="field"><span>日付</span><input class="inp" type="date" id="eD" value="${esc(e.date)}"></label>
+    <div style="display:flex;gap:8px"><label class="field" style="flex:1"><span>開始</span><input class="inp" type="time" id="eS" value="${esc(e.start)}"></label>
+    <label class="field" style="flex:1"><span>終了</span><input class="inp" type="time" id="eE" value="${esc(e.end)}"></label></div>
+    <label class="field"><span>通知</span><select class="inp" id="eN">${[[-1, "通知しない"], [0, "開始時"], [5, "5分前"], [10, "10分前"], [15, "15分前"], [30, "30分前"], [60, "1時間前"]].map(([v, l]) => `<option value="${v}" ${(e.notify ?? -1) == v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+    <label class="field"><span>補足</span><textarea class="inp" id="eM" rows="3">${esc(e.note)}</textarea></label>
+    <div class="btns">${ev ? `<button class="btn danger" data-del>削除</button>` : `<button class="btn" data-x>やめる</button>`}<button class="btn primary" data-ok>保存</button></div>`, s => {
+    $("[data-x]", s) && ($("[data-x]", s).onclick = closeSheet);
+    $("[data-ok]", s).onclick = () => {
+      e.title = $("#eT").value.trim() || "無題の予定"; e.date = $("#eD").value || ymd(new Date());
+      e.start = $("#eS").value || "00:00"; e.end = $("#eE").value; e.notify = +$("#eN").value; e.note = $("#eM").value;
+      const i = meta.events.findIndex(x => x.id === e.id);
+      if (i >= 0) meta.events[i] = e; else meta.events.push(e);
+      saveMeta(); closeSheet(); planAnchor = parseYmd(e.date); renderPlan(); toast("保存しました");
+      if (e.notify >= 0) try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission().catch(() => {}); } catch {}
+    };
+    $("[data-del]", s) && ($("[data-del]", s).onclick = () => confirmSheet("予定を削除しますか", `「${e.title}」を削除します。`, "削除する", () => { meta.events = meta.events.filter(x => x.id !== e.id); saveMeta(); renderPlan(); }));
+    if (!ev) $("#eT").focus();
+  });
+}
+
+/* ============================================================
+   設定
+   ============================================================ */
+function renderPrefsIfOpen() { if (view === "prefs") renderPrefs(); }
+function renderPrefs() {
+  const P = meta.prefs;
+  $("#prefsScroll").innerHTML = `
+    <div class="card"><h3>妨害アプリ</h3>
+      ${meta.apps.map(a => `<div class="row"><span class="grow">${esc(a.name)}</span><button class="mini" data-delapp="${a.id}">外す</button></div>`).join("") || `<div class="muted small">まだ指定されていません</div>`}
+      <div style="display:flex;gap:8px;margin-top:10px"><input class="inp" id="appName" placeholder="例:YouTube、X、ゲーム" maxlength="30"><button class="btn primary" id="addApp" style="flex:none">追加</button></div>
+      <div class="metas" style="margin-top:8px">${["YouTube", "X", "TikTok", "Instagram", "LINE", "ゲーム"].filter(n => !meta.apps.some(a => a.name === n)).map(n => `<button class="mini" data-quickapp="${n}">＋${n}</button>`).join("")}</div>
+      <p class="note">Web試作ではインストール済みアプリの一覧を読めないため、名前で指定します。</p>
+    </div>
+    <div class="card"><h3>使用状況へのアクセス(ネイティブ版で必要)</h3>
+      <p class="small" style="line-height:1.7;margin:0">ネイティブ版では、妨害アプリの使用時間を自動で取り込むために、端末で次の許可を手動で付けます。<br>
+      1. 端末の「設定」を開く<br>2. 「アプリ」→「特別なアプリアクセス」→「使用状況へのアクセス」<br>3. 一覧からこのアプリを選び、「使用状況へのアクセスを許可」をオン<br>
+      <span class="muted">機種により項目名は「使用履歴へのアクセス」などと異なります。</span></p>
+    </div>
+    <div class="card"><h3>ポモドーロと目標</h3>
+      <div style="display:flex;gap:8px">
+        <label class="field" style="flex:1"><span>集中(分)</span><input class="inp" type="number" inputmode="numeric" min="1" max="180" id="pF" value="${P.focus}"></label>
+        <label class="field" style="flex:1"><span>休憩(分)</span><input class="inp" type="number" inputmode="numeric" min="1" max="60" id="pB" value="${P.brk}"></label>
+        <label class="field" style="flex:1"><span>1日の目標(分)</span><input class="inp" type="number" inputmode="numeric" min="0" max="1440" id="pG" value="${P.goal || ""}" placeholder="なし"></label>
+      </div>
+    </div>
+    <div class="card"><h3>テンプレート</h3>
+      ${Object.keys(P.templates).map(k => `<label class="field"><span>${esc(k)}</span><textarea class="inp" rows="5" data-tplk="${esc(k)}">${esc(P.templates[k])}</textarea></label>`).join("")}
+      <button class="mini" id="tplReset">初期の内容に戻す</button>
+    </div>
+    <div class="card"><h3>保存</h3>
+      <div class="small">状態:<b>${esc(Store.status)}</b></div>
+      <p class="muted small" style="line-height:1.6">入力はまずこの端末に保存し、claude.ai にサインインして開いている場合は、あなた専用の領域へ追って同期します。ほかの人からは見えません。</p>
+      <button class="mini" id="reGuide">はじめにの案内をもう一度見る</button>
+    </div>
+    <p class="muted small" style="text-align:center">作業記録メモ帳 Web試作 · 要件定義書(2026-11-01)準拠</p>`;
+}
+$("#prefsScroll").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.id === "addApp" || b.dataset.quickapp) {
+    const name = (b.dataset.quickapp || $("#appName").value).trim(); if (!name) return;
+    if (meta.apps.some(a => a.name === name)) { toast("すでに指定済みです"); return; }
+    meta.apps.push({ id: uid(), name }); saveMeta(); renderPrefs();
+  } else if (b.dataset.delapp) {
+    const a = meta.apps.find(x => x.id === b.dataset.delapp);
+    confirmSheet("妨害アプリから外しますか", `「${a.name}」を外します。入力済みの時間は集計に出なくなります。`, "外す", () => { meta.apps = meta.apps.filter(x => x.id !== a.id); saveMeta(); renderPrefs(); });
+  } else if (b.id === "tplReset") { meta.prefs.templates = { ...DEFAULT_TPL }; saveMeta(); renderPrefs(); toast("戻しました"); }
+  else if (b.id === "reGuide") guide();
+});
+$("#prefsScroll").addEventListener("change", e => {
+  const P = meta.prefs, t = e.target;
+  if (t.id === "pF") P.focus = Math.max(1, Math.min(180, Math.round(+t.value) || 25));
+  else if (t.id === "pB") P.brk = Math.max(1, Math.min(60, Math.round(+t.value) || 5));
+  else if (t.id === "pG") P.goal = Math.max(0, Math.min(1440, Math.round(+t.value) || 0));
+  else if (t.dataset.tplk) P.templates[t.dataset.tplk] = t.value;
+  else return;
+  saveMeta(); toast("保存しました");
+});
+$("#prefsScroll").addEventListener("keydown", e => { if (e.target.id === "appName" && e.key === "Enter") $("#addApp").click(); });
+
+function guide() {
+  openSheet(`<h2>はじめに</h2>
+    <p class="small" style="line-height:1.8">このページを<b>開いているあいだ</b>が、作業時間として自動で記録されます。ほかのアプリへ切り替えたり、画面が消えたりすると止まります。無操作で止まることはありません。</p>
+    <p class="small" style="line-height:1.8">これはスマホのブラウザで試せる<b>Web試作</b>です。ネイティブ版との違いは次のとおりです。</p>
+    <ul class="small" style="line-height:1.8;padding-left:1.2em;margin:0">
+      <li>妨害アプリの使用時間は自動取得できないため、「記録」で分数を入力します</li>
+      <li>予定の通知は、ページを開いている間だけ鳴ります</li>
+      <li>インストール済みアプリの一覧は読めないため、名前で指定します</li>
+    </ul>
+    <p class="small" style="line-height:1.8">ネイティブ版で必要になる「使用状況へのアクセス」の許可手順は、「設定」に載せてあります。</p>
+    <div class="btns"><button class="btn primary" data-ok>書きはじめる</button></div>`, s => {
+    $("[data-ok]", s).onclick = () => { meta.guideSeen = true; saveMeta(); closeSheet(); show("memo"); $("#memoBody").focus(); };
+  });
+}
+
+/* ============================================================
+   起動と時計
+   ============================================================ */
+function refreshLive() {
+  const a = startOfDay(new Date()).getTime();
+  $("#liveToday").textContent = fmtDur(workMs(a, a + 864e5));
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") { Work.start(); Timer.tick(); checkEventNotices(); refreshLive(); if (view === "log") renderLog(); }
+  else { flushMemoEdit(); Work.stop(); Store.flushAll(); }
+});
+addEventListener("pagehide", () => { flushMemoEdit(); Work.stop(); Store.flushAll(); });
+
+function boot() {
+  loadAll(); Timer.load(); Work.recover(); ensureMemo();
+  Work.start();
+  renderMemo();
+  show(location.hash.slice(1) || "memo", false);
+  refreshLive();
+  if (!meta.guideSeen) guide(); else if (view === "memo") $("#memoBody").focus();
+  setInterval(() => { Work.beat(); refreshLive(); }, 10000);
+  setInterval(() => { Timer.tick(); updateClock(); }, 1000);
+  setInterval(checkEventNotices, 15000);
+  setTimeout(checkEventNotices, 1500);
+  Store.connect(() => {
+    // 他端末の内容が新しかったときは読み直す(編集中の本文は保つ)
+    const cur = meta.current;
+    loadAll(); ensureMemo();
+    if (cur && memos[cur]) meta.current = cur;
+    renderMemo(); if (view !== "memo") show(view, false); refreshLive();
+  });
+}
+boot();
+</script>
+</body>
+</html>
