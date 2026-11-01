@@ -118,6 +118,8 @@ body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 .filebar{display:flex;align-items:center;gap:6px;background:var(--surface-1);border-bottom:1px solid var(--line);padding-right:8px}
 .fb-open{flex:1;min-width:0;display:flex;align-items:center;gap:6px;padding:9px 6px 9px 10px;text-align:left;font-size:15px}
 .fb-open b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fb-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px;padding:12px 4px}
+.fb-boardbtn{flex:none;font-size:15px;font-weight:700;padding:8px 16px;border-radius:12px;border:1.5px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface-1));white-space:nowrap}
 .fb-new{flex:none;font-size:13px;font-weight:600;padding:6px 10px;border-radius:999px;background:var(--accent);color:var(--accent-ink);white-space:nowrap}
 .fb-ic{color:var(--text-secondary);font-size:17px}
 .fb-board{color:var(--accent);font-weight:600;font-size:14px;white-space:nowrap}
@@ -144,6 +146,12 @@ body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 .bc-h{position:absolute;right:-11px;bottom:-11px;width:22px;height:22px;border-radius:50%;background:var(--surface-1);border:2px solid var(--accent)}
 .bc-h::before{content:"";position:absolute;inset:-9px}
 .bc-h::after{content:"";position:absolute;left:5px;top:5px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.t-red{background:color-mix(in srgb,#e34948 7%,var(--surface-1));border-color:color-mix(in srgb,#e34948 28%,var(--line))}
+.t-orange{background:color-mix(in srgb,#eb6834 7%,var(--surface-1));border-color:color-mix(in srgb,#eb6834 28%,var(--line))}
+.t-yellow{background:color-mix(in srgb,#eda100 9%,var(--surface-1));border-color:color-mix(in srgb,#eda100 32%,var(--line))}
+.t-green{background:color-mix(in srgb,#1baf7a 7%,var(--surface-1));border-color:color-mix(in srgb,#1baf7a 28%,var(--line))}
+.t-blue{background:color-mix(in srgb,#2a78d6 7%,var(--surface-1));border-color:color-mix(in srgb,#2a78d6 28%,var(--line))}
+.t-purple{background:color-mix(in srgb,#6250d6 7%,var(--surface-1));border-color:color-mix(in srgb,#6250d6 28%,var(--line))}
 .c-red{background:color-mix(in srgb,#e34948 15%,var(--surface-1));border-color:color-mix(in srgb,#e34948 45%,var(--line))}
 .c-orange{background:color-mix(in srgb,#eb6834 15%,var(--surface-1));border-color:color-mix(in srgb,#eb6834 45%,var(--line))}
 .c-yellow{background:color-mix(in srgb,#eda100 18%,var(--surface-1));border-color:color-mix(in srgb,#eda100 50%,var(--line))}
@@ -189,7 +197,7 @@ body.side-open .side{display:flex}
 .side-h{display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px 6px;font-weight:700;font-size:13px;color:var(--text-secondary)}
 .side-list{flex:1;min-height:0;overflow:auto;padding:0 6px 10px}
 .srow{display:flex;align-items:center;gap:4px;padding:8px 6px 8px calc(4px + var(--d) * 16px);border-radius:8px;font-size:14px;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.srow.sg{font-weight:700}
+.srow.sg{font-weight:700;box-shadow:inset 3px 0 0 var(--gc)}
 .srow.sm.cur{background:var(--surface-2);font-weight:700}
 .s-fold{width:20px;flex:none;color:var(--text-secondary);font-size:12px;padding:0}
 .s-dot{width:20px;flex:none;text-align:center;color:var(--text-muted);font-size:10px}
@@ -279,8 +287,9 @@ textarea.inp{line-height:1.6;resize:vertical}
 <main>
   <!-- メモ -->
   <section class="view" id="v-memo">
-    <div class="filebar"><button class="fb-side" id="sideBtn" aria-label="ファイルとメモの一覧">☰</button><button class="fb-open" id="fileBar" aria-label="ボードを開く"><span class="fb-board">◧ ボード</span><span class="fb-sep">›</span><b id="fbName"></b></button>
-      <button class="fb-new" id="newMemo">＋ 新しいメモ</button></div>
+    <div class="filebar"><button class="fb-side" id="sideBtn" aria-label="ファイルとメモの一覧">☰</button><b class="fb-title" id="fbName"></b>
+      <button class="fb-boardbtn" id="fileBar" aria-label="ボードを開く">◧ ボード</button>
+      <button class="fb-new" id="newMemo">＋ メモ</button></div>
     <div class="memo-body">
       <aside class="side" id="side" aria-label="ファイルとメモ">
         <div class="side-h">ファイルとメモ<span class="muted small">長押しで移動</span></div>
@@ -1246,8 +1255,7 @@ function memoTitle(f) {
   return (first(f.nodes) || "新しいメモ").slice(0, 30);
 }
 function renderFileBar() {
-  const g = typeof groupOfCard === "function" ? groupOfCard(curFile) : null;
-  $("#fbName").textContent = (g ? groupChain(g) + " › " : "") + memoTitle(files[curFile]);
+  $("#fbName").textContent = memoTitle(files[curFile]); // ファイルの所属は左のツリーで見る
   if (typeof renderSide === "function" && typeof sideList !== "undefined") renderSide();
 }
 const isEmptyMemo = f => !f.name && f.nodes.length === 1 && !f.nodes[0].t && !f.nodes[0].c.length;
@@ -1503,7 +1511,7 @@ function renderBoard() {
   cardsEl.innerHTML = Object.keys(files).filter(id => board.cards[id]).map(id => {
     const f = files[id], c = board.cards[id];
     const pv = previewLines(f);
-    return `<div class="bcard${c.c ? " c-" + c.c : ""}${id === curFile ? " cur" : ""}" data-card="${id}" style="left:${c.x}px;top:${c.y}px;width:${CARD_W}px">
+    return `<div class="bcard${cardColorClass(id)}${id === curFile ? " cur" : ""}" data-card="${id}" style="left:${c.x}px;top:${c.y}px;width:${CARD_W}px">
       <div class="bc-t">${esc(memoTitle(f))}</div>${pv.length ? `<div class="bc-p">${pv.map(t => `<div>${esc(t)}</div>`).join("")}</div>` : ""}
       <div class="bc-m">${countNodes(f.nodes)}行 · ${fmtWhen(f.updated)}</div>
       <div class="bc-h" data-handle="${id}" aria-label="引いて矢印をつなぐ"></div></div>`;
@@ -1520,7 +1528,10 @@ function renderBoard() {
   }
   if (board.groups.some(g => g.drop)) { board.groups = board.groups.filter(g => !g.drop); migrated = true; }
   if (migrated || board.groups.some(g => !g.members)) recomputeTree();
-  glabelsEl.innerHTML = board.groups.map(g => `<div class="glabel${g.c ? " c-" + g.c : ""}" data-group="${g.id}"><span class="gl-n">📁 ${esc(g.name)}</span><span class="gl-k">${(g.members || []).length + descendantsOf(g).length}</span>` +
+  ensureAutoColors();
+  cardsEl.querySelectorAll("[data-card]").forEach(el => { const id = el.dataset.card; el.className = "bcard" + cardColorClass(id) + (id === curFile ? " cur" : ""); });
+  ensureAutoColors();
+  glabelsEl.innerHTML = board.groups.map(g => `<div class="glabel${groupColor(g) ? " c-" + groupColor(g) : ""}" data-group="${g.id}"><span class="gl-n">📁 ${esc(g.name)}</span><span class="gl-k">${(g.members || []).length + descendantsOf(g).length}</span>` +
     `<span class="gl-h" data-ghandle="${g.id}" aria-label="引いて矢印をつなぐ"></span></div>`).join("");
   drawEdges();
   applyView();
@@ -1561,7 +1572,7 @@ function drawEdges() {
   let h = `<defs>${mk("ah", "var(--text-secondary)")}${mk("ah2", "var(--accent)")}${COLORS.filter(Boolean).map(k => mk("ah-" + k, COLOR_HEX[k])).join("")}</defs>`;
   const geos = board.groups.map(g => [g, groupGeo(g)]).filter(([, G]) => G).sort((a, b) => b[1].area - a[1].area); // 大きい丸から描き、内側の丸を上に
   for (const [g, G] of geos) {
-    h += `<path class="gshape${hotGroup === g.id ? " hot" : ""}" d="${smoothPath(g.pts)}" style="--gc:${COLOR_HEX[g.c || ""]}"/>`;
+    h += `<path class="gshape${hotGroup === g.id ? " hot" : ""}" d="${smoothPath(g.pts)}" style="--gc:${COLOR_HEX[groupColor(g)]}"/>`;
     const lb = glabelsEl.querySelector(`[data-group="${g.id}"]`);
     if (lb) { lb.style.left = G.top.x + "px"; lb.style.top = G.top.y + "px"; }
   }
@@ -1806,8 +1817,76 @@ function quickMemoSheet(at, linkFrom, inGroup) {
     $("[data-go]", s).onclick = () => { const f = make(); settle(f); closeSheet(); openFile(f.id); focusStart(); };
   });
 }
-function colorSwatches(cur) {
-  return `<div class="swatches">${COLORS.map(k => `<button class="sw2${k ? " c-" + k : ""}${(cur || "") === k ? " on" : ""}" data-col="${k}" aria-label="${COLOR_NAMES[k]}">${k ? "" : "なし"}</button>`).join("")}</div>`;
+function colorSwatches(cur, noneLabel) {
+  return `<div class="swatches">${COLORS.map(k => `<button class="sw2${k ? " c-" + k : ""}${(cur || "") === k ? " on" : ""}" data-col="${k}" aria-label="${k ? COLOR_NAMES[k] : noneLabel || "なし"}">${k ? "" : noneLabel || "なし"}</button>`).join("")}</div>`;
+}
+// ---- ファイルごとの色(自動)と、中のメモの淡い色 ----
+const BC_DEF = { auto: true, tint: true, arrange: true };
+const boardColors = () => ({ ...BC_DEF, ...(meta.prefs.boardColors || {}) });
+const PAL_AUTO = ["blue", "green", "orange", "purple", "red", "yellow"];
+function ensureAutoColors() { // 色を持たない丸に、なるべくほかと重ならない色を一度だけ割り当てる
+  let ch = false;
+  for (const g of board.groups) if (!g.autoC) {
+    const used = board.groups.map(h => h.autoC).filter(Boolean);
+    g.autoC = PAL_AUTO.slice().sort((a, b) => used.filter(x => x === a).length - used.filter(x => x === b).length || PAL_AUTO.indexOf(a) - PAL_AUTO.indexOf(b))[0];
+    ch = true;
+  }
+  if (ch) saveBoard();
+}
+const groupColor = g => (g ? g.c || (boardColors().auto ? g.autoC || "" : "") : "");
+function cardColorClass(id) { // 自分で選んだ色はそのまま、なければ入っているファイルの色を淡く
+  const c = board.cards[id] || {};
+  if (c.c) return " c-" + c.c;
+  const t = boardColors().tint ? groupColor(groupOfCard(id)) : "";
+  return t ? " t-" + t : "";
+}
+// ---- ファイルの中を整列:ツリーと同じ順で、カードと中の丸を行と列にそろえ、丸を中身に合う形にする ----
+function layoutBox(it) {
+  if (it.t === "m") {
+    const c = board.cards[it.id], el = cardsEl.querySelector(`[data-card="${it.id}"]`);
+    let h = el && el.offsetWidth && !boardEl.classList.contains("compact") ? el.offsetHeight : 0;
+    if (!h) h = 54 + previewLines(files[it.id]).length * 18; // 見えていないときは中身から見積もる
+    return { x: c.x, y: c.y, w: CARD_W, h };
+  }
+  const H = groupGeo(groupById(it.id)); return H ? { x: H.x0, y: H.y0 - 14, w: H.x1 - H.x0, h: H.y1 - H.y0 + 14 } : null;
+}
+function roundShape(x0, y0, x1, y1) { // 中身の外枠を収める、角の丸い形
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, a = (x1 - x0) / 2 * 1.19, b = (y1 - y0) / 2 * 1.19, N = 36;
+  return [...Array(N)].map((_, i) => { const t = i / N * 2 * Math.PI, c = Math.cos(t), s = Math.sin(t); return [Math.round(cx + a * Math.sign(c) * Math.sqrt(Math.abs(c))), Math.round(cy + b * Math.sign(s) * Math.sqrt(Math.abs(s)))]; });
+}
+function arrangeGroup(g, deep) {
+  if (!g || !g.pts) return;
+  if (deep) for (const k of board.groups.filter(h => h.parent === g.id)) arrangeGroup(k, true);
+  const items = sideKids(g.id).map(it => [it, layoutBox(it)]).filter(([, b]) => b);
+  if (!items.length) return;
+  const G = groupGeo(g);
+  const n = items.length, cols = n <= 2 ? n : n <= 4 ? 2 : 3, gap = 24;
+  const colW = [...Array(cols)].map((_, j) => Math.max(...items.filter((_, i) => i % cols === j).map(([, b]) => b.w)));
+  const rel = []; let y = 0, W = 0;
+  for (let r = 0; r * cols < n; r++) { // まず (0,0) 基準で並べ方を決める
+    const row = items.slice(r * cols, r * cols + cols); let x = 0;
+    row.forEach(([it, b], j) => { rel.push([it, b, x, y]); W = Math.max(W, x + b.w); x += colW[j] + gap; });
+    y += Math.max(...row.map(([, b]) => b.h)) + gap;
+  }
+  const H = y - gap, ox = Math.round(G.cx - W / 2), oy = Math.round(G.cy - H / 2 + 8); // 元の丸の中心に、まとまりの中心を合わせる
+  for (const [it, b, x, y2] of rel) {
+    if (it.t === "m") { const c = board.cards[it.id]; c.x = ox + x; c.y = oy + y2; }
+    else translateGroup(groupById(it.id), ox + x - b.x, oy + y2 - b.y);
+  }
+  g.pts = roundShape(ox - 18, oy - 26, ox + W + 18, oy + H + 18);
+  evictStrangers(g);
+  if (g.parent && groupById(g.parent)) ensureContains(groupById(g.parent), pushOut(g.pts, 16));
+  saveBoard();
+}
+function evictStrangers(g) { // 整列した丸に、もともと中身でなかったカードがかぶったら、丸の外の空いた所へよける
+  const sub = [g, ...descendantsOf(g)], mine = new Set(sub.flatMap(x => x.members || []));
+  const G = groupGeo(g);
+  for (const id of Object.keys(files)) {
+    if (mine.has(id)) continue;
+    const p = cardCenter(id); if (!p || !sub.some(x => x.pts && insidePts(x.pts, p.x, p.y))) continue;
+    const c = board.cards[id]; let x = Math.round(G.x1 + 30), y = c.y, guard = 0;
+    while (guard++ < 40) { const q = freeSpot(x, y); if (!insidePts(g.pts, q.x + CARD_W / 2, q.y + 36)) { c.x = q.x; c.y = q.y; break; } y += 120; }
+  }
 }
 const groupChain = g => [...ancestorsOfGroup(g), g].map(x => "📁 " + x.name).join(" › ");
 function cardMenu(id) {
@@ -1816,7 +1895,7 @@ function cardMenu(id) {
   openSheet(`<h2>${esc(memoTitle(f))}</h2>${g ? `<p class="muted small" style="margin-top:-4px">${esc(groupChain(g))} に入っています</p>` : ""}
     <button class="btn primary block" data-open>開いて書く</button>
     <label class="field"><span>名前</span><input class="inp" id="cmName" value="${esc(f.name || "")}" maxlength="40" placeholder="空欄なら1行目が名前(${esc(memoTitle({ ...f, name: "" }))})"></label>
-    <div class="field"><span>色</span>${colorSwatches(c.c)}</div>
+    <div class="field"><span>色</span>${colorSwatches(c.c, boardColors().tint && groupColor(g) ? "ファイルの色" : "なし")}</div>
     ${g ? `<button class="btn block" data-out style="margin-top:4px">「${esc(g.name)}」の外へ出す</button>` : ""}
     <button class="btn danger block" data-del style="margin-top:8px">このメモを削除</button>
     <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
@@ -1854,8 +1933,8 @@ function groupMenu(gid) {
   openSheet(`<h2>📁 ${esc(g.name)}</h2>
     <p class="muted small" style="margin-top:-4px">${g.parent ? esc(groupChain(groupById(g.parent))) + " の中 · " : ""}${inner.map(esc).join("、") || "まだ空です"}</p>
     <label class="field"><span>名前</span><input class="inp" id="gmN" value="${esc(g.name)}" maxlength="30"></label>
-    <div class="field"><span>丸の色</span>${colorSwatches(g.c)}</div>
-    <button class="btn block" data-redraw style="margin-top:4px">形を描き直す</button>
+    <div class="field"><span>丸の色</span>${colorSwatches(g.c, boardColors().auto ? "自動" : "なし")}</div>
+    <div class="btns" style="margin-top:4px"><button class="btn" data-arrange>中を整列</button><button class="btn" data-redraw>形を描き直す</button></div>
     <button class="btn danger block" data-del style="margin-top:8px">丸を消す(ファイルを消す)</button>
     <p class="muted small">丸を消しても、中のメモや丸は消えません(ひとつ外側に移ります)。</p>
     <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
@@ -1864,6 +1943,7 @@ function groupMenu(gid) {
       if ("col" in b.dataset) { g.c = b.dataset.col || undefined; if (!g.c) delete g.c; saveBoard(); s.querySelectorAll(".sw2").forEach(x => x.classList.toggle("on", x === b)); renderBoard(); }
       else if ("ok" in b.dataset) { g.name = $("#gmN").value.trim() || g.name; saveBoard(); closeSheet(); renderBoard(); renderFileBar(); }
       else if ("redraw" in b.dataset) { g.name = $("#gmN").value.trim() || g.name; closeSheet(); setLasso(true, gid); }
+      else if ("arrange" in b.dataset) { g.name = $("#gmN").value.trim() || g.name; closeSheet(); arrangeGroup(g, true); recomputeTree(); renderBoard(); renderFileBar(); toast(`「${g.name}」の中を整列しました`); }
       else if ("del" in b.dataset) confirmSheet("丸を消しますか", `ファイル「${g.name}」を消します${n ? `(つながっている矢印 ${n} 本も)` : ""}。中のメモや丸は消えず、ひとつ外側に移ります。`, "消す", () => {
         board.groups = board.groups.filter(x => x !== g); board.edges = board.edges.filter(e => e.a !== gid && e.b !== gid);
         recomputeTree(); renderBoard(); renderFileBar(); toast("丸を消しました");
@@ -1920,7 +2000,7 @@ function renderSide() {
     for (const it of sideKids(pid)) {
       if (it.t === "g") {
         const g = groupById(it.id), folded = sideFold.has(g.id) && !curChain.has(g.id), n = sideKids(g.id).length;
-        rows.push(`<div class="srow sg${g.c ? " c-" + g.c : ""}" data-sid="g:${g.id}" style="--d:${d}"><button class="s-fold" data-sfold="${g.id}" aria-label="${folded ? "開く" : "畳む"}">${folded ? "▸" : "▾"}</button><span class="s-name">📁 ${esc(g.name)}</span><span class="s-k">${n}</span></div>`);
+        rows.push(`<div class="srow sg" data-sid="g:${g.id}" style="--d:${d};--gc:${COLOR_HEX[groupColor(g)]}"><button class="s-fold" data-sfold="${g.id}" aria-label="${folded ? "開く" : "畳む"}">${folded ? "▸" : "▾"}</button><span class="s-name">📁 ${esc(g.name)}</span><span class="s-k">${n}</span></div>`);
         if (!folded) walk(g.id, d + 1);
       } else rows.push(`<div class="srow sm${it.id === cur ? " cur" : ""}" data-sid="m:${it.id}" style="--d:${d}"><span class="s-dot">•</span><span class="s-name">${esc(memoTitle(files[it.id]))}</span></div>`);
     }
@@ -2022,6 +2102,10 @@ function sideMove(src, tgt, zone) {
     const now = itemParent(src);
     toast(now ? `「${groupById(now).name}」に入れました` : "ファイルの外に出しました");
     if (now) sideFold.delete(now);
+  }
+  if (boardColors().arrange) { // 移した先(と移した元)のファイルの中を、ツリーの順に整列する
+    for (const gid of new Set([newParent, oldParent])) if (gid && groupById(gid)) arrangeGroup(groupById(gid), false);
+    recomputeTree();
   }
   saveBoard(); renderSide(); renderFileBar();
 }
@@ -2451,6 +2535,12 @@ function renderPrefs() {
       <div class="btns"><button class="btn primary" id="tplAdd">＋ テンプレートを追加</button></div>
       <button class="mini" id="tplReset" style="margin-top:10px">初期の3つ(素材・アイテム・設定)を戻す</button>
     </div>
+    <div class="card"><h3>ボードの色と整列</h3>
+      ${(() => { const C = boardColors(); const row = (k, t, d) => `<label class="row"><input type="checkbox" data-bc="${k}" ${C[k] ? "checked" : ""}><span class="grow">${t}<div class="muted small">${d}</div></span></label>`;
+        return row("auto", "ファイルごとに色を自動で付ける", "丸ごとに、ほかと重ならない色を付けます。自分で選んだ色が優先です") +
+          row("tint", "メモをファイルの色で淡く塗る", "カードを、入っているファイルの色でうっすら塗ります") +
+          row("arrange", "左のツリーで移したら、ファイルの中を整列する", "移した先と元のファイルの中を、ツリーの順にそろえます"); })()}
+    </div>
     <div class="card"><h3>ボードの矢印</h3>
       ${(() => { const A = arrowPrefs(); const sw = (key, cur) => `<div class="swatches" style="margin-top:6px">${COLORS.map(k => `<button class="sw2${k ? " c-" + k : ""}${(cur || "") === k ? " on" : ""}" data-arc="${key}" data-col="${k}" aria-label="${k ? COLOR_NAMES[k] : "通常の色"}" style="${k ? `background:${COLOR_HEX[k]}` : ""}">${k ? "" : "通常"}</button>`).join("")}</div>`;
         return `<div class="field"><span>別のファイルのメモへの矢印</span>${sw("cross", A.cross)}</div>
@@ -2495,6 +2585,7 @@ $("#prefsScroll").addEventListener("click", e => {
 });
 $("#prefsScroll").addEventListener("change", e => {
   const P = meta.prefs, t = e.target;
+  if (t.dataset.bc) { P.boardColors = { ...boardColors(), [t.dataset.bc]: t.checked }; saveMeta(); toast("保存しました"); return; }
   if (t.id === "pF") P.focus = Math.max(1, Math.min(180, Math.round(+t.value) || 25));
   else if (t.id === "pB") P.brk = Math.max(1, Math.min(60, Math.round(+t.value) || 5));
   else if (t.id === "pG") P.goal = Math.max(0, Math.min(1440, Math.round(+t.value) || 0));
