@@ -113,6 +113,22 @@ body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 
 .tplbox{border-top:1px solid var(--line);padding:12px 0 4px;margin-top:10px}
 
+/* files */
+.filebar{display:flex;align-items:center;gap:6px;width:100%;padding:9px 14px;background:var(--surface-1);border-bottom:1px solid var(--line);text-align:left;font-size:15px}
+.filebar b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fb-ic{color:var(--text-secondary);font-size:17px}
+.fb-g{color:var(--text-muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%}
+.fb-cv{color:var(--text-muted);font-size:12px;margin-left:auto}
+.fgrp{display:flex;align-items:center;gap:6px;padding:10px 0 4px;border-top:1px solid var(--line);margin-top:6px}
+.fg-fold{width:22px;flex:none;color:var(--text-secondary)}
+.fg-name{flex:1;text-align:left;font-weight:700;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.frow{display:flex;align-items:center;gap:6px;border-radius:10px}
+.frow.in{padding-left:28px}
+.frow.cur{background:var(--surface-2)}
+.fopen{flex:1;min-width:0;text-align:left;padding:9px 8px;display:flex;flex-direction:column;gap:2px}
+.fopen b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fempty{padding:4px 0 6px 36px}
+
 /* generic */
 .card{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
 .card h3{margin:0 0 8px;font-size:14px;color:var(--text-secondary);font-weight:600}
@@ -192,6 +208,7 @@ textarea.inp{line-height:1.6;resize:vertical}
 <main>
   <!-- メモ -->
   <section class="view" id="v-memo">
+    <button class="filebar" id="fileBar" aria-label="ファイルの一覧を開く"><span class="fb-ic">≡</span><span class="fb-g" id="fbGroup"></span><b id="fbName"></b><span class="fb-cv">▾</span></button>
     <div class="toolbar">
       <button class="tb" id="btnSearch">検索</button>
       <button class="tb" id="btnTpl">テンプレ</button>
@@ -234,8 +251,8 @@ textarea.inp{line-height:1.6;resize:vertical}
 </main>
 <nav class="bottom" id="nav">
   <button data-v="memo"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5z"/><path d="M9 11h6M9 15h6M9 7h3"/></svg>メモ</button>
-  <button data-v="log"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>記録</button>
   <button data-v="timer"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>タイマー</button>
+  <button data-v="log"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>記録</button>
   <button data-v="plan"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>予定</button>
   <button data-v="prefs"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>設定</button>
 </nav>
@@ -298,6 +315,7 @@ const Store = {
     LS.set("doc:" + id, data);
     this.schedule(id);
   },
+  putRaw(id, data, ts) { data._ts = ts || Date.now(); LS.set("doc:" + id, data); this.schedule(id); },
   remove(id) {
     LS.del("doc:" + id);
     this.pending.delete(id);
@@ -351,22 +369,43 @@ Store.connect = async function (onMerged) {
   flushMemoEdit();
   const local = this.localDocs();
   const remoteIds = new Set();
+  const fresh = !!LS.get("fresh"); // この端末で初めての同期 → 食い違えば同期先を正とする
   let changed = false;
   for (const d of snap.docs) {
     if (!d.exists) continue;
     remoteIds.add(d.id);
-    const r = d.data(); const l = local[d.id];
-    if (!l || (r._ts || 0) > (l._ts || 0)) { LS.set("doc:" + d.id, JSON.parse(JSON.stringify(r))); changed = true; }
+    const r = JSON.parse(JSON.stringify(d.data())); const l = local[d.id];
+    if (d.id.startsWith("log-") && l) { // 作業の記録は、どちらの端末の分も失わないよう合わせる
+      const m = mergeLog(l, r), same = (x, y) => JSON.stringify({ ...x, _ts: 0 }) === JSON.stringify({ ...y, _ts: 0 });
+      if (!same(m, l)) { LS.set("doc:" + d.id, m); changed = true; }
+      if (!same(m, r)) { if (same(m, l)) LS.set("doc:" + d.id, m); this.schedule(d.id); }
+      continue;
+    }
+    if (!l || fresh || (r._ts || 0) > (l._ts || 0)) { LS.set("doc:" + d.id, r); changed = true; }
     else if ((l._ts || 0) > (r._ts || 0)) this.schedule(d.id);
   }
   for (const k of Object.keys(local)) if (!remoteIds.has(k)) this.schedule(k);
+  LS.del("fresh");
   if (changed) onMerged();
   renderPrefsIfOpen();
 };
 
+function mergeLog(l, r) {
+  const m = { sessions: [], timers: [], usage: {}, _ts: Math.max(l._ts || 0, r._ts || 0) };
+  const ss = new Map();
+  for (const [s, e] of [...(l.sessions || []), ...(r.sessions || [])]) ss.set(s, Math.max(ss.get(s) || 0, e));
+  m.sessions = [...ss].sort((a, b) => a[0] - b[0]);
+  const tm = new Map(); for (const t of [...(l.timers || []), ...(r.timers || [])]) tm.set(t.id, t);
+  m.timers = [...tm.values()].sort((a, b) => a.s - b.s);
+  const [older, newer] = (l._ts || 0) > (r._ts || 0) ? [r, l] : [l, r]; // 手入力の分数は、新しい方を採る
+  for (const src of [older.usage || {}, newer.usage || {}]) for (const [d, apps] of Object.entries(src)) m.usage[d] = { ...(m.usage[d] || {}), ...apps };
+  return m;
+}
+
 /* ============================================================
    データモデル
-   outline : メモ(入れ子のアウトライン)/ meta : 設定・予定 / memo-<id> : 旧版のメモ(移行元)
+   file-<id> : メモのファイル(名前・グループ・入れ子の行)/ meta : 設定・予定・グループ
+   outline : 1枚だった頃のメモ(移行元)/ memo-<id> : タブ形式だった頃のメモ(移行元)
    log-YYYY-MM : その月の作業区間・タイマー記録・妨害アプリ使用時間
    ============================================================ */
 const DEFAULT_TPL = {
@@ -391,8 +430,8 @@ function loadAll() {
     for (const k of Object.keys(p.templates)) { const ls = p.templates[k].split("\n").filter(x => x.trim()); if (ls.length > 1 && !ls.slice(1).some(x => /^[\t 　]/.test(x))) p.templates[k] = [ls[0], ...ls.slice(1).map(x => "  " + x)].join("\n"); }
     p.tplV = 2;
   }
-  zoomId = meta.zoom || null; focusId = meta.lastFocus || null;
-  loadOutline(docs);
+  meta.groups ||= [];
+  loadFiles(docs);
 }
 const saveMeta = () => Store.put("meta", meta);
 function logOf(key) { return logs[key] ||= { sessions: [], timers: [], usage: {} }; }
@@ -472,7 +511,9 @@ addEventListener("hashchange", () => show(location.hash.slice(1), false));
    シート(ダイアログ)
    ============================================================ */
 function openSheet(html, mount) {
-  $("#sheet").innerHTML = `<div class="grab"></div>${html}`;
+  const old = $("#sheet"), sh = old.cloneNode(false); // 開くたびに作り直し、前のシートのボタン処理を残さない
+  old.replaceWith(sh);
+  sh.innerHTML = `<div class="grab"></div>${html}`;
   $("#veil").classList.add("on");
   mount && mount($("#sheet"));
 }
@@ -500,20 +541,58 @@ function reindex() {
   const walk = (list, parent) => list.forEach(n => { n.c ||= []; index[n.id] = { n, parent, list }; walk(n.c, n); });
   walk(outline.nodes, null);
 }
-function loadOutline(docs) {
-  outline = docs.outline ? JSON.parse(JSON.stringify(docs.outline)) : null;
-  if (!outline) {
-    outline = { nodes: migrateMemos() };
-    reindex();
-    for (const [a, b] of meta.links || []) if (index[a] && index[b]) (index[a].n.l ||= []).push(b);
-    if (!outline.nodes.length) outline.nodes.push(N());
-    Store.put("outline", outline);
+// ---- ファイル(複数のメモ)とグループ ----
+let files = {};       // id -> { id, name, group, order, nodes, created, updated }
+let curFile = null;
+function newFileObj(name, group) {
+  const t = Date.now();
+  return { id: uid(), name: name || "新しいメモ", group: group || null, order: t, nodes: [N()], created: t, updated: t };
+}
+function loadFiles(docs) {
+  files = {};
+  for (const [id, v] of Object.entries(docs)) if (id.startsWith("file-") && v && v.id) files[v.id] = v;
+  if (!Object.keys(files).length) { // 以前の版のメモを「メモ」ファイルへ移す
+    let nodes = docs.outline?.nodes, ts = docs.outline?._ts;
+    if (!nodes) {
+      nodes = migrateMemos();
+      const map = {}; const w = l => l.forEach(n => { map[n.id] = n; w(n.c); }); w(nodes);
+      for (const [x, y] of meta.links || []) if (map[x] && map[y]) (map[x].l ||= []).push(y);
+      ts = undefined;
+    }
+    const hasText = l => l.some(n => n.t || (n.c && hasText(n.c)));
+    if (nodes && hasText(nodes)) {
+      const t = Date.now();
+      files.main = { id: "main", name: "メモ", group: null, order: 0, nodes: JSON.parse(JSON.stringify(nodes)), created: t, updated: t };
+      Store.putRaw("file-main", files.main, ts);
+    }
   }
-  outline.nodes ||= [];
-  if (!outline.nodes.length) outline.nodes.push(N());
+  if (!Object.keys(files).length) { const f = newFileObj("メモ", null); f.auto = true; files[f.id] = f; } // 書くまで保存しない
+  for (const f of Object.values(files)) { f.nodes ||= []; if (!f.nodes.length) f.nodes.push(N()); f.name ||= "無題"; }
+  const v = LS.get("view") || {};
+  setOutline(v.cur && files[v.cur] ? v.cur : allFilesSorted()[0].id);
+}
+function setOutline(id) {
+  curFile = id; outline = files[id]; editId = null; pendingCaret = null;
   reindex();
-  if (focusId && !index[focusId]) focusId = null;
-  if (zoomId && !index[zoomId]) zoomId = null;
+  const st = (LS.get("view") || {}).files?.[id] || {};
+  zoomId = st.zoom && index[st.zoom] ? st.zoom : null;
+  focusId = st.focus && index[st.focus] ? st.focus : null;
+}
+function saveView() { // 開いているファイルと、ファイルごとの絞り込み・最後の行は端末ごとに覚える
+  const v = LS.get("view") || {}; v.cur = curFile; v.files ||= {};
+  v.files[curFile] = { zoom: zoomId, focus: focusId };
+  LS.set("view", v);
+}
+const groupOf = f => (f.group && meta.groups.some(g => g.id === f.group) ? f.group : null);
+const sortedGroups = () => meta.groups.slice().sort((a, b) => a.order - b.order);
+const sortedFiles = gid => Object.values(files).filter(f => groupOf(f) === gid).sort((a, b) => a.order - b.order || a.created - b.created);
+const allFilesSorted = () => [...sortedGroups().flatMap(g => sortedFiles(g.id)), ...sortedFiles(null)];
+const saveFile = f => { f.updated = Date.now(); delete f.auto; Store.put("file-" + f.id, f); };
+// すべてのファイルの行を id で引けるように(ファイルをまたぐ検索・関連付け用)
+let gindex = {};
+function buildGlobal() {
+  gindex = {};
+  for (const f of Object.values(files)) { const w = l => l.forEach(n => { gindex[n.id] = { n, f: f.id }; w(n.c || []); }); w(f.nodes); }
 }
 // 旧版(タブ形式)で書いたメモを、同じ親子関係のまま行へ移す
 function migrateMemos() {
@@ -545,7 +624,7 @@ function saveOutline() {
 function flushOutline() {
   if (outlineTimer === null) return;
   clearTimeout(outlineTimer); outlineTimer = null;
-  Store.put("outline", outline);
+  saveFile(outline);
   const s = $("#saved"); if (s) s.textContent = "保存済み";
   if (JSON.stringify(outline).length > 220000) toast("メモが大きくなっています(同期の上限は約250KB)");
 }
@@ -559,16 +638,17 @@ function flatVisible() {
 function ancestors(id) { const a = []; let p = index[id]?.parent; while (p) { a.unshift(p); p = index[p.id].parent; } return a; }
 function backlinks() {
   const b = {};
-  for (const { n } of Object.values(index)) for (const t of n.l || []) if (index[t]) (b[t] ||= new Set()).add(n.id);
+  for (const { n } of Object.values(gindex)) for (const t of n.l || []) if (gindex[t]) (b[t] ||= new Set()).add(n.id);
   return b;
 }
-const label = id => (index[id]?.n.t || "(空の行)").slice(0, 40);
+const label = id => ((gindex[id] || index[id])?.n.t || "(空の行)").slice(0, 40);
+const labelX = id => (gindex[id] && gindex[id].f !== curFile ? files[gindex[id].f].name + " › " : "") + label(id); // ほかのファイルの行は名前を添える
 
 let pendingCaret = null;
 let editId = null; // 入力欄として描く行(書いている1行だけ)。ほかの行はただの文字表示にして、長押しでキーボードや文字選択が起きないようにする
 const PH_FIRST = "ここに書く。改行で次の行、→ で字下げして子にする";
 function renderOutline() {
-  reindex();
+  reindex(); buildGlobal();
   if (focusId && pendingCaret != null) editId = focusId;
   if (editId && !index[editId]) editId = null;
   const firstEmpty = outline.nodes.length === 1 && !outline.nodes[0].t && !zoomId;
@@ -577,14 +657,14 @@ function renderOutline() {
   const rows = [];
   const walk = (list, d) => list.forEach(n => {
     const has = n.c.length > 0, folded = has && n.x;
-    const rel = [...new Set([...(n.l || []).filter(x => index[x]), ...(back[n.id] || [])])];
+    const rel = [...new Set([...(n.l || []).filter(x => gindex[x]), ...(back[n.id] || [])])];
     rows.push(`<div class="ol-row${n.id === focusId ? " cur" : ""}" data-id="${n.id}" style="--d:${d}">` +
       `<button class="bul${has ? "" : " leaf"}" data-bul="${n.id}" tabindex="-1" aria-label="${has ? (folded ? "開く" : "畳む") : "この項目"}">${has ? (folded ? "▸" : "▾") : "•"}</button>` +
       `<div class="ol-main">` + (n.id === editId
         ? `<textarea class="ol-t" rows="1" data-t="${n.id}" spellcheck="false"${firstEmpty ? ` placeholder="${PH_FIRST}"` : ""}>${esc(n.t)}</textarea>`
         : `<div class="ol-v" data-v="${n.id}"${firstEmpty ? ` data-ph="${PH_FIRST}"` : ""}>${esc(n.t)}</div>`) +
       (folded ? `<button class="foldcnt" data-bul="${n.id}" tabindex="-1">… ${countAll(n)}項目</button>` : "") +
-      (rel.length ? `<div class="ol-rel">${rel.map(r => `<button class="mini link" data-jump="${r}" tabindex="-1">${esc(label(r))}</button>`).join("")}</div>` : "") +
+      (rel.length ? `<div class="ol-rel">${rel.map(r => `<button class="mini link" data-jump="${r}" tabindex="-1">${esc(labelX(r))}</button>`).join("")}</div>` : "") +
       `</div></div>`);
     if (has && !folded) walk(n.c, d + 1);
   });
@@ -694,12 +774,15 @@ function splitPasted(id, ta) {
 }
 function lastOf(nodes) { let n = nodes[nodes.length - 1]; while (n.c.length) n = n.c[n.c.length - 1]; return n.id; }
 function reveal(id) {
+  buildGlobal();
+  const g = gindex[id]; if (!g) return;
+  if (g.f !== curFile) { flushOutline(); saveView(); setOutline(g.f); saveView(); renderFileBar(); }
   if (!index[id]) return;
   if (zoomId && !ancestors(id).some(a => a.id === zoomId)) zoomId = null;
   for (const a of ancestors(id)) delete a.x;
   focusAt(id, index[id].n.t.length); saveOutline(); show("memo"); renderOutline();
 }
-function zoomTo(id) { flushOutline(); zoomId = id || null; meta.zoom = zoomId; saveMeta(); focusId = null; renderOutline(); $("#outline").scrollTop = 0; }
+function zoomTo(id) { flushOutline(); zoomId = id || null; focusId = null; saveView(); renderOutline(); $("#outline").scrollTop = 0; }
 
 // ---- 入力イベント ----
 const box = $("#outline");
@@ -738,7 +821,7 @@ let noFocusUntil = 0; // ドラッグ直後に、長押しの名残でキーボ�
 box.addEventListener("focusin", e => {
   const ta = e.target.closest(".ol-t"); if (!ta) return;
   if ((drag && drag.on) || Date.now() < noFocusUntil) { ta.blur(); return; }
-  focusId = ta.dataset.t; meta.lastFocus = focusId;
+  focusId = ta.dataset.t; saveView();
   box.querySelectorAll(".ol-row.cur").forEach(r => r.classList.remove("cur"));
   ta.closest(".ol-row").classList.add("cur");
   document.body.classList.add("editing");
@@ -946,11 +1029,16 @@ function lineMenu(id) {
     });
   });
 }
-function allPaths() {
-  const out = []; const walk = (l, p) => l.forEach(n => { out.push({ id: n.id, t: n.t, path: p }); walk(n.c, p ? p + " › " + (n.t || "…").slice(0, 16) : (n.t || "…").slice(0, 16)); });
-  walk(outline.nodes, ""); return out;
+function allPaths() { // いま開いているファイルを先に、すべてのファイルの行を「ファイル名 › 親 › …」付きで
+  const out = [];
+  for (const f of [files[curFile], ...allFilesSorted().filter(x => x.id !== curFile)]) {
+    const walk = (l, p) => l.forEach(n => { out.push({ id: n.id, t: n.t, path: p, f: f.id }); walk(n.c, p + " › " + (n.t || "…").slice(0, 16)); });
+    walk(f.nodes, f.name);
+  }
+  return out;
 }
 function openLinker(id) {
+  buildGlobal();
   const n = index[id].n; const back = backlinks();
   const linked = new Set([...(n.l || []), ...(back[id] || [])]);
   const items = allPaths().filter(x => x.id !== id && x.t.trim());
@@ -966,8 +1054,10 @@ function openLinker(id) {
     $("#lq").addEventListener("input", draw); draw();
     $("#lres").addEventListener("change", e => { const c = e.target.closest("[data-link]"); if (c) c.checked ? linked.add(c.dataset.link) : linked.delete(c.dataset.link); });
     $("[data-ok]", s).onclick = () => {
-      n.l = [...linked].filter(x => index[x]);
-      for (const { n: o } of Object.values(index)) if (o.l && o.id !== id && !linked.has(o.id)) o.l = o.l.filter(x => x !== id);
+      n.l = [...linked].filter(x => gindex[x]);
+      const touched = new Set();
+      for (const { n: o, f } of Object.values(gindex)) if (o.l && o.id !== id && !linked.has(o.id) && o.l.includes(id)) { o.l = o.l.filter(x => x !== id); if (f !== curFile) touched.add(f); }
+      touched.forEach(f => saveFile(files[f]));
       if (!n.l.length) delete n.l;
       closeSheet(); commit();
     };
@@ -978,14 +1068,15 @@ function openLinker(id) {
 $("#btnSearch").onclick = () => openSearch("");
 function openSearch(q) {
   flushOutline();
-  const tags = [...new Set(Object.values(index).flatMap(({ n }) => (n.t.match(/#[^\s#、。,,.]+/g) || [])))].sort();
+  buildGlobal();
+  const tags = [...new Set(Object.values(gindex).flatMap(({ n }) => (n.t.match(/#[^\s#、。,,.]+/g) || [])))].sort();
   openSheet(`<h2>検索</h2><input class="inp" id="q" placeholder="語句、または #タグ" value="${esc(q)}" enterkeyhint="search">
     ${tags.length ? `<div class="metas" style="margin-top:8px">${tags.slice(0, 30).map(t => `<button class="mini" data-q="${esc(t)}">${esc(t)}</button>`).join("")}</div>` : ""}
     <div id="qres" style="margin-top:6px"></div>`, s => {
     const items = allPaths();
     const run = () => {
       const v = $("#q").value.trim().toLowerCase();
-      if (!v) { $("#qres").innerHTML = `<div class="empty">すべての行から探します。行の中に「#武器」のように書くとタグになります</div>`; return; }
+      if (!v) { $("#qres").innerHTML = `<div class="empty">すべてのファイルの行から探します。行の中に「#武器」のように書くとタグになります</div>`; return; }
       const hits = items.filter(x => v.startsWith("#") ? (x.t.toLowerCase().match(/#[^\s#、。,,.]+/g) || []).includes(v) : x.t.toLowerCase().includes(v)).slice(0, 200);
       $("#qres").innerHTML = hits.length ? hits.map(x => {
         const i = x.t.toLowerCase().indexOf(v);
@@ -1033,7 +1124,136 @@ $("#btnFold").onclick = () => {
   saveOutline(); renderOutline();
   toast(anyFolded ? "すべて開きました" : "いちばん上の階層まで畳みました");
 };
-function renderMemo() { renderOutline(); }
+function renderMemo() { renderFileBar(); renderOutline(); }
+function renderFileBar() {
+  const f = files[curFile]; const g = meta.groups.find(x => x.id === groupOf(f));
+  $("#fbGroup").textContent = g ? g.name + " ›" : "";
+  $("#fbName").textContent = f.name;
+}
+function openFile(id) {
+  if (!files[id]) return;
+  flushOutline(); saveView();
+  setOutline(id); saveView();
+  show("memo"); renderMemo();
+}
+
+// ---- ファイルとグループの一覧 ----
+$("#fileBar").onclick = () => openFiles();
+function fmtWhen(t) { const d = new Date(t); return ymd(d) === ymd(new Date()) ? hm(t) : `${d.getMonth() + 1}/${d.getDate()}`; }
+const countNodes = l => l.reduce((t, n) => t + 1 + countNodes(n.c || []), 0);
+function fileRow(f, inGroup) {
+  return `<div class="frow${inGroup ? " in" : ""}${f.id === curFile ? " cur" : ""}"><button class="fopen" data-fopen="${f.id}"><b>${esc(f.name)}</b><span class="muted small">${countNodes(f.nodes)}行 · ${fmtWhen(f.updated)}</span></button>` +
+    `<button class="mini" data-fmenu="${f.id}" aria-label="ファイルの設定">⋯</button></div>`;
+}
+function openFiles() {
+  flushOutline();
+  openSheet(`<h2>ファイル</h2>
+    <div class="btns" style="margin-top:0"><button class="btn primary" data-fa="newfile">＋ ファイル</button><button class="btn" data-fa="newgroup">＋ グループ</button></div>
+    <div id="flist" style="margin-top:6px"></div>`, s => {
+    drawFiles();
+    s.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      const d = b.dataset;
+      if (d.fopen) { closeSheet(); openFile(d.fopen); }
+      else if (d.fmenu) fileMenu(d.fmenu);
+      else if (d.gfold) { const g = meta.groups.find(x => x.id === d.gfold); g.folded = !g.folded; saveMeta(); drawFiles(); }
+      else if ("gadd" in d) newFileSheet(d.gadd || null);
+      else if (d.gmenu) groupMenu(d.gmenu);
+      else if (d.fa === "newfile") newFileSheet(null);
+      else if (d.fa === "newgroup") newGroupSheet();
+    });
+  });
+}
+function drawFiles() {
+  const box = $("#flist"); if (!box) return;
+  let h = "";
+  for (const g of sortedGroups()) {
+    const fs = sortedFiles(g.id);
+    h += `<div class="fgrp"><button class="fg-fold" data-gfold="${g.id}" aria-label="${g.folded ? "開く" : "畳む"}">${g.folded ? "▸" : "▾"}</button>` +
+      `<button class="fg-name" data-gfold="${g.id}">${esc(g.name)} <span class="muted small">${fs.length}</span></button>` +
+      `<button class="mini" data-gadd="${g.id}" aria-label="このグループにファイルを追加">＋</button><button class="mini" data-gmenu="${g.id}" aria-label="グループの設定">⋯</button></div>`;
+    if (!g.folded) h += fs.map(f => fileRow(f, true)).join("") || `<div class="muted small fempty">ファイルがありません</div>`;
+  }
+  const loose = sortedFiles(null);
+  if (meta.groups.length) h += `<div class="fgrp"><span class="fg-fold"></span><span class="fg-name" style="color:var(--text-secondary)">グループなし <span class="muted small">${loose.length}</span></span><button class="mini" data-gadd="" aria-label="グループなしでファイルを追加">＋</button></div>`;
+  h += loose.map(f => fileRow(f, false)).join("");
+  box.innerHTML = h;
+}
+const groupOptions = sel => `<option value="">グループなし</option>` + sortedGroups().map(g => `<option value="${g.id}" ${g.id === sel ? "selected" : ""}>${esc(g.name)}</option>`).join("");
+function newFileSheet(gid) {
+  openSheet(`<h2>新しいファイル</h2>
+    <label class="field"><span>名前</span><input class="inp" id="fnName" value="新しいメモ" maxlength="40"></label>
+    <label class="field"><span>グループ</span><select class="inp" id="fnGroup">${groupOptions(gid)}</select></label>
+    <div class="btns"><button class="btn" data-back>戻る</button><button class="btn primary" data-ok>作成して開く</button></div>`, s => {
+    const i = $("#fnName"); i.focus(); i.select();
+    i.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) $("[data-ok]", s).click(); });
+    $("[data-back]", s).onclick = openFiles;
+    $("[data-ok]", s).onclick = () => {
+      const f = newFileObj($("#fnName").value.trim() || "新しいメモ", $("#fnGroup").value || null);
+      files[f.id] = f; saveFile(f);
+      closeSheet(); openFile(f.id); focusStart();
+    };
+  });
+}
+function newGroupSheet() {
+  openSheet(`<h2>新しいグループ</h2>
+    <label class="field"><span>名前</span><input class="inp" id="gnName" value="新しいグループ" maxlength="30"></label>
+    <div class="btns"><button class="btn" data-back>戻る</button><button class="btn primary" data-ok>作成</button></div>`, s => {
+    const i = $("#gnName"); i.focus(); i.select();
+    i.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) $("[data-ok]", s).click(); });
+    $("[data-back]", s).onclick = openFiles;
+    $("[data-ok]", s).onclick = () => { meta.groups.push({ id: uid(), name: $("#gnName").value.trim() || "新しいグループ", order: Date.now() }); saveMeta(); openFiles(); };
+  });
+}
+function swapOrder(list, i, d, save) { const j = i + d; if (j < 0 || j >= list.length) return false; const a = list[i], b = list[j]; [a.order, b.order] = [b.order, a.order]; if (a.order === b.order) a.order += d; save(a); save(b); return true; }
+function fileMenu(id) {
+  const f = files[id]; const sib = sortedFiles(groupOf(f)); const i = sib.indexOf(f);
+  openSheet(`<h2>ファイルの設定</h2>
+    <label class="field"><span>名前</span><input class="inp" id="fmName" value="${esc(f.name)}" maxlength="40"></label>
+    <label class="field"><span>グループ</span><select class="inp" id="fmGroup">${groupOptions(groupOf(f))}</select></label>
+    <div class="btns" style="margin-top:4px"><button class="btn" data-mv="-1" ${i <= 0 ? "disabled style=opacity:.4" : ""}>↑ 上へ</button><button class="btn" data-mv="1" ${i >= sib.length - 1 ? "disabled style=opacity:.4" : ""}>↓ 下へ</button></div>
+    <button class="btn danger block" data-del style="margin-top:14px">このファイルを削除</button>
+    <div class="btns"><button class="btn" data-back>戻る</button><button class="btn primary" data-ok>決定</button></div>`, s => {
+    const apply = () => {
+      const nm = $("#fmName").value.trim() || f.name, g = $("#fmGroup").value || null;
+      if (nm !== f.name || g !== groupOf(f)) { if (g !== groupOf(f)) f.order = Date.now(); f.name = nm; f.group = g; saveFile(f); if (id === curFile) renderFileBar(); }
+    };
+    s.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.mv) { apply(); if (swapOrder(sib, i, +b.dataset.mv, saveFile)) fileMenu(id); }
+      else if ("back" in b.dataset) openFiles();
+      else if ("ok" in b.dataset) { apply(); openFiles(); }
+      else if ("del" in b.dataset) confirmSheet("ファイルを削除しますか", `「${f.name}」(${countNodes(f.nodes)}行)を削除します。元に戻せません。`, "削除する", () => { deleteFile(id); openFiles(); });
+    });
+  });
+}
+function deleteFile(id) {
+  delete files[id]; Store.remove("file-" + id);
+  if (!Object.keys(files).length) { const f = newFileObj("メモ", null); f.auto = true; files[f.id] = f; }
+  if (id === curFile) { setOutline(allFilesSorted()[0].id); saveView(); }
+  renderMemo(); toast("削除しました");
+}
+function groupMenu(gid) {
+  const g = meta.groups.find(x => x.id === gid); const list = sortedGroups(); const i = list.indexOf(g); const n = sortedFiles(gid).length;
+  openSheet(`<h2>グループの設定</h2>
+    <label class="field"><span>名前</span><input class="inp" id="gmName" value="${esc(g.name)}" maxlength="30"></label>
+    <div class="btns" style="margin-top:4px"><button class="btn" data-mv="-1" ${i <= 0 ? "disabled style=opacity:.4" : ""}>↑ 上へ</button><button class="btn" data-mv="1" ${i >= list.length - 1 ? "disabled style=opacity:.4" : ""}>↓ 下へ</button></div>
+    <button class="btn danger block" data-del style="margin-top:14px">このグループを削除</button>
+    <p class="muted small">グループを削除しても、中のファイルは消えません(「グループなし」に移ります)。</p>
+    <div class="btns"><button class="btn" data-back>戻る</button><button class="btn primary" data-ok>決定</button></div>`, s => {
+    const apply = () => { const nm = $("#gmName").value.trim(); if (nm && nm !== g.name) { g.name = nm; saveMeta(); renderFileBar(); } };
+    s.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.mv) { apply(); if (swapOrder(list, i, +b.dataset.mv, () => {})) { saveMeta(); groupMenu(gid); } }
+      else if ("back" in b.dataset) openFiles();
+      else if ("ok" in b.dataset) { apply(); openFiles(); }
+      else if ("del" in b.dataset) confirmSheet("グループを削除しますか", `「${g.name}」を削除します。中の ${n} ファイルは「グループなし」に移ります。`, "削除する", () => {
+        for (const f of sortedFiles(gid)) { f.group = null; f.order = Date.now() + Math.random(); saveFile(f); }
+        meta.groups = meta.groups.filter(x => x.id !== gid); saveMeta(); renderFileBar(); openFiles();
+      });
+    });
+  });
+}
 
 /* ============================================================
    記録(作業時間 × 妨害アプリ)
@@ -1468,6 +1688,7 @@ $("#prefsScroll").addEventListener("keydown", e => { if (e.target.id === "appNam
 function guide() {
   openSheet(`<h2>はじめに</h2>
     <p class="small" style="line-height:1.8">このページを<b>開いているあいだ</b>が、作業時間として自動で記録されます。ほかのアプリへ切り替えたり、画面が消えたりすると止まります。無操作で止まることはありません。</p>
+    <p class="small" style="line-height:1.8">メモは<b>ファイル</b>に分けて書けます。上の「≡ ファイル名」から、ファイルの切り替え・追加と、グループへのまとめができます。</p>
     <p class="small" style="line-height:1.8">これはスマホのブラウザで試せる<b>Web試作</b>です。ネイティブ版との違いは次のとおりです。</p>
     <ul class="small" style="line-height:1.8;padding-left:1.2em;margin:0">
       <li>妨害アプリの使用時間は自動取得できないため、「記録」で分数を入力します</li>
@@ -1519,6 +1740,7 @@ function focusStart() { // 起動直後にすぐ書けるよう、前回の行(�
   if (id) { focusAt(id, index[id].n.t.length); renderOutline(); }
 }
 function boot() {
+  if (!Object.keys(Store.localDocs()).length) LS.set("fresh", true); // 何も入っていない端末
   loadAll(); Timer.load(); Work.recover();
   Work.start();
   renderMemo();
@@ -1532,8 +1754,10 @@ function boot() {
   setTimeout(checkEventNotices, 1500);
   Store.connect(() => {
     // 他端末の内容が新しかったときは読み直す(編集中の本文は保つ)
-    const f = focusId, z = zoomId;
-    loadAll(); if (f && index[f]) focusId = f; zoomId = z && index[z] ? z : null;
+    const f = focusId, z = zoomId, cf = curFile;
+    loadAll();
+    if (files[cf] && cf !== curFile) setOutline(cf);
+    if (f && index[f]) focusId = f; zoomId = z && index[z] ? z : null;
     if (!document.activeElement?.closest?.(".ol-t")) renderMemo(); if (view !== "memo") show(view, false); refreshLive();
   });
 }
