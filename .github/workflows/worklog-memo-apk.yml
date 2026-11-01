@@ -50,7 +50,10 @@ jobs:
           path: |
             prototype/worklog-memo-android/worklog-memo-*.apk
             prototype/worklog-memo-android/worklog-memo-*-play.aab
+      # リポジトリの設定で Actions に書き込みの権限がないと、ここは 403 で失敗する。
+      # そのときも APK・AAB は上の Artifacts(実行結果のページの下)から落とせるので、失敗扱いにしない
       - name: Releases に置く
+        continue-on-error: true
         uses: softprops/action-gh-release@v2
         with:
           tag_name: worklog-memo-v${{ github.run_number }}
