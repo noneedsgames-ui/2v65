@@ -13,6 +13,7 @@
   --accent:#2a78d6; --accent-ink:#fff; --danger:#c4302f;
   --series-work:#2a78d6; --series-dist:#eb6834;
   --tc0:#2a78d6; --tc1:#eb6834; --tc2:#1baf7a; --tc3:#eda100; --tc4:#e87ba4; --tc5:#008300; --tc6:#6250d6; --tc7:#e34948; --tcn:#a8a69f;
+  --tca:#5f6b7a; --tcw:#9a7b4f;
   --tab-sel:#0b0b0b; --tab-sel-ink:#fcfcfb;
   --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
 }
@@ -24,6 +25,7 @@
     --accent:#3987e5; --danger:#e66767;
     --series-work:#3987e5; --series-dist:#d95926;
     --tc0:#3987e5; --tc1:#d95926; --tc2:#199e70; --tc3:#c98500; --tc4:#d55181; --tc5:#008300; --tc6:#9085e9; --tc7:#e66767; --tcn:#6b6a64;
+    --tca:#9aa6b4; --tcw:#b99a6c;
     --tab-sel:#f0efec; --tab-sel-ink:#121211;
   }
 }
@@ -338,6 +340,12 @@ details.appd[open]>summary{margin-bottom:8px}
 .mimoza-bubble .next{position:absolute;right:10px;bottom:4px;font-size:11px;color:var(--text-muted);animation:mimoza-next 1s steps(2) infinite}
 @keyframes mimoza-next{50%{transform:translateY(2px)}}
 
+/* メモのタグ */
+.mtag{display:inline-block;font-size:10.5px;font-weight:700;color:var(--text-secondary);background:var(--surface-2);border-radius:999px;padding:1px 7px;margin:2px 4px 0 0}
+.mtag.big{font-size:13px;padding:5px 11px;color:var(--text-primary)}
+.lchip.tagc{background:var(--surface-2);color:var(--text-primary);border-color:var(--line)}
+.bc-tags{margin-top:3px;line-height:1.2}
+
 /* generic */
 .card{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
 .card h3{margin:0 0 8px;font-size:14px;color:var(--text-secondary);font-weight:600}
@@ -433,6 +441,7 @@ textarea.inp{line-height:1.6;resize:vertical}
       <button class="tb" id="btnSearch">検索</button>
       <button class="tb" id="btnSelect">選択</button>
       <button class="tb" id="btnCopy">コピー</button>
+      <button class="tb" id="btnTag">タグ</button>
       <button class="tb" id="btnTpl">テンプレ</button>
       <button class="tb" id="btnFold">開閉</button>
       <span class="spacer"></span>
@@ -1632,7 +1641,7 @@ $("#btnSearch").onclick = () => openSearch("");
 function openSearch(q) {
   flushOutline();
   buildGlobal();
-  const tags = [...new Set(Object.values(gindex).flatMap(({ n }) => (n.t.match(/#[^\s#、。,,.]+/g) || [])))].sort();
+  const tags = [...new Set([...allMemoTags().map(t => "#" + t), ...Object.values(gindex).flatMap(({ n }) => (n.t.match(/#[^\s#、。,,.]+/g) || []))])].sort();
   openSheet(`<h2>検索</h2><input class="inp" id="q" placeholder="語句、または #タグ" value="${esc(q)}" enterkeyhint="search">
     ${tags.length ? `<div class="metas" style="margin-top:8px">${tags.slice(0, 30).map(t => `<button class="mini" data-q="${esc(t)}">${esc(t)}</button>`).join("")}</div>` : ""}
     <div id="qres" style="margin-top:6px"></div>`, s => {
@@ -1641,17 +1650,19 @@ function openSearch(q) {
       const v = $("#q").value.trim().toLowerCase();
       if (!v) { $("#qres").innerHTML = `<div class="empty">すべてのメモの行から探します。行の中に「#武器」のように書くとタグになります</div>`; return; }
       const hits = items.filter(x => v.startsWith("#") ? (x.t.toLowerCase().match(/#[^\s#、。,,.]+/g) || []).includes(v) : x.t.toLowerCase().includes(v)).slice(0, 200);
-      $("#qres").innerHTML = hits.length ? hits.map(x => {
+      const tagHits = v.startsWith("#") ? Object.values(files).filter(f => (f.tags || []).some(t => "#" + t.toLowerCase() === v)) : [];
+      $("#qres").innerHTML = (tagHits.length ? tagHits.map(f => `<button class="row" style="width:100%;text-align:left" data-memo="${f.id}"><span class="grow"><b>📄 ${esc(memoTitle(f))}</b><div class="muted small">タグ ${tagChips(f)}</div></span></button>`).join("") : "") + (hits.length || tagHits.length ? hits.map(x => {
         const i = x.t.toLowerCase().indexOf(v);
         const hl = i >= 0 ? esc(x.t.slice(0, i)) + `<span class="hit">${esc(x.t.slice(i, i + v.length))}</span>` + esc(x.t.slice(i + v.length)) : esc(x.t);
         return `<button class="row" style="width:100%;text-align:left" data-open="${x.id}"><span class="grow">${hl}${x.path ? `<div class="muted small">${esc(x.path)}</div>` : ""}</span></button>`;
-      }).join("") : `<div class="empty">見つかりませんでした</div>`;
+      }).join("") : `<div class="empty">見つかりませんでした</div>`);
     };
     $("#q").addEventListener("input", run); run(); $("#q").focus();
     s.addEventListener("click", e => {
       const b = e.target.closest("button"); if (!b) return;
       if (b.dataset.q) { $("#q").value = b.dataset.q; run(); }
       else if (b.dataset.open) { closeSheet(); reveal(b.dataset.open); }
+      else if (b.dataset.memo) { closeSheet(); if (b.dataset.memo !== curFile) { navBack.push(curFile); openFile(b.dataset.memo); } }
     });
   });
 }
@@ -1958,6 +1969,7 @@ function renderBoard() {
     const pv = previewLines(f);
     return `<div class="bcard${cardColorClass(id)}${id === curFile ? " cur" : ""}" data-card="${id}" style="left:${c.x}px;top:${c.y}px;width:${CARD_W}px">
       <div class="bc-t">${esc(memoTitle(f))}</div>${pv.length ? `<div class="bc-p">${pv.map(t => `<div>${esc(t)}</div>`).join("")}</div>` : ""}
+      ${f.tags && f.tags.length ? `<div class="bc-tags">${tagChips(f)}</div>` : ""}
       <div class="bc-m">${countNodes(f.nodes)}行 · ${fmtWhen(f.updated)}</div>
       <div class="bc-h" data-handle="${id}" aria-label="引いて矢印をつなぐ"></div></div>`;
   }).join("");
@@ -2495,7 +2507,7 @@ function treeHtml(rich) {
       } else {
         const f = files[it.id], pv = rich ? previewLines(f)[0] : "";
         rows.push(`<div class="srow sm${it.id === cur ? " cur" : ""}${rich ? cardColorClass(it.id) : ""}" data-sid="m:${it.id}" style="--d:${d}"><span class="s-dot">•</span>` +
-          `<div class="s-body"><div class="s-line"><span class="s-name">${esc(memoTitle(f))}</span>${rich ? `<span class="s-k">${countNodes(f.nodes)}行</span>` : ""}</div>${pv ? `<div class="s-pv">${esc(pv.trim())}</div>` : ""}${links(it.id)}</div>${more("m", it.id)}</div>`);
+          `<div class="s-body"><div class="s-line"><span class="s-name">${esc(memoTitle(f))}</span>${rich ? `<span class="s-k">${countNodes(f.nodes)}行</span>` : ""}</div>${rich && f.tags && f.tags.length ? `<div>${tagChips(f)}</div>` : ""}${pv ? `<div class="s-pv">${esc(pv.trim())}</div>` : ""}${links(it.id)}</div>${more("m", it.id)}</div>`);
       }
     }
   };
@@ -2701,13 +2713,52 @@ function memoLinks(id) {
   const rank = { out: 0, in: 1, wiki: 2, wikiin: 3, via: 4 };
   return out.sort((a, b) => rank[a.kind] - rank[b.kind]);
 }
+// ---- メモのタグ(メモそのものに付ける。行の中の #タグ とは別)----
+const allMemoTags = () => [...new Set(Object.values(files).flatMap(f => f.tags || []))].sort((a, b) => a.localeCompare(b, "ja"));
+const tagChips = f => (f.tags || []).map(t => `<span class="mtag">#${esc(t)}</span>`).join("");
+function tagSheet() {
+  flushOutline();
+  const f = files[curFile]; let tags = [...(f.tags || [])];
+  openSheet(`<h2>このメモのタグ</h2>
+    <div class="metas" id="tgCur"></div>
+    <div style="display:flex;gap:8px;margin-top:6px"><input class="inp" id="tgIn" placeholder="タグを足す(例:敵キャラ)" maxlength="20"><button class="btn primary" id="tgAdd" style="flex:none">足す</button></div>
+    <div class="field"><span>ほかのメモのタグから</span><div class="metas" id="tgAll"></div></div>
+    <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
+    const draw = () => {
+      $("#tgCur").innerHTML = tags.map(t => `<button class="mtag big" data-tgdel="${esc(t)}">#${esc(t)} ✕</button>`).join("") || `<span class="muted small">まだタグはありません</span>`;
+      $("#tgAll").innerHTML = allMemoTags().filter(t => !tags.includes(t)).map(t => `<button class="mini" data-tgadd="${esc(t)}">#${esc(t)}</button>`).join("") || `<span class="muted small">なし</span>`;
+    };
+    const add = v => { for (const t of v.split(/[、,,\s#＃]+/).map(x => x.trim()).filter(Boolean)) if (!tags.includes(t)) tags.push(t); $("#tgIn").value = ""; draw(); };
+    draw(); $("#tgIn").focus();
+    $("#tgIn").addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) add($("#tgIn").value); });
+    s.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if (b.id === "tgAdd") add($("#tgIn").value);
+      else if (b.dataset.tgdel) { tags = tags.filter(t => t !== b.dataset.tgdel); draw(); }
+      else if (b.dataset.tgadd) { tags.push(b.dataset.tgadd); draw(); }
+      else if ("ok" in b.dataset) { if ($("#tgIn").value.trim()) add($("#tgIn").value); if (tags.length) f.tags = tags; else delete f.tags; saveFileQuiet(f); closeSheet(); renderLinkbar(); renderSide(); }
+    });
+  });
+}
+$("#btnTag").onclick = () => tagSheet();
+function tagMemos(tag) { // そのタグのメモの一覧から開く
+  const ms = Object.values(files).filter(f => (f.tags || []).includes(tag));
+  openSheet(`<h2>#${esc(tag)}</h2><p class="muted small" style="margin-top:-4px">このタグのメモ(${ms.length}件)</p>
+    ${ms.map(f => `<button class="row" style="width:100%;text-align:left" data-tgopen="${f.id}"><span class="grow"><b>${esc(memoTitle(f))}</b><div class="muted small">${countNodes(f.nodes)}行 · ${fmtWhen(f.updated)}</div></span><span>›</span></button>`).join("")}
+    <div class="btns"><button class="btn" data-x>閉じる</button></div>`, s => {
+    s.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.tgopen) { closeSheet(); if (b.dataset.tgopen !== curFile) { navBack.push(curFile); openFile(b.dataset.tgopen); } } else if ("x" in b.dataset) closeSheet(); });
+  });
+}
+document.addEventListener("click", e => { const t = e.target.closest("[data-mtag]"); if (t) { e.stopPropagation(); tagMemos(t.dataset.mtag); } }, true);
 function renderLinkbar() {
   const bar = $("#linkbar"); if (!bar || !files[curFile] || !board) return;
   const ls = memoLinks(curFile);
+  const tg = (files[curFile].tags || []).map(t => `<button class="lchip tagc" data-mtag="${esc(t)}">#${esc(t)}</button>`).join("");
   const back = navBack.length && files[navBack[navBack.length - 1]] ? `<button class="lchip back" data-lback>‹ ${esc(memoTitle(files[navBack[navBack.length - 1]]))}</button>` : "";
-  bar.innerHTML = back + ls.map(l => `<button class="lchip ${l.kind}" data-lgo="${l.other}" title="${l.via ? esc("📁 " + l.via.name + " から") : ""}">` +
+  bar.innerHTML = back + tg + ls.map(l => `<button class="lchip ${l.kind}" data-lgo="${l.other}" title="${l.via ? esc("📁 " + l.via.name + " から") : ""}">` +
     `${l.via ? `<span class="lb">📁${esc(l.via.name)}</span>` : ""}<span>${l.arrow}</span><span class="n">${esc(nameOf(l.other))}</span>${l.label ? `<span class="lb">${esc(l.label)}</span>` : ""}</button>`).join("");
-  bar.classList.toggle("on", !!(back || ls.length));
+  bar.classList.toggle("on", !!(back || tg || ls.length));
 }
 $("#linkbar").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
@@ -2756,8 +2807,8 @@ function renderLog() {
     const auto = workMs(a, b), wapp = workAppMs(k);
     return { d, k, auto, wapp, work: auto + wapp, dist: distMs(k), timer: timerMs(a, b) }; });
   const sum = f => rows.reduce((t, r) => t + r[f], 0);
-  const W = sum("work"), D = sum("dist"), T = sum("timer");
-  const WA = sum("wapp");
+  const D = sum("dist"), T = sum("timer"), WA = sum("wapp");
+  const W = workTotal(days[0].getTime(), addDays(days[days.length - 1], 1).getTime()); // 作業 = 内訳(このアプリ+作業の種類+作業アプリ)の合計
   { const a0 = days[0].getTime(), b0 = addDays(days[days.length - 1], 1).getTime(); logLive = Date.now() >= a0 && Date.now() < b0 ? { a: a0, b: b0, app: WA } : null; }
   const goal = meta.prefs.goal * 60000 * days.length;
   const isToday = logMode === "day" && ymd(days[0]) === ymd(new Date());
@@ -2765,13 +2816,13 @@ function renderLog() {
   let html = Mimoza.html() + `<div class="seg" id="logSeg">${[["day", "日別"], ["week", "週別"], ["month", "月別"]].map(([k, l]) => `<button data-m="${k}" class="${logMode === k ? "on" : ""}">${l}</button>`).join("")}</div>
     <div class="periodnav"><button data-sh="-1" aria-label="前へ">‹</button><span class="lbl">${label}</span><button data-sh="1" aria-label="次へ">›</button></div>
     <div class="tiles">
-      <div class="tile"><div class="k"><i class="sw" style="background:var(--series-work)"></i>作業</div><div class="v" id="tileWork">${fmtSec(W)}</div><div class="s">${[goal ? `目標比 ${Math.round(W / goal * 100)}%` : "", WA ? `うちアプリ ${fmtDur(WA)}` : isToday ? "計測中" : ""].filter(Boolean).join(" · ") || "&nbsp;"}</div></div>
+      <div class="tile"><div class="k"><i class="sw" style="background:var(--series-work)"></i>作業</div><div class="v" id="tileWork">${fmtSec(W)}</div><div class="s">${[goal ? `目標比 ${Math.round(W / goal * 100)}%` : "", isToday ? "計測中" : ""].filter(Boolean).join(" · ") || "&nbsp;"}</div></div>
       <div class="tile"><div class="k">タイマー</div><div class="v">${fmtDur(T)}</div><div class="s">種類別は下</div></div>
       <div class="tile"><div class="k"><i class="sw" style="background:var(--series-dist)"></i>妨害アプリ</div><div class="v">${fmtDur(D)}</div><div class="s">${W >= 300000 && D ? `作業の ${(D / W).toFixed(1)} 倍` : "&nbsp;"}</div></div>
     </div>`;
   html += typeCard(days);
   if (logMode === "day") html += timerList(days[0].getTime(), addDays(days[0], 1).getTime());
-  html += `<details class="card appd" ${appDetailsOpen ? "open" : ""}><summary>アプリの使用時間と、このアプリを開いていた時間</summary>${logMode === "day" ? dayDetail(rows[0]) : periodChart(rows).replace(/^<div class="card">/, '<div>')}</details>`;
+  html += `<details class="card appd" ${appDetailsOpen ? "open" : ""}><summary>アプリの使用時間</summary>${logMode === "day" ? dayDetail(rows[0]) : periodChart(rows).replace(/^<div class="card">/, '<div>')}</details>`;
   $("#logScroll").innerHTML = html;
   if (mimozaKey !== mz.lines.join("|")) { mimozaKey = mz.lines.join("|"); Mimoza.say(mz.lines, mz.first ? () => LS.set("mimozaMet", true) : null); }
   else { Mimoza.el = $("#mimoza"); Mimoza.finish(); } // 同じ話の途中なら、そのまま続きを出す
@@ -2842,8 +2893,9 @@ function mimozaLogLines(days, W, T, D) { // 記録画面でミモザが話すこ
   const tt = typeTotals(a, b), top = Object.keys(tt).filter(k => k && k !== "_other").sort((x, y) => tt[y] - tt[x])[0];
   const when = days.length === 1 ? (ymd(days[0]) === ymd(new Date()) ? "きょう" : "このひ") : days.length === 7 ? "このしゅう" : "このつき";
   const L = [];
-  if (T > 0) L.push(`${when}は タイマーで ${fmtDur(T)}も がんばったね！`);
-  else L.push(`${when}は まだ タイマーの きろくが ないみたい。いっしょに はかってみよう！`);
+  if (W >= 60000) L.push(`${when}は ぜんぶで ${fmtDur(W)}も がんばったね！`);
+  else L.push(`${when}は まだ さぎょうの きろくが ないみたい。いっしょに はじめよう！`);
+  if (!T && W >= 60000) L.push("タイマーで さぎょうの しゅるいを えらぶと、なにを したか わけて つみあげるよ！");
   if (top) L.push(`いちばん おおいのは「${typeName(top)}」だね。そのちょうし！`);
   else if (T > 0) L.push("さぎょうの しゅるいを えらぶと、なにに じかんを つかったか わかるよ！");
   const goal = meta.prefs.goal * 60000 * days.length;
@@ -2858,15 +2910,30 @@ const typeById = id => meta.workTypes.find(t => t.id === id);
 const typeColor = id => { const i = meta.workTypes.findIndex(t => t.id === id); return i >= 0 && i < 8 ? `var(--tc${i})` : "var(--tcn)"; };
 const typeName = id => typeById(id)?.name || (id ? "(消した種類)" : "種類なし");
 const seriesKey = id => { const i = meta.workTypes.findIndex(t => t.id === id); return i >= 0 && i < 8 ? id : i >= 8 ? "_other" : ""; }; // 9つ目からは「その他」
-const seriesName = k => k === "_other" ? "その他" : typeName(k);
-const seriesColor = k => k === "_other" ? "var(--tcn)" : k ? typeColor(k) : "var(--tcn)";
+const seriesName = k => k === "_app" ? "このアプリ" : k === "_wapp" ? "作業アプリ" : k === "_other" ? "その他" : typeName(k);
+const seriesColor = k => k === "_app" ? "var(--tca)" : k === "_wapp" ? "var(--tcw)" : k === "_other" ? "var(--tcn)" : k ? typeColor(k) : "var(--tcn)";
+// 区間の計算:このアプリを開いていた区間と、タイマーの区間の重なりは、タイマー(作業の種類)のほうに数える
+function mergeIv(list) { list.sort((x, y) => x[0] - y[0]); const out = []; for (const [s, e] of list) { const l = out[out.length - 1]; if (l && s <= l[1]) l[1] = Math.max(l[1], e); else out.push([s, e]); } return out; }
+function clipIv(list, a, b) { return list.map(([s, e]) => [Math.max(s, a), Math.min(e, b)]).filter(([s, e]) => e > s); }
+function appIv(a, b) { const L = []; for (const k of monthKeysBetween(a, b)) for (const [s, e] of (logs[k]?.sessions || [])) L.push([s, e]); if (Work.live) L.push([Work.live.s, Date.now()]); return mergeIv(clipIv(L, a, b)); }
+function timerIv(a, b) { const L = []; for (const k of monthKeysBetween(a, b)) for (const r of (logs[k]?.timers || [])) L.push([r.s, r.e]); const lv = Timer.liveSegment(); if (lv) L.push([lv.s, Date.now()]); return mergeIv(clipIv(L, a, b)); }
+const ivLen = L => L.reduce((t, [s, e]) => t + e - s, 0);
+function ivCross(A, B) { let t = 0, i = 0, j = 0; while (i < A.length && j < B.length) { const s = Math.max(A[i][0], B[j][0]), e = Math.min(A[i][1], B[j][1]); if (e > s) t += e - s; A[i][1] < B[j][1] ? i++ : j++; } return t; }
+function appOnlyMs(a, b) { const A = appIv(a, b); return ivLen(A) - ivCross(A, timerIv(a, b)); }
+function workWapp(a, b) { let t = 0; for (let d = startOfDay(new Date(a)); d.getTime() < b; d = addDays(d, 1)) t += workAppMs(ymd(d)); return t; }
+function seriesTotals(a, b, withWapp) { // その区間の作業の内訳 {系列: ms}。系列 = このアプリ・作業の種類・作業アプリ
+  const m = typeTotals(a, b), ao = appOnlyMs(a, b); if (ao > 0) m._app = ao;
+  if (withWapp) { const w = workWapp(a, b); if (w > 0) m._wapp = w; }
+  return m;
+}
+const workTotal = (a, b) => Object.values(seriesTotals(a, b, true)).reduce((t, x) => t + x, 0);
 function typeTotals(a, b) { // [a,b) の、作業の種類ごとのタイマーの時間 {種類: ms}
   const m = {};
   for (const k of monthKeysBetween(a, b)) for (const r of (logs[k]?.timers || [])) { const o = overlap(r.s, r.e, a, b); if (o) { const key = seriesKey(r.type); m[key] = (m[key] || 0) + o; } }
   const live = Timer.liveSegment(); if (live) { const o = overlap(live.s, Date.now(), a, b); if (o) { const key = seriesKey(Timer.st.type); m[key] = (m[key] || 0) + o; } }
   return m;
 }
-const seriesOrder = () => [...meta.workTypes.slice(0, 8).map(t => t.id), "_other", ""];
+const seriesOrder = () => ["_app", ...meta.workTypes.slice(0, 8).map(t => t.id), "_other", "", "_wapp"];
 let stackRows = [];
 function stackChart(buckets, opt) { // 積み上げ棒グラフ:buckets = [{label, title, parts: {種類: ms}}]
   const n = buckets.length, Wd = 340, H = 170, top = 10, bottom = 22, left = 34;
@@ -2911,16 +2978,17 @@ function bindStack() {
   c.addEventListener("pointerleave", () => tip.style.display = "none");
   c.addEventListener("click", e => { const el = e.target.closest("[data-si]"); if (el) showTip(el); });
 }
-function typeCard(days) { // 作業の種類ごとの積み上げグラフと、種類ごとの合計
+function typeCard(days) { // 作業時間の内訳(このアプリ+作業の種類+作業アプリ)の積み上げグラフと、内訳ごとの合計
   const a = days[0].getTime(), b = addDays(days[days.length - 1], 1).getTime();
-  const totals = typeTotals(a, b), keys = seriesOrder().filter(k => totals[k] > 0), all = keys.reduce((t, k) => t + totals[k], 0);
+  const totals = seriesTotals(a, b, true), keys = seriesOrder().filter(k => totals[k] > 0), all = keys.reduce((t, k) => t + totals[k], 0);
   let buckets;
-  if (days.length === 1) buckets = [...Array(24)].map((_, h) => ({ label: h % 3 ? "" : h, title: `${h}時台`, parts: typeTotals(a + h * 36e5, a + (h + 1) * 36e5) }));
-  else buckets = days.map(d => ({ label: days.length <= 7 ? WD[d.getDay()] : (d.getDate() === 1 || d.getDate() % 5 === 0 ? d.getDate() : ""), title: `${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]})`, parts: typeTotals(d.getTime(), addDays(d, 1).getTime()) }));
-  let h = `<div class="card"><h3>作業の種類別(タイマー)${days.length === 1 ? " · 1時間ごと" : " · 1日ごと"}</h3>`;
-  if (!all) return h + `<div class="empty">まだ記録がありません。タイマーで作業の種類を選んで計ると、ここに積み上がります。${meta.workTypes.length ? "" : `<br><button class="mini" data-goapps style="margin-top:8px">作業の種類を登録する</button>`}</div></div>`;
+  if (days.length === 1) buckets = [...Array(24)].map((_, h) => ({ label: h % 3 ? "" : h, title: `${h}時台`, parts: seriesTotals(a + h * 36e5, a + (h + 1) * 36e5, false) }));
+  else buckets = days.map(d => ({ label: days.length <= 7 ? WD[d.getDay()] : (d.getDate() === 1 || d.getDate() % 5 === 0 ? d.getDate() : ""), title: `${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]})`, parts: seriesTotals(d.getTime(), addDays(d, 1).getTime(), true) }));
+  let h = `<div class="card"><h3>作業時間の内訳${days.length === 1 ? " · 1時間ごと" : " · 1日ごと"}</h3>`;
+  if (!all) return h + `<div class="empty">まだ記録がありません。このアプリを開いている時間と、タイマーで作業の種類を選んで計った時間が、ここに積み上がります。${meta.workTypes.length ? "" : `<br><button class="mini" data-goapps style="margin-top:8px">作業の種類を登録する</button>`}</div></div>`;
   h += `<div class="legend">${keys.map(k => `<span><i class="sw" style="background:${seriesColor(k)}"></i>${esc(seriesName(k))}</span>`).join("")}<span class="muted">棒をタップで内訳</span></div>`;
-  h += stackChart(buckets, { hourly: days.length === 1, aria: "作業の種類ごとの積み上げ棒グラフ" });
+  h += stackChart(buckets, { hourly: days.length === 1, aria: "作業時間の内訳の積み上げ棒グラフ" });
+  h += `<p class="muted small" style="margin:6px 0 0">「このアプリ」は、メモなどを開いていた時間のうち、タイマーを回していなかった分です(タイマー中はその作業の種類に数えます)。${days.length === 1 && totals._wapp ? "作業アプリは使った時刻が分からないので、下の合計にだけ入ります。" : ""}</p>`;
   h += `<div style="margin-top:10px">${keys.map(k => `<div class="tshare"><span style="width:7.5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span class="tdot" style="--tc:${seriesColor(k)}"></span>${esc(seriesName(k))}</span><span class="bar" style="--tc:${seriesColor(k)}"><i style="width:${(totals[k] / all * 100).toFixed(1)}%"></i></span><span class="num" style="width:5.2em;text-align:right">${fmtDur(totals[k])}</span><span class="num muted" style="width:3em;text-align:right">${Math.round(totals[k] / all * 100)}%</span></div>`).join("")}</div>`;
   return h + `</div>`;
 }
@@ -2978,8 +3046,6 @@ function dayDetail(r) {
   if ((meta.apps.length || meta.workApps.length) && NATIVE) h += `<p class="note" style="margin-top:8px">${usageAccess() ? "「自動」の付いたアプリは、端末の使用状況から時間を読んでいます。名前だけで登録したアプリは分数を入力してください。🛠 の付いたアプリは作業時間に足します。" : "端末の使用状況から自動で読むには、「設定」で「使用状況へのアクセス」を許可してください。"}</p>`;
   else if (meta.apps.length || meta.workApps.length) h += `<p class="note" style="margin-top:8px">Web試作ではほかのアプリの使用時間を自動で取得できません。端末の「Digital Wellbeing」などで見た分数を入力するか、タイマー中に離れて戻ったときの問いかけで記録してください。🛠 の付いたアプリは作業時間に足します。ネイティブ版では使用状況データから自動で取り込みます。</p>`;
   h += `</div>`;
-  const a = r.d.getTime();
-  h += hourChart(a);
   return h;
 }
 function periodChart(rows) {
@@ -3456,9 +3522,9 @@ function guide() {
    ============================================================ */
 function refreshLive() {
   const a = startOfDay(new Date()).getTime();
-  $("#liveToday").textContent = fmtSec(workMs(a, a + 864e5) + workAppMs(ymd(new Date(a))));
+  $("#liveToday").textContent = fmtSec(workTotal(a, a + 864e5));
   if (view === "log" && logLive) { // 記録画面に今日が入っていれば、作業時間を秒で進める
-    const tw = $("#tileWork"); if (tw) tw.textContent = fmtSec(workMs(logLive.a, logLive.b) + (logLive.app || 0));
+    const tw = $("#tileWork"); if (tw) tw.textContent = fmtSec(workTotal(logLive.a, logLive.b));
     const rw = $("#rowWork"); if (rw) rw.textContent = fmtSec(workMs(logLive.a, logLive.b));
     const ls = $("#liveSess"); if (ls && Work.live) ls.textContent = fmtSec(Date.now() - Math.max(Work.live.s, logLive.a));
     if (hourData && logMode === "day") { // いまの時台の棒を伸ばす
