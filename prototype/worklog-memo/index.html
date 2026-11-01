@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#1a1a19">
-<title>作業記録メモ帳(試作)</title>
+<title>作業記録メモ帳</title>
 <style>
 :root{
   color-scheme: light;
@@ -3590,10 +3590,10 @@ function renderTimer() {
     ${s.running && meta.apps.length ? `<div class="card focusnote"><h3>集中中</h3><div class="small">${meta.apps.map(a => esc(a.name)).join("・")} は開かないでください。</div>
       ${NATIVE && P.block !== false ? `<div class="small" id="blockLeft" style="margin-top:6px;font-weight:600"></div><button class="mini" id="blockAgain" style="margin-top:6px;display:none">もう一度ブロックする(最大5分)</button>` : ""}</div>` : ""}
     <details class="card" style="${NATIVE ? "display:none" : ""}"><summary class="small" style="font-weight:600;color:var(--text-secondary)">タイマー中に妨害アプリを使えなくするには</summary>
-      <p class="small" style="line-height:1.7;margin:8px 0 0">Web試作では、ほかのアプリを止めることはできません。Android の<b>集中モード</b>を使うと、選んだアプリをタイマーの間だけ使えなくできます。<br>
+      <p class="small" style="line-height:1.7;margin:8px 0 0">ブラウザ版では、ほかのアプリを止めることはできません。Android の<b>集中モード</b>を使うと、選んだアプリをタイマーの間だけ使えなくできます。<br>
       1. 端末の「設定」→「Digital Wellbeing と保護者による使用制限」<br>2. 「集中モード」→ 妨害アプリ(${meta.apps.map(a => esc(a.name)).join("・") || "YouTube など"})を選ぶ<br>3. タイマーを始めるときに「今すぐオンにする」<br>
-      <span class="muted">機種によって項目名が違います。ネイティブ版では、タイマー中に妨害アプリを開くと、このアプリの画面で覆って使えなくします。</span></p></details>
-    <p class="note">タイマーの時間は、自動記録の作業時間には加算しません(要件書の現行前提)。ポモドーロは集中 ${P.focus} 分/休憩 ${P.brk} 分。長さは「設定」で変えられます。</p>`;
+      <span class="muted">機種によって項目名が違います。Android アプリ版では、タイマー中に妨害アプリを開くと、アプリの画面で覆って使えなくします。</span></p></details>
+    <p class="note">タイマーの時間は、記録の「作業」に作業の種類ごとに入ります。アプリを開いていた時間や作業アプリと重なる分は、二重に数えません。ポモドーロは集中 ${P.focus} 分/休憩 ${P.brk} 分。長さは「設定」で変えられます。</p>`;
   updateClock();
 }
 $("#timerScroll").addEventListener("click", e => {
@@ -3686,7 +3686,7 @@ function renderPlan() {
     h += evs.map(e => `<button class="ev" data-ev="${e.id}"><span class="t">${esc(e.start)}〜${esc(e.end || "")}</span><span class="grow"><span class="ti">${esc(e.title)}</span>
       ${e.note ? `<div class="muted small">${esc(e.note)}</div>` : ""}<div class="muted small">${e.notify >= 0 && e.notify != null ? `🔔 ${e.notify ? e.notify + "分前" : "開始時"}に通知` : "通知なし"}</div></span></button>`).join("");
   }
-  h += `<p class="note" style="margin-top:14px">Web試作の通知は、このページを開いている間だけ音と表示で知らせます。閉じていても届く通知は、ネイティブ版(AlarmManager)で実装します。</p><div style="height:64px"></div>`;
+  h += `<p class="note" style="margin-top:14px">予定の通知は、${NATIVE ? "このアプリ" : "このページ"}を開いている間だけ音と表示で知らせます。閉じているあいだは届きません。</p><div style="height:64px"></div>`;
   $("#planScroll").innerHTML = h;
 }
 $("#planScroll").addEventListener("click", e => {
@@ -3772,8 +3772,8 @@ function renderPrefs() {
       <div class="row"><span class="grow">他のアプリの上に重ねて表示<div class="muted small">集中ブロックで妨害アプリを覆う</div></span><b class="small" style="color:${canOverlay() ? "var(--accent)" : "var(--danger)"}">${canOverlay() ? "許可済み" : "未許可"}</b><button class="mini" data-perm="overlay">設定を開く</button></div>
       <p class="muted small" style="margin:6px 0 0">設定画面で「作業記録メモ帳」を選び、許可をオンにして戻ってきてください。</p>
     </div>` : ""}
-    <div class="card" style="${NATIVE ? "display:none" : ""}"><h3>使用状況へのアクセス(ネイティブ版で必要)</h3>
-      <p class="small" style="line-height:1.7;margin:0">ネイティブ版では、妨害アプリの使用時間を自動で取り込むために、端末で次の許可を手動で付けます。<br>
+    <div class="card" style="${NATIVE ? "display:none" : ""}"><h3>使用状況へのアクセス(Android アプリ版で必要)</h3>
+      <p class="small" style="line-height:1.7;margin:0">Android アプリ版では、妨害アプリの使用時間を自動で取り込むために、端末で次の許可を手動で付けます。<br>
       1. 端末の「設定」を開く<br>2. 「アプリ」→「特別なアプリアクセス」→「使用状況へのアクセス」<br>3. 一覧からこのアプリを選び、「使用状況へのアクセスを許可」をオン<br>
       <span class="muted">機種により項目名は「使用履歴へのアクセス」などと異なります。</span></p>
     </div>
@@ -3816,7 +3816,7 @@ function renderPrefs() {
       <p class="muted small" style="line-height:1.6;margin:0">メモ・ボード・予定・設定・作業の記録を一つのファイルにして、ブラウザ版とアプリ版のあいだや、別の端末へ移せます。読み込みは今のデータに合わせるので、今のデータは消えません。</p>
       <div class="btns"><button class="btn" id="bkExport">書き出す</button><button class="btn primary" id="bkImport">読み込む</button></div>
     </div>
-    <p class="muted small" style="text-align:center">作業記録メモ帳 Web試作 · 要件定義書(2026-11-01)準拠</p>`;
+    <p class="muted small" style="text-align:center">作業記録メモ帳</p>`;
 }
 $("#prefsScroll").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
@@ -4026,15 +4026,15 @@ function importSheet() {
 
 function guide() {
   openSheet(`<h2>はじめに</h2>
-    <p class="small" style="line-height:1.8">このページを<b>開いているあいだ</b>が、作業時間として自動で記録されます。ほかのアプリへ切り替えたり、画面が消えたりすると止まります。無操作で止まることはありません。</p>
+    <p class="small" style="line-height:1.8">${NATIVE ? "このアプリ" : "このページ"}を<b>開いているあいだ</b>が、作業時間として自動で記録されます。ほかのアプリへ切り替えたり、画面が消えたりすると止まります。無操作で止まることはありません。</p>
     <p class="small" style="line-height:1.8">メモは上の「＋ 新しいメモ」でいくつでも作れます。「◧ ボード」を開くと、すべてのメモがカードで並び、自由に動かして<b>矢印でつなげられます</b>。</p>
     ${NATIVE ? `<p class="small" style="line-height:1.8">ほかのアプリの使用時間を読んだり、タイマー中に妨害アプリを使えなくしたりするには、「設定 › 端末の許可」から二つの許可をオンにしてください。</p>` : ""}
-    <p class="small" style="line-height:1.8;${NATIVE ? "display:none" : ""}">これはスマホのブラウザで試せる<b>Web試作</b>です。ネイティブ版との違いは次のとおりです。</p>
+    <p class="small" style="line-height:1.8;${NATIVE ? "display:none" : ""}">これは<b>ブラウザ版</b>です。Android アプリ版との違いは次のとおりです。</p>
     <ul class="small" style="line-height:1.8;padding-left:1.2em;margin:0;${NATIVE ? "display:none" : ""}">
       <li>予定の通知は、ページを開いている間だけ鳴ります</li>
-      <li>インストール済みアプリの一覧は読めないため、名前で指定します</li>
+      <li>端末のアプリを読めないため、妨害アプリと作業に数えるアプリは選べません</li>
     </ul>
-    <p class="small" style="line-height:1.8;${NATIVE ? "display:none" : ""}">ネイティブ版で必要になる「使用状況へのアクセス」の許可手順は、「設定」に載せてあります。</p>
+    <p class="small" style="line-height:1.8;${NATIVE ? "display:none" : ""}">Android アプリ版で必要になる「使用状況へのアクセス」の許可手順は、「設定」に載せてあります。</p>
     <div class="btns"><button class="btn primary" data-ok>書きはじめる</button></div>`, s => {
     $("[data-ok]", s).onclick = () => { meta.guideSeen = true; saveMeta(); closeSheet(); show("memo"); focusStart(); };
   });
