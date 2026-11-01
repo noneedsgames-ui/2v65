@@ -735,7 +735,7 @@ function loadAll() {
   loadFiles(docs);
   loadBoard(docs);
 }
-const syncBlockApps = () => { if (NATIVE) try { Android.setBlockApps(JSON.stringify(meta.prefs.block === false ? [] : meta.apps.map(a => a.pkg).filter(Boolean))); } catch {} }; // 通知から始めるときのブロックの対象
+const syncBlockApps = () => { if (NATIVE) try { const pk = JSON.stringify(meta.apps.map(a => a.pkg).filter(Boolean)); Android.setBlockApps(meta.prefs.block === false ? "[]" : pk); Android.setUsageOverlay(meta.prefs.usageOv === true, pk); } catch {} }; // 通知から始めるときのブロックの対象
 const saveMeta = () => { Store.put("meta", meta); syncBlockApps(); syncAlarms(); syncWidget(); };
 function logOf(key) { return logs[key] ||= { sessions: [], timers: [], usage: {} }; }
 const saveLog = key => Store.put("log-" + key, logs[key]);
@@ -3822,7 +3822,8 @@ function renderPrefs() {
   $("#prefsScroll").innerHTML = `
     <div class="card"><h3>妨害アプリ</h3>
       ${meta.apps.map(a => `<div class="row"><span class="grow">${esc(a.name)}${a.pkg ? "" : `<div class="muted small">端末のアプリと結びついていません。外して選び直してください</div>`}</span><button class="mini" data-delapp="${a.id}">外す</button></div>`).join("") || `<div class="muted small">まだ指定されていません</div>`}
-      ${NATIVE ? `<button class="btn block" data-pickapps="d" style="margin-top:10px">端末のアプリから選ぶ</button>` : `<p class="note">ブラウザ版からは端末のアプリを読めないので、Android アプリ版で選びます。</p>`}
+      ${NATIVE ? `<button class="btn block" data-pickapps="d" style="margin-top:10px">端末のアプリから選ぶ</button>
+        <label class="row"><input type="checkbox" id="pUsageOv" ${P.usageOv === true ? "checked" : ""}><span class="grow">妨害アプリの使用中、画面の隅に今日の使用時間を出す<div class="muted small">そのアプリの今日の合計を秒まで出します。タイマーを動かしていなくても出ます。動いている間は通知が一つ出ます${P.usageOv !== true ? "" : !meta.apps.some(a => a.pkg) ? `<div style="color:var(--danger)">「端末のアプリから選ぶ」で選んだアプリがないので、まだ出ません</div>` : !usageAccess() || !canOverlay() ? `<div style="color:var(--danger)">「端末の許可」の使用状況と重ね表示を許可するまで、出ません</div>` : ""}</div></span></label>` : `<p class="note">ブラウザ版からは端末のアプリを読めないので、Android アプリ版で選びます。</p>`}
     </div>
     <div class="card"><h3>作業の種類</h3>
       ${meta.workTypes.map((t, i) => `<div class="row"><span class="tdot" style="--tc:${typeColor(t.id)}"></span><input class="inp" style="padding:7px 10px" value="${esc(t.name)}" data-wtname="${t.id}" maxlength="20" aria-label="種類の名前">
@@ -3945,6 +3946,15 @@ $("#prefsScroll").addEventListener("change", e => {
   if (t.dataset.wtname) { const w = typeById(t.dataset.wtname), nm = t.value.trim(); if (w && nm && !meta.workTypes.some(x => x !== w && x.name === nm)) { w.name = nm; saveMeta(); toast("保存しました"); } else if (w) t.value = w.name; return; }
   if (t.id === "pBlock") { P.block = t.checked; saveMeta(); toast("保存しました"); return; }
   if (t.id === "pLockNote") { P.lockNote = t.checked; saveMeta(); try { Android.setTimerNotice(t.checked); if (t.checked) Android.requestNotifyPerm(); } catch {} toast("保存しました"); return; }
+  if (t.id === "pUsageOv") {
+    P.usageOv = t.checked; saveMeta(); renderPrefs();
+    if (t.checked) {
+      const missing = ["usage", "overlay"].filter(k => !PERMS[k].ok());
+      if (missing.length) permSheet(missing, "画面の隅に使用時間を出すには、次の許可が要ります。");
+      else toast(meta.apps.some(a => a.pkg) ? "保存しました" : "「端末のアプリから選ぶ」で妨害アプリを選ぶと出ます");
+    } else toast("保存しました");
+    return;
+  }
   if (t.id === "pWarn") { P.timerWarnH = +t.value; delete Timer.st.warnAt; LS.set("timer", Timer.st); saveMeta(); toast("保存しました"); return; }
   if (t.id === "pExport") { P.exportRemind = t.checked; saveMeta(); toast("保存しました"); return; }
   if (t.dataset.bc) { P.boardColors = { ...boardColors(), [t.dataset.bc]: t.checked }; saveMeta(); toast("保存しました"); return; }
@@ -4267,7 +4277,7 @@ function policySheet() {
     <p>作業記録メモ帳(以下「本アプリ」)は、利用者の作業時間の記録とメモのためのアプリです。</p>
     <p><b>1. 扱う情報</b><br>利用者が書いたメモ、ボードの配置、予定、タイマーの記録 / 本アプリを開いていた時間 / 利用者が選んだアプリの使用時間(「使用状況へのアクセス」を許可した場合のみ) / 端末に入っているアプリの名前の一覧(利用者がアプリを選ぶときのみ)</p>
     <p><b>2. 情報の保存と送信</b><br>${NATIVE ? "上の情報は、利用者の端末の中に保存します。本アプリは、これらの情報を開発者やほかの第三者に送信しません。本アプリはネットワークに接続せず、端末のクラウドバックアップの対象にもしません。利用者が書き出しや自動バックアップで選んだ保存先(Google ドライブなど)へは、その内容を書き込みます。その保存先での扱いは、保存先のサービスと利用者に委ねられます。" : "上の情報はこのブラウザの中に保存します。claude.ai で開いたときは、利用者本人専用の領域へも同期します。開発者やほかの第三者には送信しません。"}</p>
-    ${NATIVE ? `<p><b>3. 権限</b><br>通知:タイマーのボタンと経過時間を出し、予定やタイマーを知らせるために使います。<br>アラームとリマインダー:その知らせを遅れずに届けるために使います。<br>再起動の知らせの受信:再起動のあと、通知と知らせを預け直すために使います。<br>使用状況へのアクセス:選んだアプリの使用時間を表示し、集中タイマー中に選んだアプリが前面に出たかを判断するために使います。<br>他のアプリの上に重ねて表示:集中タイマー中(最大5分)に、選んだアプリの上を覆う画面を出すために使います。<br>どの権限も、利用者が端末の設定でいつでも外せます。</p>` : ""}
+    ${NATIVE ? `<p><b>3. 権限</b><br>通知:タイマーのボタンと経過時間を出し、予定やタイマーを知らせるために使います。<br>アラームとリマインダー:その知らせを遅れずに届けるために使います。<br>再起動の知らせの受信:再起動のあと、通知と知らせを預け直すために使います。<br>使用状況へのアクセス:選んだアプリの使用時間を表示し、集中タイマー中に選んだアプリが前面に出たかを判断するために使います。<br>他のアプリの上に重ねて表示:集中タイマー中(最大5分)に選んだアプリの上を覆う画面を出し、設定でオンにした場合は、選んだアプリの使用中に今日の使用時間を画面の隅に出すために使います。<br>どの権限も、利用者が端末の設定でいつでも外せます。</p>` : ""}
     <p><b>${NATIVE ? 4 : 3}. 情報の削除</b><br>「設定 › このアプリについて › すべてのデータを消す」で消せます。${NATIVE ? "本アプリをアンインストールしても、端末に保存された情報はすべて削除されます。" : ""}</p></div>
     <div class="btns"><button class="btn primary" data-x>閉じる</button></div>`, s => { $("[data-x]", s).onclick = closeSheet; });
 }
@@ -4403,6 +4413,7 @@ window.onWidget = action => {
     else show("timer");
   } else if (action === "show") show("timer");
   else if (action === "plan") show("plan");
+  else if (action === "prefs") show("prefs");
 };
 window.androidBack = () => {
   if ($("#veil").classList.contains("on")) { closeSheet(); return true; }
@@ -4411,7 +4422,7 @@ window.androidBack = () => {
   return false;
 };
 window.onAndroidResume = () => { // 設定画面から戻ったときなど:許可と使用時間を読み直す
-  takeNoticeEvents(); syncAlarms(); syncWidget(); // 通知やウィジェットの表示を、画面の側の正しい様子にそろえる
+  takeNoticeEvents(); syncAlarms(); syncBlockApps(); syncWidget(); // 許可を付けて戻ったときの開始も、ここで。通知やウィジェットの表示を、画面の側の正しい様子にそろえる
   accessMemo.t = 0; for (const k of Object.keys(usageCache)) delete usageCache[k];
   if ($("#permS") && permSheet.last) permSheet(...permSheet.last);
   autoBackupTick();

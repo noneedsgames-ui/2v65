@@ -140,7 +140,7 @@ class TimerNoticeReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
             TimerNotice.ACTION_START, TimerNotice.ACTION_STOP -> TimerNotice.press(context, intent.action!!)
-            else -> { TimerNotice.refresh(context); Alarms.schedule(context) } // 再起動すると、通知も目覚ましも消える
+            else -> { TimerNotice.refresh(context); Alarms.schedule(context); UsageOverlayService.sync(context) } // 再起動すると、通知も目覚ましも消える
         }
     }
 }

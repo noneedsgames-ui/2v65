@@ -73,6 +73,15 @@
             android:exported="false" />
 
         <service
+            android:name=".UsageOverlayService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="利用者が選んだアプリの使用中、その日の使用時間を画面の隅に表示する(設定でオンにしたときのみ)" />
+        </service>
+
+        <service
             android:name=".BlockService"
             android:exported="false"
             android:foregroundServiceType="specialUse">

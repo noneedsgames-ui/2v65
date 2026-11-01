@@ -263,6 +263,9 @@ class MainActivity : Activity() {
         /** ロック画面の通知を出す・消す */
         @JavascriptInterface fun setTimerNotice(on: Boolean) = TimerNotice.setEnabled(this@MainActivity, on)
 
+        /** 妨害アプリの使用中に、隅へ使用時間を出すか。pkgsJson は対象のアプリ */
+        @JavascriptInterface fun setUsageOverlay(on: Boolean, pkgsJson: String) = UsageOverlayService.configure(this@MainActivity, on, pkgsJson)
+
         /** 予定の知らせを預ける。[{id, at, title, body}] */
         @JavascriptInterface fun setEventAlarms(json: String) = Alarms.setEvents(this@MainActivity, json)
 

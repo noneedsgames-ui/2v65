@@ -39,6 +39,7 @@ prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は ind
 - `MainActivity.kt`:WebView で `file:///android_asset/index.html` を開く。端末の機能は JS から `Android.*` で呼ぶ(使用時間・集中ブロック・ウィジェットへの状態 `timerState`)。
 - `TimerNotice.kt`:ロック画面の通知。ボタンはアプリを開かず、押した時刻を貯める(`Android.takeTimerEvents`)。画面側の `takeNoticeEvents` がそれを記録へ移す。
 - `Alarms.kt`:閉じていても届く知らせ(予定・ポモドーロの区切り・止め忘れ)。予定は画面から `Android.setEventAlarms` で受け取り、タイマーの分は `timerState` の様子から求める。
+- `UsageOverlayService.kt`:妨害アプリの使用中に、今日の使用時間を隅へ出す(設定でオンのときだけ常に動く)。
 - `BlockService.kt`:タイマー中、選んだ妨害アプリを覆う(試験運用、最大 5 分)。
 - `TimerWidget.kt`:ホーム画面のウィジェット「作業タイマー」。押すとアプリを開き、`window.onWidget('stopwatch'|'pomodoro'|'stop'|'show')` を呼ぶ。
 - ビルドのたびに `../worklog-memo/index.html` を assets に写す(`app/build.gradle.kts` の copyWeb)。なので **リポジトリ全体** が要る。
@@ -67,6 +68,6 @@ prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は ind
 - **読み込むファイルの中身**:ID などをそのまま画面に入れているので、自分で書き出したファイルだけを読み込む前提。
 
 - **データの書き出し/読み込み**:設定の「データの引っ越し」として実装した。Android の保存・ファイル選択(`MainActivity.kt`)と claude.ai 上の `downloads` は実機で未確認。
-- **実機で未確認**:Google ドライブのファイルからの読み込み、翌日以降の自動の上書き、書き出しの保存先の選択、再起動のあとの通知、新しい画面を指で触った使い心地。ロック画面の通知と、閉じているときの知らせは利用者の実機で確認済み。
+- **実機で未確認**:Google ドライブのファイルからの読み込み、翌日以降の自動の上書き、書き出しの保存先の選択、再起動のあとの通知、新しい画面を指で触った使い心地。ロック画面の通知、閉じているときの知らせ、妨害アプリの使用時間の隅の表示は、利用者の実機で確認済み。
 - **Norton 360**:直接入れた試作版を入れるたびに「疑わしいアプリ」と出る。Play の版でどうなるかは未確認。
 - **Google Play の内部テスト**:Secrets にアップロード鍵がまだ入っていないので、AAB は作られていない。Actions で「Releases に置く」が 403(権限)で失敗するが、APK は実行結果の Artifacts から落とせる(失敗扱いにはしないよう直してある)。

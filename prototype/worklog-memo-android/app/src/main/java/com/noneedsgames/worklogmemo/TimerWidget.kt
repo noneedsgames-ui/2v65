@@ -30,7 +30,7 @@ class TimerWidget : AppWidgetProvider() {
     companion object {
         const val ACTION = "com.noneedsgames.worklogmemo.WIDGET"
         const val EXTRA = "widget_action"
-        val ACTIONS = setOf("stopwatch", "pomodoro", "stop", "show", "plan")
+        val ACTIONS = setOf("stopwatch", "pomodoro", "stop", "show", "plan", "prefs")
         const val PREFS = "timer_widget"
 
         fun saveState(context: Context, json: String) {
