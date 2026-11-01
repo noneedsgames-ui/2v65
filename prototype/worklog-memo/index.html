@@ -249,6 +249,48 @@ body.side-open .side{display:flex}
 .autov{width:7.5em;text-align:right;display:flex;justify-content:flex-end;align-items:center;gap:6px}
 .autov em{font-style:normal;font-size:10px;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:0 5px}
 
+/* item kinds:チェック・番号・タイムライン・見出し・補足・コード */
+.toolbar{overflow-x:auto;scrollbar-width:none}
+.toolbar::-webkit-scrollbar{display:none}
+.oltools .ot-word{font-size:13px;font-weight:600}
+.oltools .ot-del,.selbar .ot-del{color:var(--danger)}
+.mk{flex:none;display:flex;align-items:flex-start;justify-content:center;min-height:34px}
+.chk{width:20px;height:20px;margin-top:7px;margin-right:4px;border-radius:6px;border:2px solid var(--text-muted);background:var(--surface-1);color:#fff;font-size:13px;font-weight:800;line-height:16px;padding:0;text-align:center}
+.chk.on{background:var(--accent);border-color:var(--accent)}
+.ol-row.done .ol-v,.ol-row.done .ol-t{text-decoration:line-through;color:var(--text-muted)}
+.numk{min-width:22px;margin-top:6px;margin-right:2px;font-size:15px;color:var(--text-secondary);font-variant-numeric:tabular-nums;text-align:right}
+.ol-row.k-time .mk{position:relative;width:18px}
+.ol-row.k-time .mk::before{content:"";position:absolute;left:8px;top:0;bottom:0;width:2px;background:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.ol-row.k-time .mk::after{content:"";position:absolute;left:3px;top:13px;width:12px;height:12px;border-radius:50%;background:var(--surface-1);border:2.5px solid var(--accent);box-sizing:border-box}
+.tl-at{display:inline-block;margin:6px 6px 0;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface-1));border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line))}
+.tl-at.empty{color:var(--text-muted);border-style:dashed;background:none}
+.ol-row.k-head .ol-v,.ol-row.k-head .ol-t{font-size:20px;font-weight:800;line-height:1.35;padding-top:10px}
+.ol-row.k-quote .ol-main{border-left:3px solid color-mix(in srgb,var(--text-muted) 60%,transparent);margin-left:4px}
+.ol-row.k-quote .ol-v,.ol-row.k-quote .ol-t{color:var(--text-secondary);font-size:15px}
+.ol-row.k-code .ol-v,.ol-row.k-code .ol-t{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;background:var(--surface-2);border-radius:6px}
+.kindgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kindgrid button{display:flex;align-items:center;gap:8px;padding:12px;border-radius:12px;background:var(--surface-2);font-size:15px;text-align:left}
+.kindgrid button.on{outline:2px solid var(--accent)}
+.kindgrid .ki{width:26px;text-align:center;font-weight:800;color:var(--accent)}
+/* 選択モード */
+.selbox{display:none;flex:none;width:22px;height:22px;margin:6px 2px 0 0;border-radius:50%;border:2px solid var(--text-muted)}
+body.selecting .selbox{display:block}
+body.selecting .bul{width:14px}
+.ol-row.sel .selbox{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 3px var(--surface-1)}
+.ol-row.sel .ol-v{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.ol-row.sel2 .ol-v{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.ol-row.sel2 .selbox{border-color:var(--accent);border-style:dotted}
+.selbar{display:none;align-items:center;gap:2px;padding:4px 6px calc(4px + var(--safe-b));border-top:1px solid var(--line);background:var(--surface-1)}
+body.selecting .selbar{display:flex}
+body.selecting .oltools{display:none!important}
+.selbar button{flex:1;padding:10px 0;font-size:14px;font-weight:600;border-radius:8px}
+.selbar .sel-n{flex:none;padding:0 8px;font-size:13px;color:var(--text-secondary);font-variant-numeric:tabular-nums}
+.selbar .sel-done{color:var(--accent)}
+.snack{position:fixed;left:50%;bottom:calc(132px + var(--safe-b));transform:translateX(-50%);display:none;align-items:center;gap:14px;background:var(--text-primary);color:var(--surface-1);
+  padding:8px 8px 8px 16px;border-radius:12px;font-size:14px;z-index:32;box-shadow:0 4px 14px #0004;white-space:nowrap}
+.snack.on{display:flex}
+.snack button{color:color-mix(in srgb,var(--accent) 70%,#fff);font-weight:700;padding:6px 10px}
+
 /* generic */
 .card{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
 .card h3{margin:0 0 8px;font-size:14px;color:var(--text-secondary);font-weight:600}
@@ -342,8 +384,10 @@ textarea.inp{line-height:1.6;resize:vertical}
         <div class="linkbar" id="linkbar"></div>
     <div class="toolbar">
       <button class="tb" id="btnSearch">検索</button>
+      <button class="tb" id="btnSelect">選択</button>
+      <button class="tb" id="btnCopy">コピー</button>
       <button class="tb" id="btnTpl">テンプレ</button>
-      <button class="tb" id="btnFold">全部開く/畳む</button>
+      <button class="tb" id="btnFold">開閉</button>
       <span class="spacer"></span>
       <span class="saved" id="saved"></span>
     </div>
@@ -353,10 +397,19 @@ textarea.inp{line-height:1.6;resize:vertical}
       <button data-op="in" aria-label="字下げして子にする">→</button>
       <button data-op="up" aria-label="上へ移動">↑</button>
       <button data-op="down" aria-label="下へ移動">↓</button>
-      <button data-op="fold" aria-label="畳む/開く">▾▸</button>
+      <button data-op="kind" class="ot-word" aria-label="この行の形式を変える">形式</button>
       <button data-op="child" aria-label="子を追加">＋子</button>
       <button data-op="tpl" class="ot-tpl" aria-label="テンプレートを入れる">テンプレ</button>
+      <button data-op="del" class="ot-word ot-del" aria-label="この行を削除">削除</button>
       <button data-op="more" aria-label="この行の操作">⋯</button>
+    </div>
+    <div class="selbar" id="selbar">
+      <span class="sel-n" id="selN">0件</span>
+      <button data-sel="all">すべて</button>
+      <button data-sel="copy">コピー</button>
+      <button data-sel="kind">形式</button>
+      <button data-sel="del" class="ot-del">削除</button>
+      <button data-sel="done" class="sel-done">完了</button>
     </div>
       </div>
     </div>
@@ -407,6 +460,7 @@ textarea.inp{line-height:1.6;resize:vertical}
 <div class="veil" id="veil"><div class="sheet" id="sheet"></div></div>
 <div class="banner" id="banner"></div>
 <div class="toast" id="toast"></div>
+<div class="snack" id="snack"><span id="snackMsg"></span><button id="snackUndo">元に戻す</button></div>
 
 <script>
 "use strict";
@@ -719,7 +773,13 @@ function confirmSheet(title, body, okLabel, onOk) {
    メモ:記入欄そのものが入れ子のアウトライン
    1行=1項目。字下げで親子をつくり、行頭の ▾/▸ で畳む
    ============================================================ */
-let outline = null;       // { nodes: [{ id, t, c: [], x?: 畳み, l?: [関連先id] }] }
+let outline = null;       // { nodes: [{ id, t, c: [], x?: 畳み, l?: [関連先id], k?: 形式, done?: チェック済み, at?: タイムラインの時 }] }
+// 行の形式。k を持たない行はふつうの箇条書き。一つのメモの中で混ぜられる
+const KINDS = [
+  ["", "・", "箇条書き"], ["check", "☑", "チェック"], ["num", "1.", "番号付き"], ["time", "●", "タイムライン"],
+  ["head", "見", "見出し"], ["quote", "┃", "補足"], ["code", "</>", "コード"],
+];
+const nowLabel = () => { const d = new Date(); return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 let zoomId = null;        // 「この項目だけ表示」中の項目
 let focusId = null;       // いま書いている項目
 let index = {};           // id -> { n, parent, list }
@@ -799,7 +859,10 @@ function parseIndented(text) {
     if (!raw.trim()) continue;
     const m = raw.match(/^[\t 　]*/)[0];
     const lv = [...m].reduce((t, ch) => t + (ch === " " ? 0.5 : 1), 0) | 0;
-    const node = N(raw.slice(m.length).replace(/^[・•\-*]\s*/, ""));
+    let body = raw.slice(m.length), ck = null;
+    const cm = body.match(/^([☐☑])\s*/); if (cm) { ck = cm[1]; body = body.slice(cm[0].length); }
+    const node = N(body.replace(/^[・•\-*]\s*/, ""));
+    if (ck) { node.k = "check"; if (ck === "☑") node.done = true; }
     while (stack.length > 1 && stack[stack.length - 1].lv >= lv) stack.pop();
     stack[stack.length - 1].c.push(node);
     stack.push({ c: node.c, lv });
@@ -845,20 +908,26 @@ function renderOutline() {
   if (zoomId && !index[zoomId]) zoomId = null;
   const back = backlinks();
   const rows = [];
-  const walk = (list, d) => list.forEach(n => {
+  const walk = (list, d, inSel) => { let num = 0; list.forEach(n => {
     const has = n.c.length > 0, folded = has && n.x;
     const rel = [...new Set([...(n.l || []).filter(x => gindex[x]), ...(back[n.id] || [])])];
-    rows.push(`<div class="ol-row${n.id === focusId ? " cur" : ""}" data-id="${n.id}" style="--d:${d}">` +
-      `<button class="bul${has ? "" : " leaf"}" data-bul="${n.id}" tabindex="-1" aria-label="${has ? (folded ? "開く" : "畳む") : "この項目"}">${has ? (folded ? "▸" : "▾") : "•"}</button>` +
-      `<div class="ol-main">` + (n.id === editId
+    num = n.k === "num" ? num + 1 : 0;
+    const sel = selecting && selSet.has(n.id);
+    const mk = n.k === "check" ? `<span class="mk"><button class="chk${n.done ? " on" : ""}" data-chk="${n.id}" tabindex="-1" aria-label="${n.done ? "済み" : "まだ"}">${n.done ? "✓" : ""}</button></span>`
+      : n.k === "num" ? `<span class="mk"><span class="numk">${num}.</span></span>`
+      : n.k === "time" ? `<span class="mk"></span>` : "";
+    rows.push(`<div class="ol-row${n.id === focusId && !selecting ? " cur" : ""}${n.k ? " k-" + n.k : ""}${n.k === "check" && n.done ? " done" : ""}${sel ? " sel" : inSel ? " sel2" : ""}" data-id="${n.id}" style="--d:${d}">` +
+      `<span class="selbox"></span>` +
+      `<button class="bul${has ? "" : " leaf"}" data-bul="${n.id}" tabindex="-1" aria-label="${has ? (folded ? "開く" : "畳む") : "この項目"}">${has ? (folded ? "▸" : "▾") : n.k ? "" : "•"}</button>` + mk +
+      `<div class="ol-main">` + (n.k === "time" ? `<button class="tl-at${n.at ? "" : " empty"}" data-tl="${n.id}" tabindex="-1">${esc(n.at || "＋ 時")}</button>` : "") + (n.id === editId
         ? `<textarea class="ol-t" rows="1" data-t="${n.id}" spellcheck="false"${firstEmpty ? ` placeholder="${PH_FIRST}"` : ""}>${esc(n.t)}</textarea>`
         : `<div class="ol-v" data-v="${n.id}"${firstEmpty ? ` data-ph="${PH_FIRST}"` : ""}>${n.ph ? phHtml(n.t) : esc(n.t)}</div>`) +
       (folded ? `<button class="foldcnt" data-bul="${n.id}" tabindex="-1">… ${countAll(n)}項目</button>` : "") +
       (rel.length ? `<div class="ol-rel">${rel.map(r => `<button class="mini link" data-jump="${r}" tabindex="-1">${esc(labelX(r))}</button>`).join("")}</div>` : "") +
       `</div></div>`);
-    if (has && !folded) walk(n.c, d + 1);
-  });
-  walk(roots(), 0);
+    if (has && !folded) walk(n.c, d + 1, inSel || sel);
+  }); };
+  walk(roots(), 0, false);
   let crumb = "";
   if (zoomId) {
     const z = index[zoomId].n;
@@ -868,6 +937,7 @@ function renderOutline() {
   }
   const box = $("#outline");
   box.innerHTML = crumb + rows.join("");
+  if (selecting) $("#selN").textContent = selSet.size + "件";
   if (!FIELD_SIZING) box.querySelectorAll(".ol-t").forEach(autosize);
   if (focusId && pendingCaret != null) {
     const ta = box.querySelector(`[data-t="${focusId}"]`);
@@ -882,10 +952,12 @@ function commit() { saveOutline(); renderOutline(); }
 // ---- 操作 ----
 function doEnter(id, s, e) {
   const { n, parent, list } = index[id];
+  if (!n.t && n.k) { delete n.k; delete n.done; delete n.at; focusAt(id, 0); return commit(); } // 空のチェックなどで改行 → ふつうの行に戻す
   if (!n.t && parent && parent.id !== zoomId) return doOutdent(id);        // 空行で改行 → 一段戻す
   if (s === 0 && e === 0 && n.t) { list.splice(list.indexOf(n), 0, N()); focusAt(id, 0); return commit(); } // 行頭で改行 → 上に空行
   const after = n.t.slice(e); n.t = n.t.slice(0, s);
   const m = N(after);
+  if (n.k && n.k !== "head") m.k = n.k; // 見出しの次はふつうの行、それ以外は同じ形式を続ける
   if (n.c.length && !n.x) n.c.unshift(m); else list.splice(list.indexOf(n) + 1, 0, m);
   focusAt(m.id, 0); commit();
 }
@@ -919,6 +991,7 @@ function doAddChild(id) {
 }
 function doBackspace(id) {
   const { n, list } = index[id];
+  if (n.k) { delete n.k; delete n.done; delete n.at; focusAt(id, 0); commit(); return true; } // 形式つきの行の頭で ⌫ → まずふつうの行に戻す
   if (n.c.length) return false;
   const vis = flatVisible(); const i = vis.indexOf(id);
   if (i <= 0) { if (!n.t && list.length > 1) { list.splice(list.indexOf(n), 1); const nx = flatVisible()[0]; nx && focusAt(nx, 0); commit(); return true; } return false; }
@@ -931,13 +1004,110 @@ function doBackspace(id) {
 function doDelete(id) {
   const { n, list } = index[id];
   const vis = flatVisible(); const i = vis.indexOf(id);
+  const k = countAll(n);
+  keepUndo();
   list.splice(list.indexOf(n), 1);
   if (!outline.nodes.length) outline.nodes.push(N());
   reindex();
   const nx = vis.slice(0, i).reverse().find(x => index[x]) || flatVisible()[0];
   if (nx) focusAt(nx, index[nx].n.t.length);
-  commit(); toast("削除しました");
+  commit(); snack(k ? `「${(n.t || "空の行").slice(0, 12)}」と下の ${k} 項目を削除しました` : "1行削除しました");
 }
+// ---- 元に戻す(削除の直後だけ) ----
+let undoSnap = null;
+function keepUndo() { flushOutline(); undoSnap = { file: curFile, nodes: JSON.parse(JSON.stringify(outline.nodes)) }; }
+function snack(msg) {
+  $("#snackMsg").textContent = msg; $("#snack").classList.add("on");
+  clearTimeout(snack._t); snack._t = setTimeout(() => { $("#snack").classList.remove("on"); undoSnap = null; }, 7000);
+}
+$("#snackUndo").onclick = () => {
+  $("#snack").classList.remove("on"); const u = undoSnap; undoSnap = null; if (!u || !files[u.file]) return;
+  if (u.file !== curFile) openFile(u.file);
+  files[u.file].nodes = u.nodes; outline = files[u.file]; editId = null; reindex(); saveOutline(); renderMemo(); toast("元に戻しました");
+};
+// ---- 形式を変える ----
+function setKind(ids, k) {
+  for (const id of ids) { const n = index[id]?.n; if (!n) continue;
+    if (k) n.k = k; else delete n.k;
+    if (k !== "check") delete n.done;
+    if (k === "time") { if (!n.at) n.at = nowLabel(); } else delete n.at;
+  }
+  commit();
+}
+function kindSheet(ids) {
+  flushOutline();
+  const cur = ids.length === 1 ? (index[ids[0]]?.n.k || "") : null;
+  openSheet(`<h2>形式${ids.length > 1 ? `(${ids.length}行)` : ""}</h2>
+    <div class="kindgrid">${KINDS.map(([k, i, l]) => `<button data-kd="${k}" class="${cur === k ? "on" : ""}"><span class="ki">${esc(i)}</span>${l}</button>`).join("")}</div>
+    <p class="muted small" style="margin:10px 0 0">形式は行ごとに選べます。改行すると同じ形式の行が続き、空のまま改行するとふつうの行に戻ります。</p>`, s => {
+    s.addEventListener("click", e => { const b = e.target.closest("[data-kd]"); if (!b) return;
+      const focusBack = ids.length === 1 && !selecting ? ids[0] : null;
+      closeSheet(); setKind(ids, b.dataset.kd);
+      if (focusBack) { focusAt(focusBack, index[focusBack].n.t.length); renderOutline(); }
+    });
+  });
+}
+function timeSheet(id) { // タイムラインの時を書く(日時でも「第1章」のような言葉でもよい)
+  const n = index[id].n;
+  openSheet(`<h2>タイムラインの時</h2>
+    <label class="field"><span>時(日時のほか「第1章」「3日目」のような言葉でも)</span><input class="inp" id="tlIn" value="${esc(n.at || "")}" maxlength="24"></label>
+    <div class="metas"><button class="mini" data-tln="now">いまの日時</button><button class="mini" data-tln="today">今日</button><button class="mini" data-tln="clear">消す</button></div>
+    <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
+    const i = $("#tlIn"); i.focus(); i.select();
+    s.addEventListener("click", e => { const b = e.target.closest("[data-tln]"); if (!b) return;
+      const d = new Date(); i.value = b.dataset.tln === "now" ? nowLabel() : b.dataset.tln === "today" ? `${d.getMonth() + 1}/${d.getDate()}` : ""; });
+    i.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) $("[data-ok]", s).click(); });
+    $("[data-ok]", s).onclick = () => { n.at = i.value.trim(); if (!n.at) delete n.at; closeSheet(); commit(); };
+  });
+}
+// ---- テキストとしてコピー ----
+function nodesText(list, depth, num) { // 字下げ(空白2つ)と、形式ごとの印をつけた文章
+  let out = "", cnt = 0;
+  for (const n of list) {
+    cnt = n.k === "num" ? cnt + 1 : 0;
+    const mark = n.k === "check" ? (n.done ? "☑ " : "☐ ") : n.k === "num" ? cnt + ". " : n.k === "time" ? (n.at ? `[${n.at}] ` : "") : n.k === "head" ? "■ " : n.k === "quote" ? "｜" : n.k === "code" ? "" : "・";
+    out += "  ".repeat(depth) + mark + (n.t || "") + "\n";
+    out += nodesText(n.c || [], depth + 1);
+  }
+  return out;
+}
+async function copyText(text, what) {
+  try { await navigator.clipboard.writeText(text); toast(`${what}をコピーしました`); return; } catch {}
+  // コピーできない環境では、文章を出して手でコピーしてもらう
+  openSheet(`<h2>${esc(what)}</h2><p class="muted small" style="margin-top:-4px">この画面ではそのままコピーできませんでした。下の文章を長押しして「すべて選択」→「コピー」してください。</p>
+    <textarea class="inp" id="cpT" rows="12" readonly style="font-size:13px">${esc(text)}</textarea><div class="btns"><button class="btn primary" data-x>閉じる</button></div>`, s => {
+    const t = $("#cpT"); t.focus(); t.select(); $("[data-x]", s).onclick = closeSheet; });
+}
+$("#btnCopy").onclick = () => { flushOutline(); copyText(nodesText(outline.nodes, 0), "メモ全体"); };
+// ---- 複数選択 ----
+let selecting = false; const selSet = new Set();
+function setSelecting(on) {
+  selecting = on; selSet.clear();
+  if (on) { flushOutline(); document.activeElement?.blur?.(); editId = null; }
+  document.body.classList.toggle("selecting", on);
+  $("#btnSelect").textContent = on ? "選択をやめる" : "選択";
+  renderOutline();
+}
+$("#btnSelect").onclick = () => setSelecting(!selecting);
+function selRoots() { // 選んだ行のうち、上の行が選ばれていないもの(下の行は一緒に扱う)を、メモの順に
+  const out = []; const walk = l => l.forEach(n => { if (selSet.has(n.id)) out.push(n); else walk(n.c); }); walk(roots()); return out;
+}
+$("#selbar").addEventListener("click", e => {
+  const b = e.target.closest("[data-sel]"); if (!b) return;
+  const a = b.dataset.sel, rs = selRoots();
+  if (a === "done") return setSelecting(false);
+  if (a === "all") { const all = flatVisible(); if (all.every(id => selSet.has(id))) selSet.clear(); else all.forEach(id => selSet.add(id)); return renderOutline(); }
+  if (!rs.length) { toast("行をタップして選んでください"); return; }
+  if (a === "copy") copyText(nodesText(rs, 0), `${rs.length}項目`);
+  else if (a === "kind") kindSheet([...selSet]);
+  else if (a === "del") {
+    const total = rs.reduce((t, n) => t + 1 + countAll(n), 0);
+    const go = () => { keepUndo(); for (const n of rs) { const it = index[n.id]; if (it) it.list.splice(it.list.indexOf(n), 1); }
+      if (!outline.nodes.length) outline.nodes.push(N());
+      selSet.clear(); focusId = null; commit(); snack(`${total}項目を削除しました`); };
+    total > rs.length ? confirmSheet("選んだ行を削除しますか", `${rs.length}行と、その下の項目をあわせて ${total} 項目を削除します。削除の直後なら「元に戻す」で戻せます。`, "削除する", go) : go();
+  }
+});
 function caretOf(id) { const ta = document.querySelector(`[data-t="${id}"]`); return ta ? ta.selectionStart : 0; }
 // 貼り付けや取りこぼした改行:複数行を項目に分ける
 function splitPasted(id, ta) {
@@ -948,11 +1118,12 @@ function splitPasted(id, ta) {
   const caretLine = v.slice(0, sel).split("\n").length - 1;
   const lastLineText = v.slice(0, sel).split("\n").pop();
   let nodes;
-  if (lines.length === 2) nodes = [N(lines[1])]; // 改行一つ(Enter の取りこぼし)なら、後半をそのまま次の項目に
+  const ckMark = node => { const m = node.t.match(/^([☐☑])\s*/); if (m) { node.t = node.t.slice(m[0].length); node.k = "check"; if (m[1] === "☑") node.done = true; else delete node.done; } return node; };
+  if (lines.length === 2) { nodes = [ckMark(N(lines[1]))]; ckMark(n); } // 改行一つ(Enter の取りこぼし)なら、後半をそのまま次の項目に(☐/☑ で始まればチェックに)
   else {
     const all = parseIndented(v);                // 字下げごと読み、1行目の子はこの行の子に
     nodes = all.slice(1);
-    if (all[0]) { n.t = all[0].t; n.c.push(...all[0].c); if (all[0].c.length) delete n.x; }
+    if (all[0]) { n.t = all[0].t; n.c.push(...all[0].c); if (all[0].c.length) delete n.x; if (all[0].k) { n.k = all[0].k; if (all[0].done) n.done = true; } }
     if (!nodes.length && !all[0]?.c.length) nodes = [N()];
   }
   const at = list.indexOf(n) + 1;
@@ -1053,6 +1224,14 @@ function caretFromPoint(el, x, y) {
 }
 box.addEventListener("click", e => {
   if (justDragged) return;
+  if (selecting) { // 選択モード:行をタップで選ぶ/外す
+    const row = e.target.closest(".ol-row");
+    if (row && !e.target.closest(".bul")) { const id = row.dataset.id; selSet.has(id) ? selSet.delete(id) : selSet.add(id); renderOutline(); return; }
+  }
+  const ck = e.target.closest("[data-chk]");
+  if (ck) { const n = index[ck.dataset.chk]?.n; if (n) { n.done = !n.done; if (!n.done) delete n.done; saveOutline(); renderOutline(); } return; }
+  const tl = e.target.closest("[data-tl]");
+  if (tl) { flushOutline(); timeSheet(tl.dataset.tl); return; }
   const v = e.target.closest(".ol-v");
   if (v) { focusAt(v.dataset.v, caretFromPoint(v, e.clientX, e.clientY)); renderOutline(); return; }
   const b = e.target.closest("button"); if (!b) return;
@@ -1073,7 +1252,8 @@ const ghost = document.createElement("div"); ghost.className = "dragghost"; docu
 const LONGPRESS_MS = 350;
 box.addEventListener("contextmenu", e => { if (drag || e.target.closest(".bul")) e.preventDefault(); });
 box.addEventListener("pointerdown", e => {
-  if (e.button > 0) return;
+  if (e.button > 0 || selecting) return;
+  if (e.target.closest("[data-chk],[data-tl]")) return;
   const row = e.target.closest(".ol-row"); if (!row) return;
   const b = e.target.closest(".bul");
   const ta = e.target.closest(".ol-t");
@@ -1219,6 +1399,8 @@ tools.addEventListener("click", e => {
   const id = focusId;
   ({ out: () => doOutdent(id), in: () => doIndent(id), up: () => doMove(id, -1), down: () => doMove(id, 1),
      fold: () => doToggle(id), child: () => doAddChild(id), more: () => lineMenu(id),
+     kind: () => { document.activeElement?.blur?.(); kindSheet([id]); },
+     del: () => { const k = countAll(index[id].n); if (k) { document.activeElement?.blur?.(); confirmSheet("行を削除しますか", `「${label(id)}」と、その下の ${k} 項目を削除します。削除の直後なら「元に戻す」で戻せます。`, "削除する", () => doDelete(id)); } else doDelete(id); },
      tpl: () => { document.activeElement?.blur?.(); openTemplates(id, false); } })[b.dataset.op]?.();
 });
 function lineMenu(id) {
@@ -1234,7 +1416,7 @@ function lineMenu(id) {
       if (a === "zoom") { closeSheet(); zoomTo(id); }
       else if (a === "link") openLinker(id);
       else if (a === "tpl") openTemplates(id, true);
-      else if (a === "del") { if (k) confirmSheet("行を削除しますか", `「${label(id)}」と、その下の ${k} 項目を削除します。元に戻せません。`, "削除する", () => doDelete(id)); else { closeSheet(); doDelete(id); } }
+      else if (a === "del") { if (k) confirmSheet("行を削除しますか", `「${label(id)}」と、その下の ${k} 項目を削除します。削除の直後なら「元に戻す」で戻せます。`, "削除する", () => doDelete(id)); else { closeSheet(); doDelete(id); } }
     });
   });
 }
@@ -1450,7 +1632,7 @@ function previewLines(f) {
   const out = []; const titleFromLine = !f.name;
   let skipped = false;
   const walk = (l, d) => { for (const n of l) { if (out.length >= 4) return; const t = (n.t || "").trim();
-    if (t) { if (titleFromLine && !skipped) skipped = true; else out.push("　".repeat(Math.min(d, 3)) + "・" + t); }
+    if (t) { if (titleFromLine && !skipped) skipped = true; else out.push("　".repeat(Math.min(d, 3)) + (n.k === "check" ? (n.done ? "☑ " : "☐ ") : n.k === "time" && n.at ? `[${n.at}] ` : n.k === "head" ? "■ " : "・") + t); }
     walk(n.c || [], d + 1); } };
   walk(f.nodes, 0);
   return out;
