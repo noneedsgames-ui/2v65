@@ -2,4 +2,5 @@
 <resources>
     <color name="bg">#F4F3EF</color>
     <color name="ic_bg">#2A78D6</color>
+    <color name="bg_night">#121211</color>
 </resources>
