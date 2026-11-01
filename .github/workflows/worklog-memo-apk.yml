@@ -3,13 +3,9 @@
 # - AAB(アップロード鍵):Google Play の内部テストに出す。Secrets に鍵が入っているときだけ署名する
 name: 作業記録メモ帳 APK
 
+# アプリ化はいったん保留中。HTML 版を磨いている間は push では動かさず、
+# 必要なときだけ Actions の「Run workflow」で手で動かす
 on:
-  push:
-    branches: [ccr-a6f51c3a-jl9xh6]
-    paths:
-      - "prototype/worklog-memo/**"
-      - "prototype/worklog-memo-android/**"
-      - ".github/workflows/worklog-memo-apk.yml"
   workflow_dispatch:
 
 permissions:
