@@ -3809,6 +3809,10 @@ function renderPrefs() {
       <p class="muted small" style="line-height:1.6">入力はまずこの端末に保存し、claude.ai にサインインして開いている場合は、あなた専用の領域へ追って同期します。ほかの人からは見えません。</p>
       <button class="mini" id="reGuide">はじめにの案内をもう一度見る</button>
     </div>
+    <div class="card"><h3>データの引っ越し</h3>
+      <p class="muted small" style="line-height:1.6;margin:0">メモ・ボード・予定・設定・作業の記録を一つのファイルにして、ブラウザ版とアプリ版のあいだや、別の端末へ移せます。読み込みは今のデータに合わせるので、今のデータは消えません。</p>
+      <div class="btns"><button class="btn" id="bkExport">書き出す</button><button class="btn primary" id="bkImport">読み込む</button></div>
+    </div>
     <p class="muted small" style="text-align:center">作業記録メモ帳 Web試作 · 要件定義書(2026-11-01)準拠</p>`;
 }
 $("#prefsScroll").addEventListener("click", e => {
@@ -3853,6 +3857,8 @@ $("#prefsScroll").addEventListener("click", e => {
     confirmSheet("テンプレートを削除しますか", `「${k}」を削除します。メモに入れ済みの行はそのまま残ります。`, "削除する", () => { delete meta.prefs.templates[k]; saveMeta(); renderPrefs(); toast("削除しました"); });
   }
   else if (b.id === "reGuide") guide();
+  else if (b.id === "bkExport") exportSheet();
+  else if (b.id === "bkImport") importSheet();
 });
 $("#prefsScroll").addEventListener("change", e => {
   const P = meta.prefs, t = e.target;
@@ -3876,6 +3882,154 @@ $("#prefsScroll").addEventListener("change", e => {
   saveMeta(); toast("保存しました");
 });
 $("#prefsScroll").addEventListener("keydown", e => { if (e.target.id === "appName" && e.key === "Enter") $("#addApp").click(); });
+
+/* ============================================================
+   データの引っ越し:文書をまとめて書き出し、読み込むときは今のデータに合わせる
+   ============================================================ */
+const BACKUP_APP = "worklog-memo";
+function backupText() {
+  flushMemoEdit();
+  const docs = {};
+  for (const [id, v] of Object.entries(Store.localDocs())) if (/^(meta|board|board-.+|file-.+|log-\d{4}-\d{2})$/.test(id)) docs[id] = v;
+  return JSON.stringify({ app: BACKUP_APP, version: 1, exportedAt: Date.now(), docs });
+}
+function parseBackup(text) { // 形が合わなければ null。おかしな文書は読み飛ばす
+  let o; try { o = JSON.parse(text); } catch { return null; }
+  if (!o || o.app !== BACKUP_APP || !o.docs || typeof o.docs !== "object") return null;
+  const docs = {}, isObj = v => v && typeof v === "object" && !Array.isArray(v);
+  for (const [id, v] of Object.entries(o.docs)) {
+    if (!isObj(v)) continue;
+    if (id.startsWith("file-") ? v.id === id.slice(5) && Array.isArray(v.nodes) : /^(meta|board|board-.+|log-\d{4}-\d{2})$/.test(id)) docs[id] = v;
+  }
+  return { docs, exportedAt: o.exportedAt };
+}
+// 並びは今の端末のまま(作業の種類は並び順で色が決まる)、中身は新しい方を採り、知らないものを後ろに足す
+const byIdUnion = (l, r, rNewer) => { const m = new Map((l || []).map(x => [x.id, x])); for (const x of r || []) if (rNewer || !m.has(x.id)) m.set(x.id, x); return [...m.values()]; };
+function mergeBackupMeta(l, r, remap, localEmpty) { // 同じものは新しい方を採り、片方にしかないものは残す
+  r = { ...r };
+  for (const k of ["apps", "workApps", "workTypes"]) r[k] = (r[k] || []).filter(x => !remap[x.id]);
+  const rNewer = localEmpty || (r._ts || 0) > (l._ts || 0), [older, newer] = rNewer ? [l, r] : [r, l];
+  const m = { ...older, ...newer };
+  m.prefs = { ...older.prefs, ...newer.prefs, templates: { ...older.prefs?.templates, ...newer.prefs?.templates } };
+  for (const k of ["events", "apps", "workApps", "workTypes", "boards", "groups"]) m[k] = byIdUnion(l[k], r[k], rNewer);
+  m.links = [...new Map([...(l.links || []), ...(r.links || [])].map(x => [JSON.stringify(x), x])).values()];
+  m.guideSeen = !!(l.guideSeen || r.guideSeen);
+  return m;
+}
+function mergeBackupBoard(l, r) {
+  const rNewer = (r._ts || 0) > (l._ts || 0), [older, newer] = rNewer ? [l, r] : [r, l];
+  return { ...older, ...newer, cards: { ...older.cards, ...newer.cards }, edges: byIdUnion(l.edges, r.edges, rNewer), groups: byIdUnion(l.groups, r.groups, rNewer) };
+}
+function planImport(inc, local) { // 書き込む文書と、知らせる件数を求める(まだ何も書かない)
+  const changes = {}, st = { added: 0, updated: 0, copies: 0, logs: 0, others: 0 };
+  const canon = d => JSON.stringify({ ...d, _ts: 0 }, (k, v) => v && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a < b ? -1 : 1)) : v);
+  const sameDoc = (a, b) => canon(a) === canon(b); // キーの順番の違いは変更に数えない
+  // 同じ名前の作業の種類・アプリは、今の端末の方にまとめる(ID は端末ごとに違う)
+  const remap = {}, lm = local.meta || {}, im = inc.meta || {};
+  const match = (from, to) => { for (const x of from) { const y = to.find(a => a.name === x.name); if (y && y.id !== x.id) remap[x.id] = y.id; } };
+  match(im.workTypes || [], lm.workTypes || []);
+  match([...(im.apps || []), ...(im.workApps || [])], [...(lm.apps || []), ...(lm.workApps || [])]);
+  // メモ:別の中身を上書きするときは、古い方も別のメモとして残す
+  const sig = f => JSON.stringify(f.nodes, (k, v) => k === "id" || k === "l" ? undefined : v);
+  const hasText = l => (l || []).some(n => n.t || hasText(n.c));
+  const known = new Set(Object.entries(local).filter(([k]) => k.startsWith("file-")).map(([, f]) => sig(f)));
+  const fresh = n => { const c = { ...n, id: uid(), c: (n.c || []).map(fresh) }; delete c.l; return c; };
+  for (const [id, r] of Object.entries(inc)) {
+    if (!id.startsWith("file-")) continue;
+    const l = local[id];
+    if (!l) { changes[id] = r; known.add(sig(r)); st.added++; continue; }
+    if (sameDoc(l, r)) continue;
+    const rNewer = (r.updated || r._ts || 0) > (l.updated || l._ts || 0), older = rNewer ? l : r;
+    if (rNewer) { changes[id] = r; st.updated++; }
+    if (sig(l) !== sig(r) && hasText(older.nodes) && !(older === r && known.has(sig(r)))) {
+      const c = { ...older, id: uid(), name: (older.name || memoTitle(older)) + "(別の版)", nodes: older.nodes.map(fresh) };
+      changes["file-" + c.id] = c; known.add(sig(c)); st.copies++;
+    }
+    known.add(sig(r));
+  }
+  // 作業の記録:両方の分を合わせる
+  for (const [id, r0] of Object.entries(inc)) {
+    if (!id.startsWith("log-")) continue;
+    const r = { ...r0, timers: (r0.timers || []).map(t => remap[t.type] ? { ...t, type: remap[t.type] } : t), usage: {} };
+    for (const [d, apps] of Object.entries(r0.usage || {})) { r.usage[d] = {}; for (const [a, ms] of Object.entries(apps)) { const k = remap[a] || a; r.usage[d][k] = (r.usage[d][k] || 0) + ms; } }
+    const m = local[id] ? mergeLog(local[id], r) : { sessions: r.sessions || [], timers: r.timers, usage: r.usage };
+    if (!local[id] || !sameDoc(m, local[id])) { changes[id] = m; st.logs++; }
+  }
+  // ボードと設定
+  for (const [id, r] of Object.entries(inc)) {
+    if (id !== "board" && !id.startsWith("board-")) continue;
+    const m = local[id] ? mergeBackupBoard(local[id], r) : r;
+    if (!local[id] || !sameDoc(m, local[id])) { changes[id] = m; st.others++; }
+  }
+  if (inc.meta) {
+    const localEmpty = !Object.keys(local).some(k => k.startsWith("file-"));
+    const m = local.meta ? mergeBackupMeta(local.meta, inc.meta, remap, localEmpty) : inc.meta;
+    if (!local.meta || !sameDoc(m, local.meta)) { changes.meta = m; st.others++; }
+  }
+  return { changes, st };
+}
+function applyImport(inc) {
+  flushMemoEdit();
+  const { changes } = planImport(inc, Store.localDocs()), before = {}, now = Date.now();
+  for (const [id, d] of Object.entries(changes)) {
+    before[id] = LS.get("doc:" + id);
+    if (!LS.set("doc:" + id, { ...d, _ts: now })) { // 入りきらなければ、読み込む前に戻す
+      for (const [k, v] of Object.entries(before)) v ? LS.set("doc:" + k, v) : LS.del("doc:" + k);
+      toast("端末の保存容量が足りず、読み込めませんでした"); return false;
+    }
+  }
+  for (const id of Object.keys(changes)) Store.schedule(id);
+  reloadDocs();
+  return true;
+}
+async function saveBackupFile() {
+  const text = backupText(), filename = `worklog-memo-${ymd(new Date())}.json`;
+  if (NATIVE) { try { Android.saveTextFile(filename, text); } catch { toast("保存できませんでした。文章としてコピーしてください"); } return; }
+  const dl = window.claude && typeof window.claude.use === "function" ? await window.claude.use("downloads").catch(() => null) : null;
+  if (dl) { try { await dl.save({ filename, data: text }); } catch (e) { if (e?.code !== "declined") toast("保存できませんでした。文章としてコピーしてください"); } return; }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "application/json" })); a.download = filename;
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+}
+window.onBackupSaved = ok => toast(ok ? "ファイルに保存しました" : "保存できませんでした");
+function exportSheet() {
+  openSheet(`<h2>データを書き出す</h2>
+    <p class="muted small" style="line-height:1.6">保存したファイルを、移したい先の「設定 › データの引っ越し › 読み込む」で選びます。ファイルにはメモの中身がそのまま入っています。</p>
+    <button class="btn block" data-file>ファイルに保存</button>
+    <button class="btn block" data-copy style="margin-top:8px">文章としてコピー</button>
+    <p class="muted small" style="line-height:1.6">ファイルを保存できないときは、コピーして、移したい先の読み込みの欄に貼り付けてください。</p>
+    <div class="btns"><button class="btn" data-x>閉じる</button></div>`, s => {
+    $("[data-x]", s).onclick = closeSheet;
+    $("[data-file]", s).onclick = saveBackupFile;
+    $("[data-copy]", s).onclick = () => copyText(backupText(), "データ");
+  });
+}
+function importSheet() {
+  const read = text => {
+    const b = parseBackup(text);
+    if (!b) { toast("このアプリの書き出したデータではありません"); return; }
+    flushMemoEdit();
+    const { changes, st } = planImport(b.docs, Store.localDocs());
+    if (!Object.keys(changes).length) { toast("新しく読み込むものはありません"); return; }
+    const when = b.exportedAt ? new Date(b.exportedAt).toLocaleString("ja-JP") : "不明";
+    const line = (n, t) => n ? `<div class="row"><span class="grow">${t}</span><b class="num">${n}</b></div>` : "";
+    openSheet(`<h2>読み込みますか</h2>
+      <p class="muted small">書き出した日時:${esc(when)}</p>
+      ${line(st.added, "新しく入るメモ")}${line(st.updated, "新しい版に変わるメモ")}${line(st.copies, "別の版として残すメモ")}${line(st.logs, "合わせる作業の記録(月)")}${line(st.others, "合わせるボード・設定")}
+      <p class="muted small" style="line-height:1.6">今のデータは消えません。同じメモの中身が違うときは新しい方を残し、古い方は「(別の版)」として別に残します。</p>
+      <div class="btns"><button class="btn" data-x>やめる</button><button class="btn primary" data-ok>読み込む</button></div>`, s2 => {
+      $("[data-x]", s2).onclick = closeSheet;
+      $("[data-ok]", s2).onclick = () => { closeSheet(); if (applyImport(b.docs)) toast("読み込みました"); };
+    });
+  };
+  openSheet(`<h2>データを読み込む</h2>
+    <label class="field"><span>書き出したファイル</span><input class="inp" type="file" id="bkFile" accept=".json,application/json,text/plain"></label>
+    <label class="field"><span>または、コピーした文章を貼り付ける</span><textarea class="inp" id="bkText" rows="4"></textarea></label>
+    <div class="btns"><button class="btn" data-x>やめる</button><button class="btn primary" data-read>貼り付けた文章を読む</button></div>`, s => {
+    $("[data-x]", s).onclick = closeSheet;
+    $("[data-read]", s).onclick = () => read($("#bkText").value);
+    $("#bkFile").addEventListener("change", async e => { const f = e.target.files[0]; if (!f) return; try { read(await f.text()); } catch { toast("ファイルを読めませんでした"); } });
+  });
+}
 
 function guide() {
   openSheet(`<h2>はじめに</h2>
@@ -4005,15 +4159,15 @@ function boot() {
   setInterval(() => { Timer.tick(); updateClock(); }, 1000);
   setInterval(checkEventNotices, 15000);
   setTimeout(checkEventNotices, 1500);
-  Store.connect(() => {
-    // 他端末の内容が新しかったときは読み直す(編集中の本文は保つ)
-    const f = focusId, z = zoomId, cf = curFile;
-    loadAll();
-    if (files[cf] && cf !== curFile) setOutline(cf);
-    if (f && index[f]) focusId = f; zoomId = z && index[z] ? z : null;
-    if (!document.activeElement?.closest?.(".ol-t")) renderMemo(); if (view !== "memo") show(view, false); refreshLive();
-    if (view === "board") renderBoard();
-  });
+  Store.connect(reloadDocs);
+}
+function reloadDocs() { // 他端末の内容が新しかったときや読み込みのあとに読み直す(編集中の本文は保つ)
+  const f = focusId, z = zoomId, cf = curFile;
+  loadAll();
+  if (files[cf] && cf !== curFile) setOutline(cf);
+  if (f && index[f]) focusId = f; zoomId = z && index[z] ? z : null;
+  if (!document.activeElement?.closest?.(".ol-t")) renderMemo(); if (view !== "memo") show(view, false); refreshLive();
+  if (view === "board") renderBoard();
 }
 boot();
 </script>

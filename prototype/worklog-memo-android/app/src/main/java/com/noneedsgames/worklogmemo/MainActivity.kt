@@ -16,6 +16,8 @@ import android.view.WindowInsets
 import android.widget.LinearLayout
 import android.window.OnBackInvokedDispatcher
 import android.webkit.JavascriptInterface
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -28,6 +30,8 @@ class MainActivity : Activity() {
     private lateinit var web: WebView
     private var pageReady = false
     private var pendingWidget: String? = null // ウィジェットから頼まれた操作(画面の読み込みが済んだら渡す)
+    private var pendingSave: String? = null // 書き出す文章(保存先を選び終えたら書く)
+    private var pendingPick: ValueCallback<Array<Uri>>? = null // 読み込むファイルの選択を待っている画面側の受け口
 
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,6 +53,16 @@ class MainActivity : Activity() {
                 return true
             }
             override fun onPageFinished(view: WebView, url: String) { pageReady = true; flushWidget() }
+        }
+        // WebView の <input type="file"> は、これがないと何も開かない
+        web.webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(view: WebView, callback: ValueCallback<Array<Uri>>, params: WebChromeClient.FileChooserParams): Boolean {
+                pendingPick?.onReceiveValue(null)
+                pendingPick = callback
+                val i = Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*")
+                try { startActivityForResult(i, REQ_PICK) } catch (_: Exception) { pendingPick = null; callback.onReceiveValue(null) }
+                return true
+            }
         }
         pendingWidget = widgetAction(intent)
         setContentView(withInsets(web))
@@ -129,6 +143,23 @@ class MainActivity : Activity() {
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() { handleBack() } // Android 12 以前
 
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        val uri = data?.data?.takeIf { resultCode == RESULT_OK }
+        when (requestCode) {
+            REQ_PICK -> { pendingPick?.onReceiveValue(uri?.let { arrayOf(it) }); pendingPick = null }
+            REQ_SAVE -> {
+                val text = pendingSave; pendingSave = null
+                if (uri == null || text == null) return // 保存先を選ばずに戻ったときは何も言わない
+                val ok = try {
+                    contentResolver.openOutputStream(uri, "wt")!!.use { it.write(text.toByteArray()) }; true
+                } catch (_: Exception) { false }
+                web.evaluateJavascript("window.onBackupSaved && window.onBackupSaved($ok)", null)
+            }
+        }
+    }
+
     inner class Bridge {
         @JavascriptInterface fun isNative(): Boolean = true
 
@@ -190,5 +221,21 @@ class MainActivity : Activity() {
         @JavascriptInterface fun timerState(json: String) = TimerWidget.saveState(this@MainActivity, json)
 
         @JavascriptInterface fun blockRemainingMs(): Double = BlockService.remainingMs().toDouble()
+
+        /** データの書き出し:保存先を選んでもらい、そこへ文章を書く */
+        @JavascriptInterface fun saveTextFile(name: String, text: String) = runOnUiThread {
+            pendingSave = text
+            val i = Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                .setType("application/json").putExtra(Intent.EXTRA_TITLE, name)
+            try { startActivityForResult(i, REQ_SAVE) } catch (_: Exception) {
+                pendingSave = null
+                web.evaluateJavascript("window.onBackupSaved && window.onBackupSaved(false)", null)
+            }
+        }
+    }
+
+    private companion object {
+        const val REQ_PICK = 1001
+        const val REQ_SAVE = 1002
     }
 }
