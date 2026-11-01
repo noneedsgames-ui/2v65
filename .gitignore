@@ -13,3 +13,8 @@ data_*/
 
 # System/tool-specific ignores
 .DS_Store
+
+# 作業記録メモ帳:Google Play のアップロード鍵(リポジトリには入れない)
+.play-upload-key/
+upload.jks
+UPLOAD_KEYSTORE_*.txt
