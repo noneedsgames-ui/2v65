@@ -97,6 +97,7 @@ nav.bottom button.on{color:var(--text-primary);font-weight:600}
 .oltools{display:none;gap:2px;padding:4px 6px calc(4px + var(--safe-b));border-top:1px solid var(--line);background:var(--surface-1)}
 .oltools button{flex:1;padding:10px 0;font-size:16px;border-radius:8px;color:var(--text-primary)}
 .oltools button:active{background:var(--surface-2)}
+.oltools .ot-tpl{flex:1.7;font-size:13px;font-weight:600;color:var(--accent)}
 body.editing .oltools{display:flex}
 body.editing.kb nav.bottom{display:none}
 
@@ -231,6 +232,7 @@ textarea.inp{line-height:1.6;resize:vertical}
       <button data-op="down" aria-label="下へ移動">↓</button>
       <button data-op="fold" aria-label="畳む/開く">▾▸</button>
       <button data-op="child" aria-label="子を追加">＋子</button>
+      <button data-op="tpl" class="ot-tpl" aria-label="テンプレートを入れる">テンプレ</button>
       <button data-op="more" aria-label="この行の操作">⋯</button>
     </div>
   </section>
@@ -1018,7 +1020,8 @@ tools.addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b || !focusId || !index[focusId]) return;
   const id = focusId;
   ({ out: () => doOutdent(id), in: () => doIndent(id), up: () => doMove(id, -1), down: () => doMove(id, 1),
-     fold: () => doToggle(id), child: () => doAddChild(id), more: () => lineMenu(id) })[b.dataset.op]?.();
+     fold: () => doToggle(id), child: () => doAddChild(id), more: () => lineMenu(id),
+     tpl: () => { document.activeElement?.blur?.(); openTemplates(id, false); } })[b.dataset.op]?.();
 });
 function lineMenu(id) {
   flushOutline();
@@ -1107,7 +1110,9 @@ function openTemplates(id, asChild) {
   flushOutline();
   const T = meta.prefs.templates;
   openSheet(`<h2>テンプレートを入れる</h2>
-    ${id ? `<label class="row"><input type="checkbox" id="asChild" ${asChild ? "checked" : ""}><span class="grow">「${esc(label(id))}」の子として入れる</span></label>` : ""}
+    ${id ? (index[id] && !index[id].n.t && !index[id].n.c.length && !asChild
+      ? `<p class="muted small" style="margin-top:-4px">いまの空の行に入れます</p><input type="checkbox" id="asChild" hidden>`
+      : `<label class="row"><input type="checkbox" id="asChild" ${asChild ? "checked" : ""}><span class="grow">「${esc(label(id))}」の子として入れる</span></label>`) : ""}
     ${Object.keys(T).map(k => `<button class="row" style="width:100%;text-align:left" data-tpl="${esc(k)}"><span class="grow"><b>${esc(k)}</b><div class="muted small">${esc(T[k].split("\n").filter(Boolean).slice(0, 3).map(s => s.trim()).join(" / "))}</div></span><span>＋</span></button>`).join("")}
     <p class="muted small">中身は「設定」で書き換えられます(行頭の空白2つで1段下げ)。</p>`, s => {
     s.addEventListener("click", e => {
@@ -1115,7 +1120,11 @@ function openTemplates(id, asChild) {
       const nodes = parseIndented(T[b.dataset.tpl]); if (!nodes.length) return;
       const child = id && $("#asChild")?.checked;
       if (child) { const p = index[id].n; p.c.push(...nodes); delete p.x; }
-      else if (id) { const { n, list } = index[id]; list.splice(list.indexOf(n) + 1, 0, ...nodes); }
+      else if (id) {
+        const { n, list } = index[id];
+        if (!n.t && !n.c.length) list.splice(list.indexOf(n), 1, ...nodes); // 空の行で呼んだら、その行をテンプレートに置き換える
+        else list.splice(list.indexOf(n) + 1, 0, ...nodes);
+      }
       else roots().push(...nodes);
       closeSheet(); reindex(); focusAt(nodes[0].id, nodes[0].t.length); commit();
     });
