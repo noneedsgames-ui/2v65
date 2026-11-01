@@ -3,4 +3,11 @@
     <color name="bg">#F4F3EF</color>
     <color name="ic_bg">#2A78D6</color>
     <color name="bg_night">#121211</color>
+    <!-- ウィジェットの色(夜は values-night で替える) -->
+    <color name="widget_bg">#FCFCFB</color>
+    <color name="widget_soft">#ECEBE6</color>
+    <color name="widget_accent">#2A78D6</color>
+    <color name="widget_on_accent">#FFFFFF</color>
+    <color name="widget_text">#1F1F1D</color>
+    <color name="widget_muted">#6B6A65</color>
 </resources>

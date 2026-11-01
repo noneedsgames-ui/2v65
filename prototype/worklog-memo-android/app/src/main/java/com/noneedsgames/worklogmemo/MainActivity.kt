@@ -26,6 +26,8 @@ import org.json.JSONObject
 class MainActivity : Activity() {
 
     private lateinit var web: WebView
+    private var pageReady = false
+    private var pendingWidget: String? = null // ウィジェットから頼まれた操作(画面の読み込みが済んだら渡す)
 
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,7 +48,9 @@ class MainActivity : Activity() {
                 try { startActivity(Intent(Intent.ACTION_VIEW, u)) } catch (_: Exception) {}
                 return true
             }
+            override fun onPageFinished(view: WebView, url: String) { pageReady = true; flushWidget() }
         }
+        pendingWidget = widgetAction(intent)
         setContentView(withInsets(web))
         // 戻るボタン(Android 13 以降は「予測型の戻る」の仕組みで受ける)
         if (Build.VERSION.SDK_INT >= 33)
@@ -89,6 +93,26 @@ class MainActivity : Activity() {
         web.evaluateJavascript("(window.androidBack && window.androidBack()) ? 'y' : 'n'") { r ->
             if (r?.contains("y") != true) moveTaskToBack(true)
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        pendingWidget = widgetAction(intent)
+        if (pageReady) flushWidget()
+    }
+
+    private fun widgetAction(i: Intent?): String? {
+        if (i?.action != TimerWidget.ACTION) return null
+        val a = i.getStringExtra(TimerWidget.EXTRA)?.takeIf { it in TimerWidget.ACTIONS }
+        i.removeExtra(TimerWidget.EXTRA) // 画面を作り直したときに、もう一度始めないように
+        return a
+    }
+
+    private fun flushWidget() {
+        val a = pendingWidget ?: return
+        pendingWidget = null
+        web.evaluateJavascript("window.onWidget && window.onWidget('$a')", null)
     }
 
     override fun onSaveInstanceState(outState: Bundle) { super.onSaveInstanceState(outState); web.saveState(outState) }
@@ -161,6 +185,9 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface fun stopBlock() = runOnUiThread { BlockService.stop(this@MainActivity) }
+
+        /** タイマーの様子(JSON)を受け取り、ホーム画面のウィジェットに出す */
+        @JavascriptInterface fun timerState(json: String) = TimerWidget.saveState(this@MainActivity, json)
 
         @JavascriptInterface fun blockRemainingMs(): Double = BlockService.remainingMs().toDouble()
     }

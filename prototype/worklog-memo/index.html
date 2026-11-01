@@ -3286,7 +3286,7 @@ const typeById = id => meta.workTypes.find(t => t.id === id);
 const typeColor = id => { const i = meta.workTypes.findIndex(t => t.id === id); return i >= 0 && i < 8 ? `var(--tc${i})` : "var(--tcn)"; };
 const typeName = id => typeById(id)?.name || (id ? "(消した種類)" : "種類なし");
 const seriesKey = id => { const i = meta.workTypes.findIndex(t => t.id === id); return i >= 0 && i < 8 ? id : i >= 8 ? "_other" : ""; }; // 9つ目からは「その他」
-const seriesName = k => k === "_app" ? "このアプリ" : k === "_wapp" ? "作業アプリ" : k === "_other" ? "その他" : typeName(k);
+const seriesName = k => k === "_app" ? "計画メモ" : k === "_wapp" ? "作業アプリ" : k === "_other" ? "その他" : typeName(k);
 const seriesColor = k => k === "_app" ? "var(--tca)" : k === "_wapp" ? "var(--tcw)" : k === "_other" ? "var(--tcn)" : k ? typeColor(k) : "var(--tcn)";
 // 区間の計算:このアプリを開いていた区間と、タイマーの区間の重なりは、タイマー(作業の種類)のほうに数える
 function mergeIv(list) { list.sort((x, y) => x[0] - y[0]); const out = []; for (const [s, e] of list) { const l = out[out.length - 1]; if (l && s <= l[1]) l[1] = Math.max(l[1], e); else out.push([s, e]); } return out; }
@@ -3325,13 +3325,14 @@ function stackChart(buckets, opt) { // 積み上げ棒グラフ:buckets = [{labe
   buckets.forEach((b, i) => {
     const x = left + gw * i + (gw - bw) / 2; let acc = 0;
     const segs = order.filter(k => b.parts[k] > 0);
-    segs.forEach((k, j) => { // 下から積む。間に 2px のすき間、いちばん上だけ角を丸める
-      const v0 = acc, v1 = acc + b.parts[k]; acc = v1;
-      const yb = y(v0) - (j ? 1 : 0), yt = y(v1) + (j < segs.length - 1 ? 1 : 0), h = Math.max(0.8, yb - yt);
-      const r = j === segs.length - 1 ? Math.min(4, h, bw / 2) : 0;
-      g += r ? `<path d="M${x},${yb} V${yt + r} Q${x},${yt} ${x + r},${yt} H${x + bw - r} Q${x + bw},${yt} ${x + bw},${yt + r} V${yb} Z" fill="${seriesColor(k)}"/>`
-        : `<rect x="${x}" y="${yb - h}" width="${bw}" height="${h}" fill="${seriesColor(k)}"/>`;
-    });
+    // 下から積む。すき間が出ないよう、上の項目から順に根元まで塗り、その上に下の項目を重ねる。いちばん上だけ角を丸める
+    const yb = y(0), tops = segs.map(k => (acc += b.parts[k], y(acc)));
+    if (segs.length && yb - tops[segs.length - 1] < 0.8) tops[segs.length - 1] = yb - 0.8;
+    for (let j = segs.length - 1; j >= 0; j--) {
+      const yt = tops[j], h = yb - yt, r = j === segs.length - 1 ? Math.min(4, h, bw / 2) : 0;
+      g += r ? `<path d="M${x},${yb} V${yt + r} Q${x},${yt} ${x + r},${yt} H${x + bw - r} Q${x + bw},${yt} ${x + bw},${yt + r} V${yb} Z" fill="${seriesColor(segs[j])}"/>`
+        : `<rect x="${x}" y="${yt}" width="${bw}" height="${h}" fill="${seriesColor(segs[j])}"/>`;
+    }
     if (b.label !== "") g += `<text class="axis" x="${left + gw * i + gw / 2}" y="${H - 6}" text-anchor="middle">${b.label}</text>`;
     g += `<rect x="${left + gw * i}" y="${top}" width="${gw}" height="${ph + bottom}" fill="transparent" data-si="${i}"/>`;
   });
@@ -3361,10 +3362,10 @@ function typeCard(days) { // 作業時間の内訳(このアプリ+作業の種�
   if (days.length === 1) buckets = [...Array(24)].map((_, h) => ({ label: h % 3 ? "" : h, title: `${h}時台`, parts: seriesTotals(a + h * 36e5, a + (h + 1) * 36e5, false) }));
   else buckets = days.map(d => ({ label: days.length <= 7 ? WD[d.getDay()] : (d.getDate() === 1 || d.getDate() % 5 === 0 ? d.getDate() : ""), title: `${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]})`, parts: seriesTotals(d.getTime(), addDays(d, 1).getTime(), true) }));
   let h = `<div class="card"><h3>作業時間の内訳${days.length === 1 ? " · 1時間ごと" : " · 1日ごと"}</h3>`;
-  if (!all) return h + `<div class="empty">まだ記録がありません。このアプリを開いている時間と、タイマーで作業の種類を選んで計った時間が、ここに積み上がります。${meta.workTypes.length ? "" : `<br><button class="mini" data-goapps style="margin-top:8px">作業の種類を登録する</button>`}</div></div>`;
+  if (!all) return h + `<div class="empty">まだ記録がありません。計画メモ(このアプリ)を開いている時間と、タイマーで作業の種類を選んで計った時間が、ここに積み上がります。${meta.workTypes.length ? "" : `<br><button class="mini" data-goapps style="margin-top:8px">作業の種類を登録する</button>`}</div></div>`;
   h += `<div class="legend">${keys.map(k => `<span><i class="sw" style="background:${seriesColor(k)}"></i>${esc(seriesName(k))}</span>`).join("")}<span class="muted">棒をタップで内訳</span></div>`;
   h += stackChart(buckets, { hourly: days.length === 1, aria: "作業時間の内訳の積み上げ棒グラフ" });
-  h += `<p class="muted small" style="margin:6px 0 0">「このアプリ」は、メモなどを開いていた時間のうち、タイマーを回していなかった分です(タイマー中はその作業の種類に数えます)。${days.length === 1 && totals._wapp ? "作業アプリは使った時刻が分からないので、下の合計にだけ入ります。" : ""}</p>`;
+  h += `<p class="muted small" style="margin:6px 0 0">「計画メモ」は、このアプリでメモなどを開いていた時間のうち、タイマーを回していなかった分です(タイマー中はその作業の種類に数えます)。${days.length === 1 && totals._wapp ? "作業アプリは使った時刻が分からないので、下の合計にだけ入ります。" : ""}</p>`;
   h += `<div style="margin-top:10px">${keys.map(k => `<div class="tshare"><span style="width:7.5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span class="tdot" style="--tc:${seriesColor(k)}"></span>${esc(seriesName(k))}</span><span class="bar" style="--tc:${seriesColor(k)}"><i style="width:${(totals[k] / all * 100).toFixed(1)}%"></i></span><span class="num" style="width:5.2em;text-align:right">${fmtDur(totals[k])}</span><span class="num muted" style="width:3em;text-align:right">${Math.round(totals[k] / all * 100)}%</span></div>`).join("")}</div>`;
   return h + `</div>`;
 }
@@ -3407,7 +3408,7 @@ function dayDetail(r) {
   const bar = (ms, color) => `<div style="height:10px;border-radius:0 4px 4px 0;background:${color};width:${Math.max(ms ? 1.5 : 0, ms / max * 100)}%"></div>`;
   const inp = (a, ms) => isAuto(a) ? `<span class="num small autov">${fmtDur(ms)}<em>自動</em></span>` : `<input class="inp num" style="width:5.5em;padding:6px 8px;text-align:right" type="number" inputmode="numeric" min="0" max="1440" value="${Math.round(ms / 60000) || ""}" placeholder="分" data-usage="${r.k}|${a.id}" aria-label="${esc(a.name)}の使用時間(分)">`;
   let h = `<div class="card" style="box-shadow:none;border:0;padding:0;margin:0"><h3>作業時間と妨害アプリ</h3>
-    <div class="row"><span style="width:7em" class="small">このアプリ</span><span class="grow">${bar(r.auto, "var(--series-work)")}</span><span class="num small" style="width:7.5em;text-align:right" id="rowWork">${fmtSec(r.auto)}</span></div>`;
+    <div class="row"><span style="width:7em" class="small">計画メモ</span><span class="grow">${bar(r.auto, "var(--series-work)")}</span><span class="num small" style="width:7.5em;text-align:right" id="rowWork">${fmtSec(r.auto)}</span></div>`;
   for (const a of meta.workApps) { // 作業に数えるアプリ(作業時間に足す)
     const ms = workAppMs(r.k, a.id);
     h += `<div class="row"><span style="width:7em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" class="small">🛠 ${esc(a.name)}</span><span class="grow">${bar(ms, "var(--series-work)")}</span>${inp(a, ms)}</div>`;
@@ -3528,7 +3529,7 @@ function bindChart() {
 const Timer = {
   st: null,
   load() { this.st = LS.get("timer") || { mode: "stopwatch", label: "", running: false }; },
-  save() { LS.set("timer", this.st); },
+  save() { LS.set("timer", this.st); syncWidget(); },
   liveSegment() { const s = this.st; if (!s || !s.running) return null; if (s.mode === "pomodoro" && s.phase === "break") return null; return { s: s.segStart }; },
   record(s, e) {
     if (e - s < 5000) return;
@@ -3957,6 +3958,25 @@ function focusStart() { // 起動直後にすぐ書けるよう、前回の行(�
   if (id) { focusAt(id, index[id].n.t.length); renderOutline(); }
 }
 // Android の戻るボタン:開いているものを一つずつ閉じる。何もなければアプリを閉じる
+// ---- ホーム画面のウィジェット(Android アプリのみ):ストップウォッチ/タイマーを始める・止める ----
+const TIMER_NAME = { stopwatch: "ストップウォッチ", pomodoro: "タイマー" };
+function syncWidget() { // ウィジェットに、いまのタイマーの様子を渡す(計測中なら経過や終わる時刻を出す)
+  if (!NATIVE) return;
+  const s = Timer.st || {}, P = meta && meta.prefs || {};
+  const phaseEnd = s.running && s.mode === "pomodoro" ? s.phaseStart + ((s.phase === "break" ? P.brk : P.focus) || 25) * 60000 : 0;
+  try { Android.timerState(JSON.stringify({ running: !!s.running, mode: s.mode, start: s.segStart || 0, phase: s.phase || "focus", phaseEnd, type: s.type ? typeName(s.type) : "", label: s.label || "" })); } catch {}
+}
+window.onWidget = action => {
+  const s = Timer.st;
+  if (action === "stopwatch" || action === "pomodoro") {
+    if (s.running) { show("timer"); toast(s.mode === action ? `${TIMER_NAME[action]}はもう計っています` : `いまは${TIMER_NAME[s.mode]}を計っています。止めてから切り替えてください`); return; }
+    s.mode = action; Timer.start(); show("timer");
+    toast(action === "pomodoro" ? `タイマーを始めました(集中 ${meta.prefs.focus}分)` : "ストップウォッチを始めました");
+  } else if (action === "stop") {
+    if (s.running) { const d = Date.now() - s.segStart; Timer.stop(); show("timer"); toast(`${TIMER_NAME[s.mode]}を止めました(${fmtDur(d)})`); }
+    else show("timer");
+  } else if (action === "show") show("timer");
+};
 window.androidBack = () => {
   if ($("#veil").classList.contains("on")) { closeSheet(); return true; }
   if (document.body.classList.contains("side-open") && !isWide()) { setSide(false); return true; }
@@ -3971,7 +3991,9 @@ window.onAndroidResume = () => { // 設定画面から戻ったときなど:許�
 function boot() {
   { const so = LS.get("sideOpen"); document.body.classList.toggle("side-open", so === null ? innerWidth >= 720 : !!so); }
   if (!Object.keys(Store.localDocs()).length) LS.set("fresh", true); // 何も入っていない端末
-  loadAll(); Timer.load(); Work.recover();
+  loadAll(); Timer.load(); Work.recover(); syncWidget();
+  const wh = /^#(start|stop)(?:=(stopwatch|pomodoro))?$/.exec(location.hash); // ホーム画面のショートカット用:#start=stopwatch など
+  if (wh) { try { history.replaceState(null, "", "#timer"); } catch {} setTimeout(() => window.onWidget(wh[1] === "stop" ? "stop" : wh[2] || "stopwatch"), 0); }
   Work.start();
   renderMemo();
   show(location.hash.slice(1) || "memo", false);
