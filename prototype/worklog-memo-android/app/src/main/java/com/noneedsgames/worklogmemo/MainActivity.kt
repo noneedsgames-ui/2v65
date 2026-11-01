@@ -5,10 +5,16 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.View
+import android.view.WindowInsets
+import android.widget.LinearLayout
+import android.window.OnBackInvokedDispatcher
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -41,9 +47,48 @@ class MainActivity : Activity() {
                 return true
             }
         }
-        setContentView(web)
+        setContentView(withInsets(web))
+        // 戻るボタン(Android 13 以降は「予測型の戻る」の仕組みで受ける)
+        if (Build.VERSION.SDK_INT >= 33)
+            onBackInvokedDispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT) { handleBack() }
         if (savedInstanceState == null || web.restoreState(savedInstanceState) == null)
             web.loadUrl("file:///android_asset/index.html")
+    }
+
+    /**
+     * 画面を端まで使う(Android 15 以降は必ずそうなる)ので、ステータスバー・ナビゲーションバー・キーボードの分だけ
+     * 上下に余白を置き、画面がバーやキーボードに隠れないようにする
+     */
+    private fun withInsets(content: View): View {
+        if (Build.VERSION.SDK_INT < 30) return content // 古い Android は、これまでどおりバーの内側に描かれる
+        window.setDecorFitsSystemWindows(false)
+        val night = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val top = View(this).apply { setBackgroundColor(Color.parseColor(if (night) "#252523" else "#ECEBE6")) }
+        val bottom = View(this).apply { setBackgroundColor(Color.parseColor(if (night) "#1A1A19" else "#FCFCFB")) }
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.parseColor(if (night) "#121211" else "#F4F3EF"))
+            addView(top, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0))
+            addView(content, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+            addView(bottom, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0))
+        }
+        root.setOnApplyWindowInsetsListener { v, insets ->
+            val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+            val ime = insets.getInsets(WindowInsets.Type.ime())
+            v.setPadding(bars.left, 0, bars.right, 0)
+            top.layoutParams = (top.layoutParams as LinearLayout.LayoutParams).apply { height = bars.top }
+            bottom.layoutParams = (bottom.layoutParams as LinearLayout.LayoutParams).apply { height = maxOf(bars.bottom, ime.bottom) }
+            top.requestLayout(); bottom.requestLayout()
+            WindowInsets.CONSUMED
+        }
+        return root
+    }
+
+    /** 戻る:画面の中で閉じるものがあれば閉じる。なければアプリを裏へ下げる */
+    private fun handleBack() {
+        web.evaluateJavascript("(window.androidBack && window.androidBack()) ? 'y' : 'n'") { r ->
+            if (r?.contains("y") != true) moveTaskToBack(true)
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) { super.onSaveInstanceState(outState); web.saveState(outState) }
@@ -58,13 +103,7 @@ class MainActivity : Activity() {
     override fun onPause() { web.onPause(); super.onPause() }
 
     @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        web.evaluateJavascript("(window.androidBack && window.androidBack()) ? 'y' : 'n'") { r ->
-            if (r?.contains("y") != true) {
-                @Suppress("DEPRECATION") super.onBackPressed()
-            }
-        }
-    }
+    override fun onBackPressed() { handleBack() } // Android 12 以前
 
     inner class Bridge {
         @JavascriptInterface fun isNative(): Boolean = true

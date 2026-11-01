@@ -36,5 +36,6 @@
 | タイマー中に妨害アプリを使えなくする(試験運用) | タイマーを始めると前景サービスが動き、妨害アプリが前面に出たら画面全体を覆う。**いちどに最大5分**で自動で止まる(タイマー画面からかけ直せる) | 使用状況へのアクセス、他のアプリの上に重ねて表示 |
 
 - ビルドは GitHub Actions(`.github/workflows/worklog-memo-apk.yml`)。push のたびに APK を作り、Releases に置く
-- 署名は試作用の固定のデバッグ鍵(`app/debug.keystore`)。前の版の上から入れれば、データは残る
+- 直接入れる APK は試作用の固定のデバッグ鍵(`app/debug.keystore`)で署名し、「作業記録メモ帳(試作)」(`.dev`)という別アプリとして入る。前の版の上から入れれば、データは残る
+- Google Play の内部テストに出す AAB は、Secrets のアップロード鍵で署名する。手順と Play Console の文案は `prototype/worklog-memo-android/PLAY_RELEASE.md`
 - データは端末内のみ(claude.ai への同期はない)。ブラウザ版のデータとは別
