@@ -74,8 +74,8 @@ nav.bottom button.on{color:var(--text-primary);font-weight:600}
   padding:10px 14px 40px;line-height:1.75;font-size:16px}
 
 /* outline */
-.outline{flex:1;min-height:0;overflow:auto;background:var(--surface-1);padding:8px 8px 120px}
-.ol-row{display:flex;align-items:flex-start;padding-left:calc(var(--d) * 22px);border-radius:8px;
+.outline{flex:1;min-height:0;overflow:auto;background:var(--surface-1);padding:8px 8px 120px 16px}
+.ol-row{position:relative;display:flex;align-items:flex-start;padding-left:calc(var(--d) * 22px);border-radius:8px;
   background-image:repeating-linear-gradient(to right,var(--line) 0 1px,transparent 1px 22px);
   background-size:calc(var(--d) * 22px) 100%;background-repeat:no-repeat;background-position:11px 0}
 .ol-row.cur .ol-t{background:var(--surface-2)}
@@ -254,18 +254,25 @@ body.side-open .side{display:flex}
 .toolbar::-webkit-scrollbar{display:none}
 .oltools .ot-word{font-size:13px;font-weight:600}
 .oltools .ot-del,.selbar .ot-del{color:var(--danger)}
-.mk{flex:none;display:flex;align-items:flex-start;justify-content:center;min-height:34px}
-.chk{width:20px;height:20px;margin-top:7px;margin-right:4px;border-radius:6px;border:2px solid var(--text-muted);background:var(--surface-1);color:#fff;font-size:13px;font-weight:800;line-height:16px;padding:0;text-align:center}
-.chk.on{background:var(--accent);border-color:var(--accent)}
+.chkbox{display:block;width:18px;height:18px;border-radius:5px;border:2px solid var(--text-muted);background:var(--surface-1);color:#fff;font-size:12px;font-weight:800;line-height:14px;text-align:center}
+.chkbox.on{background:var(--accent);border-color:var(--accent)}
 .ol-row.done .ol-v,.ol-row.done .ol-t{text-decoration:line-through;color:var(--text-muted)}
-.numk{min-width:22px;margin-top:6px;margin-right:2px;font-size:15px;color:var(--text-secondary);font-variant-numeric:tabular-nums;text-align:right}
-.ol-row.k-time .mk{position:relative;width:18px}
-.ol-row.k-time .mk::before{content:"";position:absolute;left:8px;top:0;bottom:0;width:2px;background:color-mix(in srgb,var(--accent) 35%,var(--line))}
-.ol-row.k-time .mk::after{content:"";position:absolute;left:3px;top:13px;width:12px;height:12px;border-radius:50%;background:var(--surface-1);border:2.5px solid var(--accent);box-sizing:border-box}
-.tl-at{display:inline-block;margin:6px 6px 0;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface-1));border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line))}
+.numk{font-size:14px;color:var(--text-secondary);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ol-row .bul:has(.numk){justify-content:flex-end;padding-right:2px;overflow:visible}
+.gfold{position:absolute;top:9px;left:calc(var(--d) * 22px - 15px);width:15px;height:18px;padding:0;font-size:10px;color:var(--text-muted)}
+/* タイムライン:点と線は「•」の場所に。続く行どうしは一本の線でつなぎ、端は丸く止める */
+.ol-row.k-time .bul{position:relative;align-self:stretch;height:auto;min-height:34px}
+.ol-row.k-time .bul::before{content:"";position:absolute;left:10px;top:0;bottom:0;width:2.5px;border-radius:2px;background:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.ol-row.k-time.tl-first .bul::before{top:12px}
+.ol-row.k-time.tl-last .bul::before{bottom:auto;height:12px}
+.ol-row.k-time.tl-first.tl-last .bul::before{display:none}
+.ol-row.k-time .bul::after{content:"";position:absolute;left:5px;top:7px;width:12px;height:12px;border-radius:50%;background:var(--surface-1);border:2.5px solid var(--accent);box-sizing:border-box}
+.ol-row.tlv::after{content:"";position:absolute;left:calc(var(--tld) * 22px + 10px);top:0;bottom:0;width:2.5px;background:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.tl-at{display:inline-block;white-space:nowrap;line-height:1.6;margin:5px 6px 0;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface-1));border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line))}
 .tl-at.empty{color:var(--text-muted);border-style:dashed;background:none}
 .ol-row.k-head .ol-v,.ol-row.k-head .ol-t{font-size:20px;font-weight:800;line-height:1.35;padding-top:10px}
-.ol-row.k-quote .ol-main{border-left:3px solid color-mix(in srgb,var(--text-muted) 60%,transparent);margin-left:4px}
+.ol-row.k-quote .bul{position:relative;align-self:stretch;height:auto;min-height:34px}
+.ol-row.k-quote .bul::before{content:"";position:absolute;left:9px;top:5px;bottom:5px;width:3px;border-radius:2px;background:color-mix(in srgb,var(--text-muted) 65%,transparent)}
 .ol-row.k-quote .ol-v,.ol-row.k-quote .ol-t{color:var(--text-secondary);font-size:15px}
 .ol-row.k-code .ol-v,.ol-row.k-code .ol-t{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;background:var(--surface-2);border-radius:6px}
 .kindgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -775,9 +782,9 @@ function confirmSheet(title, body, okLabel, onOk) {
    ============================================================ */
 let outline = null;       // { nodes: [{ id, t, c: [], x?: 畳み, l?: [関連先id], k?: 形式, done?: チェック済み, at?: タイムラインの時 }] }
 // 行の形式。k を持たない行はふつうの箇条書き。一つのメモの中で混ぜられる
-const KINDS = [
-  ["", "・", "箇条書き"], ["check", "☑", "チェック"], ["num", "1.", "番号付き"], ["time", "●", "タイムライン"],
-  ["head", "見", "見出し"], ["quote", "┃", "補足"], ["code", "</>", "コード"],
+const KINDS = [ // [形式, 印, 名前, 行の頭で打つ Markdown]
+  ["", "・", "箇条書き", "- "], ["check", "☑", "チェック", "[] "], ["num", "1.", "番号付き", "1. "], ["time", "●", "タイムライン", "@ "],
+  ["head", "見", "見出し", "# "], ["quote", "┃", "補足", "> "], ["code", "</>", "コード", "``` "],
 ];
 const nowLabel = () => { const d = new Date(); return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 let zoomId = null;        // 「この項目だけ表示」中の項目
@@ -861,8 +868,9 @@ function parseIndented(text) {
     const lv = [...m].reduce((t, ch) => t + (ch === " " ? 0.5 : 1), 0) | 0;
     let body = raw.slice(m.length), ck = null;
     const cm = body.match(/^([☐☑])\s*/); if (cm) { ck = cm[1]; body = body.slice(cm[0].length); }
-    const node = N(body.replace(/^[・•\-*]\s*/, ""));
-    if (ck) { node.k = "check"; if (ck === "☑") node.done = true; }
+    const node = N(body);
+    if (ck) { node.k = "check"; if (ck === "☑") node.done = true; MD_SET.add(node); }
+    else { const r = mdMatch(body); if (r) { applyMd(node, r); MD_SET.add(node); } else node.t = body.replace(/^[・•]\s*/, ""); }
     while (stack.length > 1 && stack[stack.length - 1].lv >= lv) stack.pop();
     stack[stack.length - 1].c.push(node);
     stack.push({ c: node.c, lv });
@@ -908,26 +916,33 @@ function renderOutline() {
   if (zoomId && !index[zoomId]) zoomId = null;
   const back = backlinks();
   const rows = [];
-  const walk = (list, d, inSel) => { let num = 0; list.forEach(n => {
+  const walk = (list, d, inSel, tlv) => { let num = 0; list.forEach((n, i) => {
     const has = n.c.length > 0, folded = has && n.x;
     const rel = [...new Set([...(n.l || []).filter(x => gindex[x]), ...(back[n.id] || [])])];
     num = n.k === "num" ? num + 1 : 0;
     const sel = selecting && selSet.has(n.id);
-    const mk = n.k === "check" ? `<span class="mk"><button class="chk${n.done ? " on" : ""}" data-chk="${n.id}" tabindex="-1" aria-label="${n.done ? "済み" : "まだ"}">${n.done ? "✓" : ""}</button></span>`
-      : n.k === "num" ? `<span class="mk"><span class="numk">${num}.</span></span>`
-      : n.k === "time" ? `<span class="mk"></span>` : "";
-    rows.push(`<div class="ol-row${n.id === focusId && !selecting ? " cur" : ""}${n.k ? " k-" + n.k : ""}${n.k === "check" && n.done ? " done" : ""}${sel ? " sel" : inSel ? " sel2" : ""}" data-id="${n.id}" style="--d:${d}">` +
-      `<span class="selbox"></span>` +
-      `<button class="bul${has ? "" : " leaf"}" data-bul="${n.id}" tabindex="-1" aria-label="${has ? (folded ? "開く" : "畳む") : "この項目"}">${has ? (folded ? "▸" : "▾") : n.k ? "" : "•"}</button>` + mk +
+    const arrow = folded ? "▸" : "▾";
+    const marked = n.k === "check" || n.k === "num" || n.k === "time"; // 印を持つ形式(印は「•」の場所に置く)
+    const inner = n.k === "check" ? `<span class="chkbox${n.done ? " on" : ""}">${n.done ? "✓" : ""}</span>`
+      : n.k === "num" ? `<span class="numk">${num}.</span>`
+      : n.k === "time" ? "" : has ? arrow : n.k ? "" : "•";
+    const gf = marked && has ? `<button class="gfold" data-bul="${n.id}" tabindex="-1" aria-label="${folded ? "開く" : "畳む"}">${arrow}</button>` : "";
+    // タイムライン:続いている行どうしを一本の線でつなぎ、最初と最後は点で止める
+    const prevT = i > 0 && list[i - 1].k === "time", nextT = i < list.length - 1 && list[i + 1].k === "time";
+    const tlc = n.k === "time" ? (prevT ? "" : " tl-first") + (nextT ? "" : " tl-last") : "";
+    rows.push(`<div class="ol-row${n.id === focusId && !selecting ? " cur" : ""}${n.k ? " k-" + n.k : ""}${n.k === "check" && n.done ? " done" : ""}${sel ? " sel" : inSel ? " sel2" : ""}${tlc}${tlv != null ? " tlv" : ""}" data-id="${n.id}" style="--d:${d}${tlv != null ? ";--tld:" + tlv : ""}">` +
+      `<span class="selbox"></span>` + gf +
+      `<button class="bul${has && !marked ? "" : " leaf"}" data-bul="${n.id}" tabindex="-1" aria-label="${n.k === "check" ? (n.done ? "済みを外す" : "済みにする") : has ? (folded ? "開く" : "畳む") : "この項目"}">${inner}</button>` +
       `<div class="ol-main">` + (n.k === "time" ? `<button class="tl-at${n.at ? "" : " empty"}" data-tl="${n.id}" tabindex="-1">${esc(n.at || "＋ 時")}</button>` : "") + (n.id === editId
         ? `<textarea class="ol-t" rows="1" data-t="${n.id}" spellcheck="false"${firstEmpty ? ` placeholder="${PH_FIRST}"` : ""}>${esc(n.t)}</textarea>`
         : `<div class="ol-v" data-v="${n.id}"${firstEmpty ? ` data-ph="${PH_FIRST}"` : ""}>${n.ph ? phHtml(n.t) : esc(n.t)}</div>`) +
       (folded ? `<button class="foldcnt" data-bul="${n.id}" tabindex="-1">… ${countAll(n)}項目</button>` : "") +
       (rel.length ? `<div class="ol-rel">${rel.map(r => `<button class="mini link" data-jump="${r}" tabindex="-1">${esc(labelX(r))}</button>`).join("")}</div>` : "") +
       `</div></div>`);
-    if (has && !folded) walk(n.c, d + 1, inSel || sel);
+    // 次もタイムラインなら、子の行のあいだも線を通す
+    if (has && !folded) walk(n.c, d + 1, inSel || sel, n.k === "time" && nextT ? d : tlv);
   }); };
-  walk(roots(), 0, false);
+  walk(roots(), 0, false, null);
   let crumb = "";
   if (zoomId) {
     const z = index[zoomId].n;
@@ -944,6 +959,11 @@ function renderOutline() {
     if (ta) { ta.focus({ preventScroll: false }); const c = Math.min(pendingCaret, ta.value.length); ta.setSelectionRange(c, c); selectPlaceholder(ta, c); ta.scrollIntoView({ block: "nearest" }); }
     pendingCaret = null;
   }
+}
+function bulTap(n) {
+  if (n.k === "check") { n.done = !n.done; if (!n.done) delete n.done; saveOutline(); renderOutline(); }
+  else if (n.c.length) doToggle(n.id);
+  else { focusAt(n.id, n.t.length); renderOutline(); }
 }
 function autosize(ta) { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; }
 function focusAt(id, caret) { focusId = id; pendingCaret = caret; }
@@ -1013,6 +1033,34 @@ function doDelete(id) {
   if (nx) focusAt(nx, index[nx].n.t.length);
   commit(); snack(k ? `「${(n.t || "空の行").slice(0, 12)}」と下の ${k} 項目を削除しました` : "1行削除しました");
 }
+// ---- Markdown:行の頭の記号で形式を決める(全角も可)----
+const MD_RULES = [
+  [/^(?:[-*][ 　])?[\[［][ 　]?[\]］][ 　]/, () => ({ k: "check" })],
+  [/^(?:[-*][ 　])?[\[［][xX✓ｘＸ][\]］][ 　]/, () => ({ k: "check", done: true })],
+  [/^[-*・+][ 　]/, () => ({})],
+  [/^[#＃]{1,6}[ 　]/, () => ({ k: "head" })],
+  [/^[>＞][ 　]/, () => ({ k: "quote" })],
+  [/^[0-9０-９]+[.．][ 　]/, () => ({ k: "num" })],
+  [/^(?:```|｀｀｀)[ 　]/, () => ({ k: "code" })],
+  [/^[@＠](\S*)[ 　]/, m => ({ k: "time", at: m[1] || nowLabel() })],
+];
+const MD_SET = new WeakSet(); // 貼り付けで、記号から形式が決まった行
+function mdMatch(t) { for (const [re, f] of MD_RULES) { const m = t.match(re); if (m) return { len: m[0].length, ...f(m) }; } return null; }
+function applyMd(n, r) { // r = mdMatch の結果:記号を外して形式を付ける
+  n.t = n.t.slice(r.len);
+  if (r.k) n.k = r.k; else delete n.k;
+  if (r.done) n.done = true; else delete n.done;
+  if (r.at) n.at = r.at; else if (r.k !== "time") delete n.at;
+}
+function tryMdTyping(ta) { // 書いている行の頭で、記号+空白を打ったら形式に変える(コードの行の中は除く)
+  const n = index[ta.dataset.t]?.n; if (!n || n.k === "code") return false;
+  const r = mdMatch(ta.value); if (!r) return false;
+  if (!r.k && !n.k && r.len === ta.value.length) return false; // 「- 」だけはそのまま
+  const caret = Math.max(0, ta.selectionStart - r.len);
+  n.t = ta.value; applyMd(n, r); delete n.ph;
+  focusAt(n.id, caret); commit(); return true;
+}
+
 // ---- 元に戻す(削除の直後だけ) ----
 let undoSnap = null;
 function keepUndo() { flushOutline(); undoSnap = { file: curFile, nodes: JSON.parse(JSON.stringify(outline.nodes)) }; }
@@ -1038,8 +1086,8 @@ function kindSheet(ids) {
   flushOutline();
   const cur = ids.length === 1 ? (index[ids[0]]?.n.k || "") : null;
   openSheet(`<h2>形式${ids.length > 1 ? `(${ids.length}行)` : ""}</h2>
-    <div class="kindgrid">${KINDS.map(([k, i, l]) => `<button data-kd="${k}" class="${cur === k ? "on" : ""}"><span class="ki">${esc(i)}</span>${l}</button>`).join("")}</div>
-    <p class="muted small" style="margin:10px 0 0">形式は行ごとに選べます。改行すると同じ形式の行が続き、空のまま改行するとふつうの行に戻ります。</p>`, s => {
+    <div class="kindgrid">${KINDS.map(([k, i, l, md]) => `<button data-kd="${k}" class="${cur === k ? "on" : ""}"><span class="ki">${esc(i)}</span><span class="grow">${l}<div class="muted small" style="font-family:ui-monospace,monospace">${esc(md.trim())}</div></span></button>`).join("")}</div>
+    <p class="muted small" style="margin:10px 0 0">行の頭で上の記号と空白を打っても、その形式になります(<b>@2日目 </b> のように書けばタイムラインの時も入ります)。改行すると同じ形式の行が続き、空のまま改行するとふつうの行に戻ります。</p>`, s => {
     s.addEventListener("click", e => { const b = e.target.closest("[data-kd]"); if (!b) return;
       const focusBack = ids.length === 1 && !selecting ? ids[0] : null;
       closeSheet(); setKind(ids, b.dataset.kd);
@@ -1071,6 +1119,28 @@ function nodesText(list, depth, num) { // 字下げ(空白2つ)と、形式ご�
   }
   return out;
 }
+function nodesMarkdown(list, depth) { // Markdown(入れ子は空白2つ、続くコードの行は ``` でまとめる)
+  let out = "", cnt = 0, inCode = false; const ind = "  ".repeat(depth);
+  for (const n of list) {
+    if (n.k !== "code" && inCode) { out += ind + "```\n"; inCode = false; }
+    cnt = n.k === "num" ? cnt + 1 : 0;
+    const t = n.t || "";
+    if (n.k === "code") { if (!inCode) { out += ind + "```\n"; inCode = true; } out += ind + t + "\n"; }
+    else out += ind + (n.k === "check" ? `- [${n.done ? "x" : " "}] ` : n.k === "num" ? cnt + ". " : n.k === "time" ? `- ${n.at ? "**" + n.at + "** " : ""}` : n.k === "head" ? "#".repeat(Math.min(depth + 2, 6)) + " " : n.k === "quote" ? "> " : "- ") + t + "\n";
+    if (n.c && n.c.length) { if (inCode) { out += ind + "```\n"; inCode = false; } out += nodesMarkdown(n.c, depth + 1); }
+  }
+  if (inCode) out += ind + "```\n";
+  return out;
+}
+function copyChooser(list, what) { // 文章の形を選んでコピー
+  flushOutline();
+  openSheet(`<h2>${esc(what)}をコピー</h2>
+    <button class="row" style="width:100%;text-align:left" data-cf="plain"><span class="grow"><b>文章(記号つき)</b><div class="muted small">・ ☐ ■ などの記号と字下げ。メモや LINE に貼るとき</div></span></button>
+    <button class="row" style="width:100%;text-align:left" data-cf="md"><span class="grow"><b>Markdown</b><div class="muted small">- [ ] や # の記号。Markdown が使えるアプリに貼るとき</div></span></button>`, s => {
+    s.addEventListener("click", e => { const b = e.target.closest("[data-cf]"); if (!b) return;
+      closeSheet(); copyText(b.dataset.cf === "md" ? nodesMarkdown(list, 0) : nodesText(list, 0), what); });
+  });
+}
 async function copyText(text, what) {
   try { await navigator.clipboard.writeText(text); toast(`${what}をコピーしました`); return; } catch {}
   // コピーできない環境では、文章を出して手でコピーしてもらう
@@ -1078,7 +1148,7 @@ async function copyText(text, what) {
     <textarea class="inp" id="cpT" rows="12" readonly style="font-size:13px">${esc(text)}</textarea><div class="btns"><button class="btn primary" data-x>閉じる</button></div>`, s => {
     const t = $("#cpT"); t.focus(); t.select(); $("[data-x]", s).onclick = closeSheet; });
 }
-$("#btnCopy").onclick = () => { flushOutline(); copyText(nodesText(outline.nodes, 0), "メモ全体"); };
+$("#btnCopy").onclick = () => copyChooser(outline.nodes, "メモ全体");
 // ---- 複数選択 ----
 let selecting = false; const selSet = new Set();
 function setSelecting(on) {
@@ -1098,7 +1168,7 @@ $("#selbar").addEventListener("click", e => {
   if (a === "done") return setSelecting(false);
   if (a === "all") { const all = flatVisible(); if (all.every(id => selSet.has(id))) selSet.clear(); else all.forEach(id => selSet.add(id)); return renderOutline(); }
   if (!rs.length) { toast("行をタップして選んでください"); return; }
-  if (a === "copy") copyText(nodesText(rs, 0), `${rs.length}項目`);
+  if (a === "copy") copyChooser(rs, `${rs.length}項目`);
   else if (a === "kind") kindSheet([...selSet]);
   else if (a === "del") {
     const total = rs.reduce((t, n) => t + 1 + countAll(n), 0);
@@ -1118,12 +1188,13 @@ function splitPasted(id, ta) {
   const caretLine = v.slice(0, sel).split("\n").length - 1;
   const lastLineText = v.slice(0, sel).split("\n").pop();
   let nodes;
-  const ckMark = node => { const m = node.t.match(/^([☐☑])\s*/); if (m) { node.t = node.t.slice(m[0].length); node.k = "check"; if (m[1] === "☑") node.done = true; else delete node.done; } return node; };
+  const ckMark = node => { const m = node.t.match(/^([☐☑])\s*/); if (m) { node.t = node.t.slice(m[0].length); node.k = "check"; if (m[1] === "☑") node.done = true; else delete node.done; } else { const r = mdMatch(node.t); if (r && r.k) applyMd(node, r); } return node; };
   if (lines.length === 2) { nodes = [ckMark(N(lines[1]))]; ckMark(n); } // 改行一つ(Enter の取りこぼし)なら、後半をそのまま次の項目に(☐/☑ で始まればチェックに)
   else {
     const all = parseIndented(v);                // 字下げごと読み、1行目の子はこの行の子に
     nodes = all.slice(1);
-    if (all[0]) { n.t = all[0].t; n.c.push(...all[0].c); if (all[0].c.length) delete n.x; if (all[0].k) { n.k = all[0].k; if (all[0].done) n.done = true; } }
+    if (all[0]) { n.t = all[0].t; n.c.push(...all[0].c); if (all[0].c.length) delete n.x;
+      if (MD_SET.has(all[0])) for (const f of ["k", "done", "at"]) { if (all[0][f] !== undefined) n[f] = all[0][f]; else delete n[f]; } }
     if (!nodes.length && !all[0]?.c.length) nodes = [N()];
   }
   const at = list.indexOf(n) + 1;
@@ -1168,11 +1239,14 @@ box.addEventListener("input", e => {
   ta.classList.remove("phsel");
   const id = ta.dataset.t; if (!index[id]) return;
   if (ta.value.includes("\n") && !e.isComposing) { splitPasted(id, ta); return; }
-  index[id].n.t = ta.value; saveOutline();
+  index[id].n.t = ta.value;
+  if (!e.isComposing && tryMdTyping(ta)) return;
+  saveOutline();
   if (!FIELD_SIZING) autosize(ta);
 });
 box.addEventListener("compositionend", e => {
-  const ta = e.target.closest(".ol-t"); if (ta && ta.value.includes("\n")) splitPasted(ta.dataset.t, ta);
+  const ta = e.target.closest(".ol-t"); if (ta && ta.value.includes("\n")) { splitPasted(ta.dataset.t, ta); return; }
+  if (ta) { const n = index[ta.dataset.t]?.n; if (n) n.t = ta.value; tryMdTyping(ta); }
 });
 box.addEventListener("beforeinput", e => {
   const ta = e.target.closest(".ol-t"); if (!ta) return;
@@ -1236,7 +1310,7 @@ box.addEventListener("click", e => {
   if (v) { focusAt(v.dataset.v, caretFromPoint(v, e.clientX, e.clientY)); renderOutline(); return; }
   const b = e.target.closest("button"); if (!b) return;
   if (b.dataset.bul && e.detail !== 0 && b.classList.contains("bul")) return; // 指・マウスでの行頭タップは pointerup で処理済み
-  if (b.dataset.bul) { const n = index[b.dataset.bul].n; if (n.c.length) doToggle(n.id); else { focusAt(n.id, n.t.length); renderOutline(); } }
+  if (b.dataset.bul) { const n = index[b.dataset.bul].n; b.classList.contains("gfold") ? doToggle(n.id) : bulTap(n); }
   else if (b.dataset.jump) reveal(b.dataset.jump);
   else if ("zoom" in b.dataset) zoomTo(b.dataset.zoom);
   else if ("firstchild" in b.dataset) doAddChild(zoomId);
@@ -1281,9 +1355,9 @@ box.addEventListener("pointerup", e => {
   if (!drag || e.pointerId !== drag.pid) return;
   if (!drag.on) {
     if (!drag.viaBul) { cancelPress(); return; } // ただのタップ → 書き込みへ
-    const id = drag.id; drag = null; // 行頭を動かさずに離した → 畳む/開く
+    const id = drag.id; drag = null; // 行頭を動かさずに離した → チェックなら済み/まだ、下に行があれば畳む/開く
     const n = index[id]?.n; if (!n) return;
-    if (n.c.length) doToggle(id); else { focusAt(id, n.t.length); renderOutline(); }
+    bulTap(n);
     return;
   }
   endDrag(true);
