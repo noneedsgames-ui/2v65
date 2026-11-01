@@ -116,7 +116,7 @@ body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 
 /* files */
 .filebar{display:flex;align-items:center;gap:6px;background:var(--surface-1);border-bottom:1px solid var(--line);padding-right:8px}
-.fb-open{flex:1;min-width:0;display:flex;align-items:center;gap:6px;padding:9px 6px 9px 14px;text-align:left;font-size:15px}
+.fb-open{flex:1;min-width:0;display:flex;align-items:center;gap:6px;padding:9px 6px 9px 10px;text-align:left;font-size:15px}
 .fb-open b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fb-new{flex:none;font-size:13px;font-weight:600;padding:6px 10px;border-radius:999px;background:var(--accent);color:var(--accent-ink);white-space:nowrap}
 .fb-ic{color:var(--text-secondary);font-size:17px}
@@ -176,6 +176,29 @@ body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 .swatches{display:flex;gap:8px;flex-wrap:wrap}
 .sw2{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface-1);font-size:10px;color:var(--text-muted)}
 .sw2.on{outline:2.5px solid var(--accent);outline-offset:2px}
+
+/* side tree */
+.fb-side{flex:none;padding:8px 2px 8px 12px;font-size:18px;color:var(--text-secondary)}
+.memo-body{flex:1;min-height:0;display:flex;position:relative}
+.memo-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.side{display:none;flex-direction:column;background:var(--surface-1);border-right:1px solid var(--line);width:min(78vw,300px)}
+body.side-open .side{display:flex}
+.side-scrim{display:none;position:absolute;inset:0;background:#0004;z-index:11}
+@media (max-width:719px){.side{position:absolute;left:0;top:0;bottom:0;z-index:12;box-shadow:4px 0 16px #0003}body.side-open .side-scrim{display:block}}
+@media (min-width:720px){.side{width:260px;flex:none}}
+.side-h{display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px 6px;font-weight:700;font-size:13px;color:var(--text-secondary)}
+.side-list{flex:1;min-height:0;overflow:auto;padding:0 6px 10px}
+.srow{display:flex;align-items:center;gap:4px;padding:8px 6px 8px calc(4px + var(--d) * 16px);border-radius:8px;font-size:14px;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.srow.sg{font-weight:700}
+.srow.sm.cur{background:var(--surface-2);font-weight:700}
+.s-fold{width:20px;flex:none;color:var(--text-secondary);font-size:12px;padding:0}
+.s-dot{width:20px;flex:none;text-align:center;color:var(--text-muted);font-size:10px}
+.s-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s-k{font-size:11px;color:var(--text-muted);font-weight:600}
+.srow.pressing{background:var(--surface-2);transition:background .35s}
+.srow.dragging{opacity:.3}
+.srow.drop{outline:2px solid var(--accent);outline-offset:-2px}
+.side-new{margin:6px 10px 10px;padding:9px;border-radius:10px;border:1px dashed var(--text-muted);color:var(--text-secondary);font-size:13px}
 
 /* generic */
 .card{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
@@ -256,8 +279,16 @@ textarea.inp{line-height:1.6;resize:vertical}
 <main>
   <!-- メモ -->
   <section class="view" id="v-memo">
-    <div class="filebar"><button class="fb-open" id="fileBar" aria-label="ボードを開く"><span class="fb-board">◧ ボード</span><span class="fb-sep">›</span><b id="fbName"></b></button>
+    <div class="filebar"><button class="fb-side" id="sideBtn" aria-label="ファイルとメモの一覧">☰</button><button class="fb-open" id="fileBar" aria-label="ボードを開く"><span class="fb-board">◧ ボード</span><span class="fb-sep">›</span><b id="fbName"></b></button>
       <button class="fb-new" id="newMemo">＋ 新しいメモ</button></div>
+    <div class="memo-body">
+      <aside class="side" id="side" aria-label="ファイルとメモ">
+        <div class="side-h">ファイルとメモ<span class="muted small">長押しで移動</span></div>
+        <div class="side-list" id="sideList"></div>
+        <button class="side-new" id="sideNew">＋ 新しいメモ</button>
+      </aside>
+      <div class="side-scrim" id="sideScrim"></div>
+      <div class="memo-main">
     <div class="toolbar">
       <button class="tb" id="btnSearch">検索</button>
       <button class="tb" id="btnTpl">テンプレ</button>
@@ -275,6 +306,8 @@ textarea.inp{line-height:1.6;resize:vertical}
       <button data-op="child" aria-label="子を追加">＋子</button>
       <button data-op="tpl" class="ot-tpl" aria-label="テンプレートを入れる">テンプレ</button>
       <button data-op="more" aria-label="この行の操作">⋯</button>
+    </div>
+      </div>
     </div>
   </section>
 
@@ -1215,6 +1248,7 @@ function memoTitle(f) {
 function renderFileBar() {
   const g = typeof groupOfCard === "function" ? groupOfCard(curFile) : null;
   $("#fbName").textContent = (g ? groupChain(g) + " › " : "") + memoTitle(files[curFile]);
+  if (typeof renderSide === "function" && typeof sideList !== "undefined") renderSide();
 }
 const isEmptyMemo = f => !f.name && f.nodes.length === 1 && !f.nodes[0].t && !f.nodes[0].c.length;
 function openFile(id) {
@@ -1492,10 +1526,14 @@ function renderBoard() {
   applyView();
   $("#bhint").style.display = LS.get("boardHintDone") ? "none" : "";
 }
+const sizeCache = {}; // ボードが隠れている間(メモ画面からの移動など)は、最後に測った大きさで計算する
 function cardBox(id) {
-  const el = cardsEl.querySelector(`[data-card="${id}"]`), c = board.cards[id];
-  if (!el || !c) return null;
-  return { x: c.x, y: c.y, w: el.offsetWidth, h: el.offsetHeight, cx: c.x + el.offsetWidth / 2, cy: c.y + el.offsetHeight / 2 };
+  const c = board.cards[id]; if (!c || !files[id]) return null;
+  const el = cardsEl.querySelector(`[data-card="${id}"]`);
+  let w, h;
+  if (el && el.offsetWidth) { w = el.offsetWidth; h = el.offsetHeight; sizeCache[id] = { w, h }; }
+  else ({ w, h } = sizeCache[id] || { w: CARD_W, h: 72 });
+  return { x: c.x, y: c.y, w, h, cx: c.x + w / 2, cy: c.y + h / 2 };
 }
 function endGeo(id) { // 矢印の端:メモなら四角、丸なら描いた形
   if (files[id]) return cardBox(id);
@@ -1508,9 +1546,19 @@ function clipTo(G, dx, dy, gap) { // 中心から (dx,dy) 方向へ進み、縁�
   return { x: G.cx + dx * t, y: G.cy + dy * t };
 }
 let tmpLine = null, lassoPts = null, hotGroup = null; // 引いている途中の矢印・描いている途中の囲み・入りそうな丸
+// 矢印の色:別のファイルのメモ同士=緑、ファイル同士=青で少し太く(設定で変えられる)
+const ARROW_DEF = { cross: "green", group: "blue", groupW: 2.8 };
+const arrowPrefs = () => ({ ...ARROW_DEF, ...(meta.prefs.arrows || {}) });
+const edgeColor = k => (k ? COLOR_HEX[k] : "var(--text-secondary)");
+function edgeStyle(e) {
+  const P = arrowPrefs(), ga = groupById(e.a), gb = groupById(e.b);
+  if (ga && gb) return { k: P.group, w: P.groupW };
+  if (files[e.a] && files[e.b] && (groupOfCard(e.a)?.id || null) !== (groupOfCard(e.b)?.id || null)) return { k: P.cross, w: 1.8 };
+  return { k: "", w: 1.8 };
+}
 function drawEdges() {
-  let h = `<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--text-secondary)"/></marker>
-    <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>`;
+  const mk = (id, col) => `<marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${col}"/></marker>`;
+  let h = `<defs>${mk("ah", "var(--text-secondary)")}${mk("ah2", "var(--accent)")}${COLORS.filter(Boolean).map(k => mk("ah-" + k, COLOR_HEX[k])).join("")}</defs>`;
   const geos = board.groups.map(g => [g, groupGeo(g)]).filter(([, G]) => G).sort((a, b) => b[1].area - a[1].area); // 大きい丸から描き、内側の丸を上に
   for (const [g, G] of geos) {
     h += `<path class="gshape${hotGroup === g.id ? " hot" : ""}" d="${smoothPath(g.pts)}" style="--gc:${COLOR_HEX[g.c || ""]}"/>`;
@@ -1522,8 +1570,9 @@ function drawEdges() {
     const dx = B.cx - A.cx, dy = B.cy - A.cy;
     const p1 = clipTo(A, dx, dy, 3), p2 = clipTo(B, -dx, -dy, 3);
     const d = `M${p1.x},${p1.y} L${p2.x},${p2.y}`;
-    const me = e.dir === "none" ? "" : ` marker-end="url(#ah)"`, ms = e.dir === "both" ? ` marker-start="url(#ah)"` : "";
-    h += `<path class="edge" d="${d}"${me}${ms}/><path class="edge-hit" d="${d}" data-edge="${e.id}"/>`;
+    const st = edgeStyle(e), mid = st.k ? "ah-" + st.k : "ah";
+    const me = e.dir === "none" ? "" : ` marker-end="url(#${mid})"`, ms = e.dir === "both" ? ` marker-start="url(#${mid})"` : "";
+    h += `<path class="edge" d="${d}"${me}${ms} style="stroke:${edgeColor(st.k)};stroke-width:${st.w}"/><path class="edge-hit" d="${d}" data-edge="${e.id}"/>`;
     if (e.label) h += `<text class="edge-label" x="${(p1.x + p2.x) / 2}" y="${(p1.y + p2.y) / 2 - 6}" text-anchor="middle" data-edge="${e.id}">${esc(e.label)}</text>`;
   }
   if (tmpLine) h += `<path class="edge tmp" d="M${tmpLine.x1},${tmpLine.y1} L${tmpLine.x2},${tmpLine.y2}" marker-end="url(#ah2)"/>`;
@@ -1838,6 +1887,189 @@ function edgeMenu(eid) {
       else if ("ok" in b.dataset) { e.label = $("#emL").value.trim(); saveBoard(); closeSheet(); drawEdges(); }
     });
   });
+}
+
+/* ============================================================
+   メモ画面の左の縦のツリー:ファイル(丸)とメモを入れ子で並べ、長押しで並べ替え・ファイルの移動。
+   移した結果はボードに反映する(カードや丸をそのファイルの中へ動かし、丸を収まる形にふくらませる)。
+   並び順は board.order に持つ(ボード上の位置には関係しない)
+   ============================================================ */
+const sideEl = $("#side"), sideList = $("#sideList");
+const sideFold = new Set(LS.get("sideFold") || []);
+const isWide = () => innerWidth >= 720;
+function setSide(open) {
+  document.body.classList.toggle("side-open", open);
+  LS.set("sideOpen", open);
+  if (open) renderSide();
+}
+$("#sideBtn").onclick = () => setSide(!document.body.classList.contains("side-open"));
+$("#sideScrim").onclick = () => setSide(false);
+const itemParent = it => it.t === "g" ? (groupById(it.id)?.parent || null) : (groupOfCard(it.id)?.id || null);
+const itemName = it => it.t === "g" ? groupById(it.id).name : memoTitle(files[it.id]);
+function sideKids(pid) {
+  const order = board.order || {};
+  const gs = board.groups.filter(g => (g.parent || null) === pid).map(g => ({ t: "g", id: g.id }));
+  const ms = Object.keys(files).filter(id => board.cards[id] && (groupOfCard(id)?.id || null) === pid).map(id => ({ t: "m", id }));
+  return [...gs, ...ms].sort((a, b) => (order[a.id] ?? Infinity) - (order[b.id] ?? Infinity) || (a.t === b.t ? 0 : a.t === "g" ? -1 : 1) || itemName(a).localeCompare(itemName(b), "ja"));
+}
+function renderSide() {
+  if (!document.body.classList.contains("side-open")) return;
+  const rows = [];
+  const cur = curFile, curChain = new Set((groupOfCard(cur) ? [...ancestorsOfGroup(groupOfCard(cur)), groupOfCard(cur)] : []).map(g => g.id));
+  const walk = (pid, d) => {
+    for (const it of sideKids(pid)) {
+      if (it.t === "g") {
+        const g = groupById(it.id), folded = sideFold.has(g.id) && !curChain.has(g.id), n = sideKids(g.id).length;
+        rows.push(`<div class="srow sg${g.c ? " c-" + g.c : ""}" data-sid="g:${g.id}" style="--d:${d}"><button class="s-fold" data-sfold="${g.id}" aria-label="${folded ? "開く" : "畳む"}">${folded ? "▸" : "▾"}</button><span class="s-name">📁 ${esc(g.name)}</span><span class="s-k">${n}</span></div>`);
+        if (!folded) walk(g.id, d + 1);
+      } else rows.push(`<div class="srow sm${it.id === cur ? " cur" : ""}" data-sid="m:${it.id}" style="--d:${d}"><span class="s-dot">•</span><span class="s-name">${esc(memoTitle(files[it.id]))}</span></div>`);
+    }
+  };
+  walk(null, 0);
+  sideList.innerHTML = rows.join("") || `<div class="muted small" style="padding:10px">メモがありません</div>`;
+  sideList.querySelector(".srow.cur")?.scrollIntoView({ block: "nearest" });
+}
+sideList.addEventListener("click", e => {
+  if (sJust) return;
+  const f = e.target.closest("[data-sfold]");
+  const row = e.target.closest(".srow"); if (!row) return;
+  const [t, id] = row.dataset.sid.split(":");
+  if (t === "g" || f) { const gid = f ? f.dataset.sfold : id; sideFold.has(gid) ? sideFold.delete(gid) : sideFold.add(gid); LS.set("sideFold", [...sideFold]); renderSide(); return; }
+  openFile(id); if (!isWide()) setSide(false); else renderSide();
+});
+$("#sideNew").onclick = () => { if (!isWide()) setSide(false); newMemo(); };
+
+// ---- 長押しで持ち上げて動かす:行の上=前へ、下=後ろへ、ファイルの行の真ん中=その中へ ----
+let sdrag = null, sJust = false;
+sideList.addEventListener("pointerdown", e => {
+  const row = e.target.closest(".srow"); if (!row || e.button > 0 || e.target.closest("[data-sfold]")) return;
+  clearTimeout(sdrag?.timer);
+  const [t, id] = row.dataset.sid.split(":");
+  sdrag = { it: { t, id }, row, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, pid: e.pointerId, on: false, target: null };
+  row.classList.add("pressing");
+  sdrag.timer = setTimeout(() => { if (sdrag && !sdrag.on) sStart(); }, LONGPRESS_MS);
+});
+sideList.addEventListener("pointermove", e => {
+  if (!sdrag || e.pointerId !== sdrag.pid) return;
+  sdrag.x = e.clientX; sdrag.y = e.clientY;
+  if (!sdrag.on) { if (Math.hypot(e.clientX - sdrag.x0, e.clientY - sdrag.y0) > 8) sCancel(); return; }
+  e.preventDefault(); sOver();
+});
+sideList.addEventListener("pointerup", e => { if (!sdrag || e.pointerId !== sdrag.pid) return; sdrag.on ? sEnd(true) : sCancel(); });
+sideList.addEventListener("pointercancel", () => { if (sdrag && !sdrag.on) sCancel(); });
+sideList.addEventListener("contextmenu", e => { if (sdrag) e.preventDefault(); });
+function sCancel() { if (!sdrag) return; clearTimeout(sdrag.timer); sdrag.row.classList.remove("pressing"); sdrag = null; }
+function sStart() {
+  const d = sdrag; d.on = true; d.row.classList.remove("pressing");
+  // 動かす行と、その中の行を薄く
+  const skip = new Set([d.it.t + ":" + d.it.id]);
+  if (d.it.t === "g") { for (const g of descendantsOf(groupById(d.it.id))) skip.add("g:" + g.id); for (const g of [groupById(d.it.id), ...descendantsOf(groupById(d.it.id))]) for (const m of g.members || []) skip.add("m:" + m); }
+  d.skip = skip;
+  sideList.querySelectorAll(".srow").forEach(r => skip.has(r.dataset.sid) && r.classList.add("dragging"));
+  try { d.row.setPointerCapture(d.pid); } catch {}
+  ghost.textContent = (d.it.t === "g" ? "📁 " : "") + itemName(d.it); ghost.style.display = "block";
+  document.body.classList.add("dragging");
+  try { navigator.vibrate && navigator.vibrate(12); } catch {}
+  sOver();
+}
+function sOver() {
+  const d = sdrag;
+  ghost.style.left = Math.min(innerWidth - 80, d.x + 14) + "px"; ghost.style.top = (d.y - 34) + "px";
+  sideList.querySelectorAll(".drop").forEach(x => x.classList.remove("drop"));
+  dropline.style.display = "none"; d.target = null;
+  const r = sideList.getBoundingClientRect(); // 端に寄せたら送る
+  if (d.y < r.top + 30) sideList.scrollTop -= 8; else if (d.y > r.bottom - 30) sideList.scrollTop += 8;
+  const rows = [...sideList.querySelectorAll(".srow")].filter(x => !d.skip.has(x.dataset.sid));
+  if (!rows.length) return;
+  let row = rows.find(x => { const b = x.getBoundingClientRect(); return d.y >= b.top && d.y < b.bottom; });
+  let zone;
+  if (!row) { if (d.y < rows[0].getBoundingClientRect().top) { row = rows[0]; zone = "before"; } else { row = rows[rows.length - 1]; zone = "after"; } }
+  else { const b = row.getBoundingClientRect(), rel = (d.y - b.top) / b.height; zone = rel < 0.3 ? "before" : rel > 0.7 ? "after" : row.classList.contains("sg") ? "into" : rel < 0.5 ? "before" : "after"; }
+  const [t, id] = row.dataset.sid.split(":");
+  d.target = { it: { t, id }, zone };
+  if (zone === "into") { row.classList.add("drop"); return; }
+  const b = row.getBoundingClientRect(), nm = row.querySelector(".s-name").getBoundingClientRect();
+  dropline.style.display = "block"; dropline.style.left = (nm.left - 4) + "px"; dropline.style.width = Math.max(40, b.right - nm.left) + "px";
+  dropline.style.top = ((zone === "before" ? b.top : b.bottom) - 1.5) + "px";
+}
+function sEnd(drop) {
+  const d = sdrag; sdrag = null; if (!d) return;
+  sJust = true; setTimeout(() => sJust = false, 80);
+  ghost.style.display = "none"; dropline.style.display = "none"; document.body.classList.remove("dragging");
+  sideList.querySelectorAll(".drop,.dragging").forEach(x => x.classList.remove("drop", "dragging"));
+  if (!drop || !d.target) return renderSide();
+  sideMove(d.it, d.target.it, d.target.zone);
+}
+document.addEventListener("touchmove", e => { if (sdrag && sdrag.on) { e.preventDefault(); const t = e.touches[0]; if (t) { sdrag.x = t.clientX; sdrag.y = t.clientY; sOver(); } } }, { passive: false });
+document.addEventListener("touchend", () => { if (sdrag && sdrag.on) sEnd(true); });
+
+// ---- 並べ替え・ファイルの移動と、ボードへの反映 ----
+function sideMove(src, tgt, zone) {
+  if (src.t === tgt.t && src.id === tgt.id) return renderSide();
+  const newParent = zone === "into" ? tgt.id : itemParent(tgt);
+  if (src.t === "g") { const g = groupById(src.id); if (newParent === g.id || descendantsOf(g).some(x => x.id === newParent)) { toast("ファイルを自分の中には入れられません"); return renderSide(); } }
+  const oldParent = itemParent(src);
+  board.order ||= {};
+  const sib = sideKids(newParent).filter(x => !(x.t === src.t && x.id === src.id));
+  let at = sib.length;
+  if (zone !== "into") { const i = sib.findIndex(x => x.t === tgt.t && x.id === tgt.id); at = i < 0 ? sib.length : i + (zone === "after" ? 1 : 0); }
+  sib.splice(at, 0, src);
+  sib.forEach((x, k) => { board.order[x.id] = k; });
+  if (newParent !== oldParent) { // ボードの上でも、そのファイルの中(外)へ動かす
+    if (src.t === "m") newParent ? placeCardInGroup(src.id, groupById(newParent)) : placeCardOutside(src.id);
+    else newParent ? placeGroupIn(groupById(src.id), groupById(newParent)) : placeGroupOutside(groupById(src.id));
+    recomputeTree();
+    const now = itemParent(src);
+    toast(now ? `「${groupById(now).name}」に入れました` : "ファイルの外に出しました");
+    if (now) sideFold.delete(now);
+  }
+  saveBoard(); renderSide(); renderFileBar();
+}
+function contentBounds(skip) { // ボード上の中身の外枠
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const id of Object.keys(files)) { if (skip && skip.has("m:" + id)) continue; const b = cardBox(id); if (b) { x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h); } }
+  for (const g of board.groups) { if (skip && skip.has("g:" + g.id)) continue; const G = groupGeo(g); if (G) { x0 = Math.min(x0, G.x0); y0 = Math.min(y0, G.y0); x1 = Math.max(x1, G.x1); y1 = Math.max(y1, G.y1); } }
+  return isFinite(x0) ? { x0, y0, x1, y1 } : { x0: 0, y0: 0, x1: 0, y1: 0 };
+}
+function placeCardInGroup(id, g) {
+  const b = cardBox(id), c = board.cards[id], G = groupGeo(g); if (!b || !G) return;
+  const allowed = new Set([g.id, ...ancestorsOfGroup(g).map(x => x.id)]);
+  const others = Object.keys(files).filter(x => x !== id).map(cardBox).filter(Boolean);
+  const free = (x, y) => {
+    const r = { x, y, w: b.w, h: b.h }, pts = rectPts(r, 6);
+    if (!pts.every(q => insidePts(g.pts, q[0], q[1]))) return false;
+    if (others.some(o => x < o.x + o.w + 10 && x + b.w + 10 > o.x && y < o.y + o.h + 10 && y + b.h + 10 > o.y)) return false;
+    return !board.groups.some(h => !allowed.has(h.id) && h.pts && insidePts(h.pts, x + b.w / 2, y + b.h / 2));
+  };
+  const cand = [];
+  for (let y = G.y0; y <= G.y1 - b.h; y += 20) for (let x = G.x0; x <= G.x1 - b.w; x += 20) cand.push([x, y]);
+  cand.sort((p, q) => Math.hypot(p[0] + b.w / 2 - G.cx, p[1] + b.h / 2 - G.cy) - Math.hypot(q[0] + b.w / 2 - G.cx, q[1] + b.h / 2 - G.cy));
+  const spot = cand.find(([x, y]) => free(x, y));
+  if (spot) { c.x = Math.round(spot[0]); c.y = Math.round(spot[1]); }
+  else { // 空きがなければ右の縁の外に置き、丸をふくらませて収める
+    c.x = Math.round(G.x1 + 14); c.y = Math.round(G.cy - b.h / 2);
+    const s2 = freeSpot(c.x, c.y); c.y = s2.y;
+  }
+  ensureContains(g, rectPts(cardBox(id), 14));
+}
+function placeCardOutside(id) {
+  const B = contentBounds(new Set(["m:" + id])), c = board.cards[id];
+  const p = freeSpot(Math.round(B.x1 + 50), Math.round(B.y0)); c.x = p.x; c.y = p.y;
+}
+function translateGroup(g, dx, dy) {
+  const all = [g, ...descendantsOf(g)];
+  for (const x of all) x.pts = x.pts.map(p => [Math.round(p[0] + dx), Math.round(p[1] + dy)]);
+  for (const x of all) for (const m of x.members || []) { const c = board.cards[m]; if (c) { c.x = Math.round(c.x + dx); c.y = Math.round(c.y + dy); } }
+}
+function placeGroupIn(g, P) { // 丸を、外側にする丸の右の縁に並べてから、外側の丸をふくらませて収める
+  const G = groupGeo(g), Q = groupGeo(P); if (!G || !Q) return;
+  translateGroup(g, Q.x1 - G.x0 - Math.min(40, (G.x1 - G.x0) / 3), Q.cy - G.cy);
+  ensureContains(P, pushOut(g.pts, 16));
+}
+function placeGroupOutside(g) {
+  const skip = new Set([["g", g.id], ...descendantsOf(g).map(x => ["g", x.id]), ...[g, ...descendantsOf(g)].flatMap(x => (x.members || []).map(m => ["m", m]))].map(([t, i]) => t + ":" + i));
+  const B = contentBounds(skip), G = groupGeo(g); if (!G) return;
+  translateGroup(g, B.x1 + 60 - G.x0, 0);
 }
 
 /* ============================================================
@@ -2219,6 +2451,13 @@ function renderPrefs() {
       <div class="btns"><button class="btn primary" id="tplAdd">＋ テンプレートを追加</button></div>
       <button class="mini" id="tplReset" style="margin-top:10px">初期の3つ(素材・アイテム・設定)を戻す</button>
     </div>
+    <div class="card"><h3>ボードの矢印</h3>
+      ${(() => { const A = arrowPrefs(); const sw = (key, cur) => `<div class="swatches" style="margin-top:6px">${COLORS.map(k => `<button class="sw2${k ? " c-" + k : ""}${(cur || "") === k ? " on" : ""}" data-arc="${key}" data-col="${k}" aria-label="${k ? COLOR_NAMES[k] : "通常の色"}" style="${k ? `background:${COLOR_HEX[k]}` : ""}">${k ? "" : "通常"}</button>`).join("")}</div>`;
+        return `<div class="field"><span>別のファイルのメモへの矢印</span>${sw("cross", A.cross)}</div>
+        <div class="field"><span>ファイル同士の矢印</span>${sw("group", A.group)}</div>
+        <div class="field"><span>ファイル同士の矢印の太さ</span><div class="seg">${[[1.8, "ふつう"], [2.8, "少し太い"], [4, "太い"]].map(([w, l]) => `<button data-agw="${w}" class="${A.groupW === w ? "on" : ""}">${l}</button>`).join("")}</div></div>
+        <p class="muted small" style="margin:0">「通常」を選ぶと、ほかの矢印と同じ色になります。<button class="mini" id="arrowReset">初期に戻す</button></p>`; })()}
+    </div>
     <div class="card"><h3>保存</h3>
       <div class="small">状態:<b>${esc(Store.status)}</b></div>
       <p class="muted small" style="line-height:1.6">入力はまずこの端末に保存し、claude.ai にサインインして開いている場合は、あなた専用の領域へ追って同期します。ほかの人からは見えません。</p>
@@ -2228,6 +2467,9 @@ function renderPrefs() {
 }
 $("#prefsScroll").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.arc) { meta.prefs.arrows = { ...arrowPrefs(), [b.dataset.arc]: b.dataset.col }; saveMeta(); renderPrefs(); return; }
+  if (b.dataset.agw) { meta.prefs.arrows = { ...arrowPrefs(), groupW: +b.dataset.agw }; saveMeta(); renderPrefs(); return; }
+  if (b.id === "arrowReset") { delete meta.prefs.arrows; saveMeta(); renderPrefs(); toast("初期に戻しました"); return; }
   if (b.id === "addApp" || b.dataset.quickapp) {
     const name = (b.dataset.quickapp || $("#appName").value).trim(); if (!name) return;
     if (meta.apps.some(a => a.name === name)) { toast("すでに指定済みです"); return; }
@@ -2325,6 +2567,7 @@ function focusStart() { // 起動直後にすぐ書けるよう、前回の行(�
   if (id) { focusAt(id, index[id].n.t.length); renderOutline(); }
 }
 function boot() {
+  { const so = LS.get("sideOpen"); document.body.classList.toggle("side-open", so === null ? innerWidth >= 720 : !!so); }
   if (!Object.keys(Store.localDocs()).length) LS.set("fresh", true); // 何も入っていない端末
   loadAll(); Timer.load(); Work.recover();
   Work.start();
