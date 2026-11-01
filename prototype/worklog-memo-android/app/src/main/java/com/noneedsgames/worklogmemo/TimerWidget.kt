@@ -31,11 +31,12 @@ class TimerWidget : AppWidgetProvider() {
         const val ACTION = "com.noneedsgames.worklogmemo.WIDGET"
         const val EXTRA = "widget_action"
         val ACTIONS = setOf("stopwatch", "pomodoro", "stop", "show")
-        private const val PREFS = "timer_widget"
+        const val PREFS = "timer_widget"
 
         fun saveState(context: Context, json: String) {
-            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("state", json).apply()
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("state", json).commit()
             refresh(context)
+            TimerNotice.refresh(context)
         }
 
         private fun refresh(context: Context) {
@@ -44,7 +45,7 @@ class TimerWidget : AppWidgetProvider() {
             if (ids.isNotEmpty()) manager.updateAppWidget(ids, views(context))
         }
 
-        private fun open(context: Context, action: String, request: Int): PendingIntent {
+        fun open(context: Context, action: String, request: Int): PendingIntent {
             val i = Intent(context, MainActivity::class.java)
                 .setAction(ACTION)
                 .putExtra(EXTRA, action)

@@ -730,7 +730,8 @@ function loadAll() {
   loadFiles(docs);
   loadBoard(docs);
 }
-const saveMeta = () => Store.put("meta", meta);
+const syncBlockApps = () => { if (NATIVE) try { Android.setBlockApps(JSON.stringify(meta.prefs.block === false ? [] : meta.apps.map(a => a.pkg).filter(Boolean))); } catch {} }; // 通知から始めるときのブロックの対象
+const saveMeta = () => { Store.put("meta", meta); syncBlockApps(); };
 function logOf(key) { return logs[key] ||= { sessions: [], timers: [], usage: {} }; }
 const saveLog = key => Store.put("log-" + key, logs[key]);
 
@@ -3538,31 +3539,31 @@ const Timer = {
     logOf(key).timers.push(r);
     saveLog(key);
   },
-  start() {
-    const now = Date.now(); const s = this.st;
+  start(at) { // at:ロック画面の通知で押した時刻(妨害アプリのブロックは、押したときに端末の側で始めてある)
+    const now = at || Date.now(); const s = this.st;
     s.running = true; s.segStart = now; s.phaseStart = now; s.phase = "focus"; s.cycle = 1;
-    this.save(); unlockAudio();
-    startBlock();
+    this.save();
+    if (!at) { unlockAudio(); startBlock(); }
   },
-  stop() {
+  stop(at) {
     const s = this.st; if (!s.running) return;
-    if (!(s.mode === "pomodoro" && s.phase === "break")) this.record(s.segStart, Date.now());
+    if (!(s.mode === "pomodoro" && s.phase === "break")) this.record(s.segStart, at || Date.now());
     s.running = false; this.save();
     if (NATIVE) try { Android.stopBlock(); } catch {}
   },
   // ポモドーロの区切りを、閉じていた間の分も含めて追いつかせる
-  tick() {
+  tick(now = Date.now(), quiet) {
     const s = this.st; if (!s.running || s.mode !== "pomodoro") return;
     const P = meta.prefs; let changed = false, guard = 0;
     while (guard++ < 200) {
       const len = (s.phase === "focus" ? P.focus : P.brk) * 60000;
       const end = s.phaseStart + len;
-      if (Date.now() < end) break;
+      if (now < end) break;
       if (s.phase === "focus") { this.record(s.segStart, end); s.phase = "break"; }
       else { s.phase = "focus"; s.segStart = end; s.cycle = (s.cycle || 1) + 1; }
       s.phaseStart = end; changed = true;
     }
-    if (changed) { this.save(); chime(s.phase === "break" ? "休憩に入ります" : "集中を再開します"); }
+    if (changed) { this.save(); if (!quiet) chime(s.phase === "break" ? "休憩に入ります" : "集中を再開します"); }
   }
 };
 function renderTimer() {
@@ -3781,7 +3782,8 @@ function renderPrefs() {
         <label class="field" style="flex:1"><span>1日の目標(分)</span><input class="inp" type="number" inputmode="numeric" min="0" max="1440" id="pG" value="${P.goal || ""}" placeholder="なし"></label>
       </div>
       ${NATIVE ? `<label class="row"><input type="checkbox" id="pBlock" ${P.block !== false ? "checked" : ""}><span class="grow">タイマー中に妨害アプリを使えなくする(試験運用)<div class="muted small">タイマーを始めると、妨害アプリを開いても画面で覆って使えなくします。いちどに最大5分まで</div></span></label>` : ""}
-      <label class="row"><input type="checkbox" id="pAway" ${P.awayAsk !== false ? "checked" : ""}><span class="grow">タイマー中に離れたら、戻ったときに何をしていたか聞く<div class="muted small">1分以上離れたとき。選んだアプリの時間として記録します</div></span></label>
+      ${NATIVE ? `<label class="row"><input type="checkbox" id="pLockNote" ${P.lockNote !== false ? "checked" : ""}><span class="grow">ロック画面に通知を出す<div class="muted small">ロックを解かずにストップウォッチを始める・止める。出ないときは、端末の設定でこのアプリのロック画面の通知を許可してください</div></span></label>` : ""}
+      <label class="row"><input type="checkbox" id="pAway"${P.awayAsk !== false ? "checked" : ""}><span class="grow">タイマー中に離れたら、戻ったときに何をしていたか聞く<div class="muted small">1分以上離れたとき。選んだアプリの時間として記録します</div></span></label>
     </div>
     <div class="card"><h3>テンプレート</h3><p class="muted small" style="margin:0">1行目が親、行頭に空白を2つ入れた行がその子になります。</p>
       ${Object.keys(P.templates).map(k => `<div class="tplbox">
@@ -3864,7 +3866,8 @@ $("#prefsScroll").addEventListener("change", e => {
   const P = meta.prefs, t = e.target;
   if (t.dataset.wtname) { const w = typeById(t.dataset.wtname), nm = t.value.trim(); if (w && nm && !meta.workTypes.some(x => x !== w && x.name === nm)) { w.name = nm; saveMeta(); toast("保存しました"); } else if (w) t.value = w.name; return; }
   if (t.id === "pBlock") { P.block = t.checked; saveMeta(); toast("保存しました"); return; }
-  if (t.id === "pAway") { P.awayAsk = t.checked; saveMeta(); toast("保存しました"); return; }
+  if (t.id === "pLockNote") { P.lockNote = t.checked; saveMeta(); try { Android.setTimerNotice(t.checked); } catch {} toast("保存しました"); return; }
+  if (t.id === "pAway") {P.awayAsk = t.checked; saveMeta(); toast("保存しました"); return; }
   if (t.dataset.bc) { P.boardColors = { ...boardColors(), [t.dataset.bc]: t.checked }; saveMeta(); toast("保存しました"); return; }
   if (t.id === "pF") P.focus = Math.max(1, Math.min(180, Math.round(+t.value) || 25));
   else if (t.id === "pB") P.brk = Math.max(1, Math.min(60, Math.round(+t.value) || 5));
@@ -4120,7 +4123,19 @@ function syncWidget() { // ウィジェットに、いまのタイマーの様�
   const phaseEnd = s.running && s.mode === "pomodoro" ? s.phaseStart + ((s.phase === "break" ? P.brk : P.focus) || 25) * 60000 : 0;
   try { Android.timerState(JSON.stringify({ running: !!s.running, mode: s.mode, start: s.segStart || 0, phase: s.phase || "focus", phaseEnd, type: s.type ? typeName(s.type) : "", label: s.label || "" })); } catch {}
 }
+function takeNoticeEvents() { // ロック画面の通知で押された「始める・止める」を、押した時刻のまま記録に移す
+  if (!NATIVE) return;
+  let ev = []; try { ev = JSON.parse(Android.takeTimerEvents()); } catch {}
+  if (!ev.length) return;
+  for (const { a, t } of ev) {
+    if (a === "start" && !Timer.st.running) { Timer.st.mode = "stopwatch"; Timer.start(t); }
+    else if (a === "stop" && Timer.st.running) { Timer.tick(t, true); Timer.stop(t); }
+  }
+  syncWidget();
+  if (view === "timer") renderTimer();
+}
 window.onWidget = action => {
+  takeNoticeEvents();
   const s = Timer.st;
   if (action === "stopwatch" || action === "pomodoro") {
     if (s.running) { show("timer"); toast(s.mode === action ? `${TIMER_NAME[action]}はもう計っています` : `いまは${TIMER_NAME[s.mode]}を計っています。止めてから切り替えてください`); return; }
@@ -4138,6 +4153,7 @@ window.androidBack = () => {
   return false;
 };
 window.onAndroidResume = () => { // 設定画面から戻ったときなど:許可と使用時間を読み直す
+  takeNoticeEvents();
   accessMemo.t = 0; for (const k of Object.keys(usageCache)) delete usageCache[k];
   if (view === "prefs") renderPrefs(); else if (view === "log") renderLog(); else if (view === "timer") renderTimer();
   refreshLive();
@@ -4145,7 +4161,9 @@ window.onAndroidResume = () => { // 設定画面から戻ったときなど:許�
 function boot() {
   { const so = LS.get("sideOpen"); document.body.classList.toggle("side-open", so === null ? innerWidth >= 720 : !!so); }
   if (!Object.keys(Store.localDocs()).length) LS.set("fresh", true); // 何も入っていない端末
-  loadAll(); Timer.load(); Work.recover(); syncWidget();
+  loadAll(); Timer.load(); Work.recover(); takeNoticeEvents(); syncWidget();
+  syncBlockApps();
+  if (NATIVE) try { Android.setTimerNotice(meta.prefs.lockNote !== false); } catch {}
   const wh = /^#(start|stop)(?:=(stopwatch|pomodoro))?$/.exec(location.hash); // ホーム画面のショートカット用:#start=stopwatch など
   if (wh) { try { history.replaceState(null, "", "#timer"); } catch {} setTimeout(() => window.onWidget(wh[1] === "stop" ? "stop" : wh[2] || "stopwatch"), 0); }
   Work.start();
@@ -4156,7 +4174,7 @@ function boot() {
   setTimeout(handleAway, 400); // 閉じている間にタイマー中だった分も聞く
   setInterval(() => Work.beat(), 10000);
   setInterval(refreshLive, 1000);
-  setInterval(() => { Timer.tick(); updateClock(); }, 1000);
+  setInterval(() => { takeNoticeEvents(); Timer.tick(); updateClock(); }, 1000);
   setInterval(checkEventNotices, 15000);
   setTimeout(checkEventNotices, 1500);
   Store.connect(reloadDocs);

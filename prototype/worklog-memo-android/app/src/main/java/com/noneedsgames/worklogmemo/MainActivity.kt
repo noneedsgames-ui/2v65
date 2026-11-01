@@ -129,6 +129,12 @@ class MainActivity : Activity() {
         web.evaluateJavascript("window.onWidget && window.onWidget('$a')", null)
     }
 
+    // 通知の許可が下りたら、すぐ通知を出す
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        TimerNotice.refresh(this)
+    }
+
     override fun onSaveInstanceState(outState: Bundle) { super.onSaveInstanceState(outState); web.saveState(outState) }
 
     override fun onResume() {
@@ -218,7 +224,21 @@ class MainActivity : Activity() {
         @JavascriptInterface fun stopBlock() = runOnUiThread { BlockService.stop(this@MainActivity) }
 
         /** タイマーの様子(JSON)を受け取り、ホーム画面のウィジェットに出す */
-        @JavascriptInterface fun timerState(json: String) = TimerWidget.saveState(this@MainActivity, json)
+        @JavascriptInterface fun timerState(json: String) {
+            if (!TimerNotice.hasEvents(this@MainActivity)) TimerWidget.saveState(this@MainActivity, json) // 貯まった出来事を渡す前の古い様子では上書きしない
+        }
+
+        /** ロック画面の通知で押された「始める・止める」を受け取る。[{a, t}] */
+        @JavascriptInterface fun takeTimerEvents(): String = TimerNotice.takeEvents(this@MainActivity)
+
+        @JavascriptInterface fun setBlockApps(pkgsJson: String) = TimerNotice.setBlockApps(this@MainActivity, pkgsJson)
+
+        /** ロック画面の通知を出す・消す */
+        @JavascriptInterface fun setTimerNotice(on: Boolean) {
+            TimerNotice.setEnabled(this@MainActivity, on)
+            if (on && Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+                runOnUiThread { requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 2) }
+        }
 
         @JavascriptInterface fun blockRemainingMs(): Double = BlockService.remainingMs().toDouble()
 

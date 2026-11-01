@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ロック画面の通知:折りたたまれていても押せるよう、ボタンを本文の中に置く。高さは 48dp ほどしかない -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <Chronometer
+        android:id="@+id/n_chrono"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+        android:textSize="32dp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/n_big"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+        android:textSize="22dp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/n_sub"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:textAppearance="@android:style/TextAppearance.Material.Notification"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/n_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="44dp"
+        android:background="@drawable/widget_pill_accent"
+        android:gravity="center"
+        android:maxLines="1"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:textColor="@color/widget_on_accent"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+</LinearLayout>

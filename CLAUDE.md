@@ -37,6 +37,7 @@ prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は ind
 ### Android 版
 
 - `MainActivity.kt`:WebView で `file:///android_asset/index.html` を開く。端末の機能は JS から `Android.*` で呼ぶ(使用時間・集中ブロック・ウィジェットへの状態 `timerState`)。
+- `TimerNotice.kt`:ロック画面の通知。ボタンはアプリを開かず、押した時刻を貯める(`Android.takeTimerEvents`)。画面側の `takeNoticeEvents` がそれを記録へ移す。
 - `BlockService.kt`:タイマー中、選んだ妨害アプリを覆う(試験運用、最大 5 分)。
 - `TimerWidget.kt`:ホーム画面のウィジェット「作業タイマー」。押すとアプリを開き、`window.onWidget('stopwatch'|'pomodoro'|'stop'|'show')` を呼ぶ。
 - ビルドのたびに `../worklog-memo/index.html` を assets に写す(`app/build.gradle.kts` の copyWeb)。なので **リポジトリ全体** が要る。
@@ -60,5 +61,5 @@ prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は ind
 ## 残っていること・提案中のこと
 
 - **データの書き出し/読み込み**:設定の「データの引っ越し」として実装した。Android の保存・ファイル選択(`MainActivity.kt`)と claude.ai 上の `downloads` は実機で未確認。
-- **ウィジェット**:ビルドは通ったが、実機での確認はまだ。
+- **ウィジェット・ロック画面の通知**:ビルドは通ったが、実機での確認はまだ。
 - **Google Play の内部テスト**:Secrets にアップロード鍵がまだ入っていないので、AAB は作られていない。Actions で「Releases に置く」が 403(権限)で失敗するが、APK は実行結果の Artifacts から落とせる(失敗扱いにはしないよう直してある)。
