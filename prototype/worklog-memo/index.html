@@ -106,16 +106,22 @@ body.editing.kb nav.bottom{display:none}
 .ol-row.dragging{opacity:.3}
 .ol-row.dropin .ol-t{outline:2px solid var(--accent);outline-offset:-2px}
 .ol-row.moved .ol-t{background:color-mix(in srgb,var(--accent) 18%,transparent);transition:background .6s}
-.dropline{position:fixed;height:3px;background:var(--accent);border-radius:2px;pointer-events:none;z-index:15;display:none}
-.dragghost{position:fixed;display:none;pointer-events:none;z-index:16;background:var(--surface-1);border:1px solid var(--line);
+.dropline{position:fixed;height:3px;background:var(--accent);border-radius:2px;pointer-events:none;z-index:40;display:none}
+.dragghost{position:fixed;display:none;pointer-events:none;z-index:41;background:var(--surface-1);border:1px solid var(--line);
   box-shadow:0 4px 14px #0003;border-radius:8px;padding:6px 10px;font-size:14px;max-width:60vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 
 .tplbox{border-top:1px solid var(--line);padding:12px 0 4px;margin-top:10px}
 
 /* files */
-.filebar{display:flex;align-items:center;gap:6px;width:100%;padding:9px 14px;background:var(--surface-1);border-bottom:1px solid var(--line);text-align:left;font-size:15px}
-.filebar b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.filebar{display:flex;align-items:center;gap:6px;background:var(--surface-1);border-bottom:1px solid var(--line);padding-right:8px}
+.fb-open{flex:1;min-width:0;display:flex;align-items:center;gap:6px;padding:9px 6px 9px 14px;text-align:left;font-size:15px}
+.fb-open b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fb-new{flex:none;font-size:13px;font-weight:600;padding:6px 10px;border-radius:999px;background:var(--accent);color:var(--accent-ink);white-space:nowrap}
+.fgrp.drop,.frow.drop{outline:2px solid var(--accent);outline-offset:-2px;border-radius:10px}
+.frow.dragging{opacity:.3}
+.frow.pressing{background:var(--surface-2);transition:background .35s}
+.fhint{font-size:12px;color:var(--text-muted);margin:8px 0 2px}
 .fb-ic{color:var(--text-secondary);font-size:17px}
 .fb-g{color:var(--text-muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%}
 .fb-cv{color:var(--text-muted);font-size:12px;margin-left:auto}
@@ -208,7 +214,8 @@ textarea.inp{line-height:1.6;resize:vertical}
 <main>
   <!-- メモ -->
   <section class="view" id="v-memo">
-    <button class="filebar" id="fileBar" aria-label="ファイルの一覧を開く"><span class="fb-ic">≡</span><span class="fb-g" id="fbGroup"></span><b id="fbName"></b><span class="fb-cv">▾</span></button>
+    <div class="filebar"><button class="fb-open" id="fileBar" aria-label="メモの一覧を開く"><span class="fb-ic">≡</span><span class="fb-g" id="fbGroup"></span><b id="fbName"></b><span class="fb-cv">▾</span></button>
+      <button class="fb-new" id="newMemo">＋ 新しいメモ</button></div>
     <div class="toolbar">
       <button class="tb" id="btnSearch">検索</button>
       <button class="tb" id="btnTpl">テンプレ</button>
@@ -404,7 +411,7 @@ function mergeLog(l, r) {
 
 /* ============================================================
    データモデル
-   file-<id> : メモのファイル(名前・グループ・入れ子の行)/ meta : 設定・予定・グループ
+   file-<id> : メモ1件(名前・入っているファイル・入れ子の行)/ meta : 設定・予定・ファイル(メモのまとまり)
    outline : 1枚だった頃のメモ(移行元)/ memo-<id> : タブ形式だった頃のメモ(移行元)
    log-YYYY-MM : その月の作業区間・タイマー記録・妨害アプリ使用時間
    ============================================================ */
@@ -541,12 +548,12 @@ function reindex() {
   const walk = (list, parent) => list.forEach(n => { n.c ||= []; index[n.id] = { n, parent, list }; walk(n.c, n); });
   walk(outline.nodes, null);
 }
-// ---- ファイル(複数のメモ)とグループ ----
+// ---- メモ(複数)と、メモをまとめるファイル。内部では メモ=files、ファイル=meta.groups ----
 let files = {};       // id -> { id, name, group, order, nodes, created, updated }
 let curFile = null;
 function newFileObj(name, group) {
   const t = Date.now();
-  return { id: uid(), name: name || "新しいメモ", group: group || null, order: t, nodes: [N()], created: t, updated: t };
+  return { id: uid(), name: name || "", group: group || null, order: t, nodes: [N()], created: t, updated: t };
 }
 function loadFiles(docs) {
   files = {};
@@ -566,8 +573,8 @@ function loadFiles(docs) {
       Store.putRaw("file-main", files.main, ts);
     }
   }
-  if (!Object.keys(files).length) { const f = newFileObj("メモ", null); f.auto = true; files[f.id] = f; } // 書くまで保存しない
-  for (const f of Object.values(files)) { f.nodes ||= []; if (!f.nodes.length) f.nodes.push(N()); f.name ||= "無題"; }
+  if (!Object.keys(files).length) { const f = newFileObj("", null); f.auto = true; files[f.id] = f; } // 書くまで保存しない
+  for (const f of Object.values(files)) { f.nodes ||= []; if (!f.nodes.length) f.nodes.push(N()); f.name ||= ""; }
   const v = LS.get("view") || {};
   setOutline(v.cur && files[v.cur] ? v.cur : allFilesSorted()[0].id);
 }
@@ -624,7 +631,7 @@ function saveOutline() {
 function flushOutline() {
   if (outlineTimer === null) return;
   clearTimeout(outlineTimer); outlineTimer = null;
-  saveFile(outline);
+  saveFile(outline); renderFileBar();
   const s = $("#saved"); if (s) s.textContent = "保存済み";
   if (JSON.stringify(outline).length > 220000) toast("メモが大きくなっています(同期の上限は約250KB)");
 }
@@ -642,7 +649,7 @@ function backlinks() {
   return b;
 }
 const label = id => ((gindex[id] || index[id])?.n.t || "(空の行)").slice(0, 40);
-const labelX = id => (gindex[id] && gindex[id].f !== curFile ? files[gindex[id].f].name + " › " : "") + label(id); // ほかのファイルの行は名前を添える
+const labelX = id => (gindex[id] && gindex[id].f !== curFile ? memoTitle(files[gindex[id].f]) + " › " : "") + label(id); // ほかのファイルの行は名前を添える
 
 let pendingCaret = null;
 let editId = null; // 入力欄として描く行(書いている1行だけ)。ほかの行はただの文字表示にして、長押しでキーボードや文字選択が起きないようにする
@@ -907,12 +914,13 @@ box.addEventListener("pointercancel", e => {
 });
 // 持ち上げ中は指の動きでスクロールさせない(タッチの座標もこちらで拾う)
 document.addEventListener("touchmove", e => {
+  if (ldrag && ldrag.on) { e.preventDefault(); const t = e.touches[0]; if (t) { ldrag.x = t.clientX; ldrag.y = t.clientY; lOver(); } return; }
   if (!drag || !drag.on) return;
   e.preventDefault();
   const t = e.touches[0]; if (t) { drag.x = t.clientX; drag.y = t.clientY; dragOver(); }
 }, { passive: false });
-document.addEventListener("touchend", () => { if (drag && drag.on) endDrag(true); });
-document.addEventListener("touchcancel", () => { if (drag && drag.on) endDrag(false); });
+document.addEventListener("touchend", () => { if (ldrag && ldrag.on) { lEnd(true); return; } if (drag && drag.on) endDrag(true); });
+document.addEventListener("touchcancel", () => { if (ldrag && ldrag.on) { lEnd(false); return; } if (drag && drag.on) endDrag(false); });
 function subtreeIds(id) { const out = new Set([id]); const w = n => n.c.forEach(c => { out.add(c.id); w(c); }); w(index[id].n); return out; }
 function startDrag() {
   flushOutline();
@@ -1033,7 +1041,7 @@ function allPaths() { // いま開いているファイルを先に、すべて�
   const out = [];
   for (const f of [files[curFile], ...allFilesSorted().filter(x => x.id !== curFile)]) {
     const walk = (l, p) => l.forEach(n => { out.push({ id: n.id, t: n.t, path: p, f: f.id }); walk(n.c, p + " › " + (n.t || "…").slice(0, 16)); });
-    walk(f.nodes, f.name);
+    walk(f.nodes, memoTitle(f));
   }
   return out;
 }
@@ -1125,41 +1133,61 @@ $("#btnFold").onclick = () => {
   toast(anyFolded ? "すべて開きました" : "いちばん上の階層まで畳みました");
 };
 function renderMemo() { renderFileBar(); renderOutline(); }
+// メモの名前:付けていなければ1行目
+function memoTitle(f) {
+  if (f.name) return f.name;
+  const first = l => { for (const n of l) { if (n.t && n.t.trim()) return n.t.trim(); const c = first(n.c || []); if (c) return c; } return ""; };
+  return (first(f.nodes) || "新しいメモ").slice(0, 30);
+}
 function renderFileBar() {
   const f = files[curFile]; const g = meta.groups.find(x => x.id === groupOf(f));
   $("#fbGroup").textContent = g ? g.name + " ›" : "";
-  $("#fbName").textContent = f.name;
+  $("#fbName").textContent = memoTitle(f);
 }
+const isEmptyMemo = f => !f.name && f.nodes.length === 1 && !f.nodes[0].t && !f.nodes[0].c.length;
 function openFile(id) {
   if (!files[id]) return;
   flushOutline(); saveView();
+  const prev = curFile;
   setOutline(id); saveView();
+  // 名前も中身もないまま離れたメモは、ほかにメモがあれば片づける
+  if (prev !== id && files[prev] && isEmptyMemo(files[prev]) && Object.keys(files).length > 1) { delete files[prev]; Store.remove("file-" + prev); }
   show("memo"); renderMemo();
 }
+function newMemo(gid) { // ボタン一つで新しいメモ。名前は書いた1行目
+  const f = newFileObj("", gid);
+  files[f.id] = f; Store.put("file-" + f.id, f);
+  closeSheet(); openFile(f.id); focusStart();
+}
+$("#newMemo").onclick = () => newMemo(groupOf(files[curFile]));
 
-// ---- ファイルとグループの一覧 ----
+// ---- メモの一覧とファイル(メモのまとまり) ----
 $("#fileBar").onclick = () => openFiles();
 function fmtWhen(t) { const d = new Date(t); return ymd(d) === ymd(new Date()) ? hm(t) : `${d.getMonth() + 1}/${d.getDate()}`; }
 const countNodes = l => l.reduce((t, n) => t + 1 + countNodes(n.c || []), 0);
+const saveFileQuiet = f => { delete f.auto; Store.put("file-" + f.id, f); }; // 並べ替え・移動では更新日時を変えない
 function fileRow(f, inGroup) {
-  return `<div class="frow${inGroup ? " in" : ""}${f.id === curFile ? " cur" : ""}"><button class="fopen" data-fopen="${f.id}"><b>${esc(f.name)}</b><span class="muted small">${countNodes(f.nodes)}行 · ${fmtWhen(f.updated)}</span></button>` +
-    `<button class="mini" data-fmenu="${f.id}" aria-label="ファイルの設定">⋯</button></div>`;
+  return `<div class="frow${inGroup ? " in" : ""}${f.id === curFile ? " cur" : ""}" data-fid="${f.id}"><button class="fopen" data-fopen="${f.id}"><b>${esc(memoTitle(f))}</b><span class="muted small">${countNodes(f.nodes)}行 · ${fmtWhen(f.updated)}</span></button>` +
+    `<button class="mini" data-fmenu="${f.id}" aria-label="メモの設定">⋯</button></div>`;
 }
 function openFiles() {
   flushOutline();
-  openSheet(`<h2>ファイル</h2>
-    <div class="btns" style="margin-top:0"><button class="btn primary" data-fa="newfile">＋ ファイル</button><button class="btn" data-fa="newgroup">＋ グループ</button></div>
-    <div id="flist" style="margin-top:6px"></div>`, s => {
+  openSheet(`<h2>メモ</h2>
+    <div class="btns" style="margin-top:0"><button class="btn primary" data-fa="newmemo">＋ 新しいメモ</button><button class="btn" data-fa="newgroup">＋ ファイル</button></div>
+    <p class="fhint">メモを長押しして、ファイルに重ねると中へ入ります。メモ同士を重ねると、二つを入れた新しいファイルができます。</p>
+    <div id="flist" style="margin-top:2px"></div>`, s => {
     drawFiles();
+    bindListDrag(s);
     s.addEventListener("click", e => {
+      if (lJust) return;
       const b = e.target.closest("button"); if (!b) return;
       const d = b.dataset;
       if (d.fopen) { closeSheet(); openFile(d.fopen); }
       else if (d.fmenu) fileMenu(d.fmenu);
       else if (d.gfold) { const g = meta.groups.find(x => x.id === d.gfold); g.folded = !g.folded; saveMeta(); drawFiles(); }
-      else if ("gadd" in d) newFileSheet(d.gadd || null);
+      else if ("gadd" in d) newMemo(d.gadd || null);
       else if (d.gmenu) groupMenu(d.gmenu);
-      else if (d.fa === "newfile") newFileSheet(null);
+      else if (d.fa === "newmemo") newMemo(null);
       else if (d.fa === "newgroup") newGroupSheet();
     });
   });
@@ -1169,77 +1197,73 @@ function drawFiles() {
   let h = "";
   for (const g of sortedGroups()) {
     const fs = sortedFiles(g.id);
-    h += `<div class="fgrp"><button class="fg-fold" data-gfold="${g.id}" aria-label="${g.folded ? "開く" : "畳む"}">${g.folded ? "▸" : "▾"}</button>` +
-      `<button class="fg-name" data-gfold="${g.id}">${esc(g.name)} <span class="muted small">${fs.length}</span></button>` +
-      `<button class="mini" data-gadd="${g.id}" aria-label="このグループにファイルを追加">＋</button><button class="mini" data-gmenu="${g.id}" aria-label="グループの設定">⋯</button></div>`;
-    if (!g.folded) h += fs.map(f => fileRow(f, true)).join("") || `<div class="muted small fempty">ファイルがありません</div>`;
+    h += `<div class="fgrp" data-gid="${g.id}"><button class="fg-fold" data-gfold="${g.id}" aria-label="${g.folded ? "開く" : "畳む"}">${g.folded ? "▸" : "▾"}</button>` +
+      `<button class="fg-name" data-gfold="${g.id}">📁 ${esc(g.name)} <span class="muted small">${fs.length}</span></button>` +
+      `<button class="mini" data-gadd="${g.id}" aria-label="このファイルに新しいメモ">＋</button><button class="mini" data-gmenu="${g.id}" aria-label="ファイルの設定">⋯</button></div>`;
+    if (!g.folded) h += fs.map(f => fileRow(f, true)).join("") || `<div class="muted small fempty">メモがありません</div>`;
   }
   const loose = sortedFiles(null);
-  if (meta.groups.length) h += `<div class="fgrp"><span class="fg-fold"></span><span class="fg-name" style="color:var(--text-secondary)">グループなし <span class="muted small">${loose.length}</span></span><button class="mini" data-gadd="" aria-label="グループなしでファイルを追加">＋</button></div>`;
+  if (meta.groups.length) h += `<div class="fgrp" data-gid=""><span class="fg-fold"></span><span class="fg-name" style="color:var(--text-secondary)">ファイルに入れていないメモ <span class="muted small">${loose.length}</span></span></div>`;
   h += loose.map(f => fileRow(f, false)).join("");
   box.innerHTML = h;
 }
-const groupOptions = sel => `<option value="">グループなし</option>` + sortedGroups().map(g => `<option value="${g.id}" ${g.id === sel ? "selected" : ""}>${esc(g.name)}</option>`).join("");
-function newFileSheet(gid) {
+const groupOptions = sel => `<option value="">ファイルに入れない</option>` + sortedGroups().map(g => `<option value="${g.id}" ${g.id === sel ? "selected" : ""}>${esc(g.name)}</option>`).join("");
+function newGroupSheet(then) {
   openSheet(`<h2>新しいファイル</h2>
-    <label class="field"><span>名前</span><input class="inp" id="fnName" value="新しいメモ" maxlength="40"></label>
-    <label class="field"><span>グループ</span><select class="inp" id="fnGroup">${groupOptions(gid)}</select></label>
-    <div class="btns"><button class="btn" data-back>戻る</button><button class="btn primary" data-ok>作成して開く</button></div>`, s => {
-    const i = $("#fnName"); i.focus(); i.select();
-    i.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) $("[data-ok]", s).click(); });
-    $("[data-back]", s).onclick = openFiles;
-    $("[data-ok]", s).onclick = () => {
-      const f = newFileObj($("#fnName").value.trim() || "新しいメモ", $("#fnGroup").value || null);
-      files[f.id] = f; saveFile(f);
-      closeSheet(); openFile(f.id); focusStart();
-    };
-  });
-}
-function newGroupSheet() {
-  openSheet(`<h2>新しいグループ</h2>
-    <label class="field"><span>名前</span><input class="inp" id="gnName" value="新しいグループ" maxlength="30"></label>
+    <label class="field"><span>名前</span><input class="inp" id="gnName" value="新しいファイル" maxlength="30"></label>
     <div class="btns"><button class="btn" data-back>戻る</button><button class="btn primary" data-ok>作成</button></div>`, s => {
     const i = $("#gnName"); i.focus(); i.select();
     i.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) $("[data-ok]", s).click(); });
     $("[data-back]", s).onclick = openFiles;
-    $("[data-ok]", s).onclick = () => { meta.groups.push({ id: uid(), name: $("#gnName").value.trim() || "新しいグループ", order: Date.now() }); saveMeta(); openFiles(); };
+    $("[data-ok]", s).onclick = () => { meta.groups.push({ id: uid(), name: $("#gnName").value.trim() || "新しいファイル", order: Date.now() }); saveMeta(); openFiles(); };
+  });
+}
+function nameGroupSheet(gid) { // メモ同士を重ねて作ったファイルに、その場で名前を付ける
+  const g = meta.groups.find(x => x.id === gid);
+  openSheet(`<h2>ファイルの名前</h2>
+    <p class="muted small" style="margin-top:-4px">${sortedFiles(gid).map(f => esc(memoTitle(f))).join("、")} をまとめました。</p>
+    <label class="field"><span>名前</span><input class="inp" id="ngName" value="${esc(g.name)}" maxlength="30"></label>
+    <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
+    const i = $("#ngName"); i.focus(); i.select();
+    i.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) $("[data-ok]", s).click(); });
+    $("[data-ok]", s).onclick = () => { g.name = $("#ngName").value.trim() || g.name; saveMeta(); renderFileBar(); openFiles(); };
   });
 }
 function swapOrder(list, i, d, save) { const j = i + d; if (j < 0 || j >= list.length) return false; const a = list[i], b = list[j]; [a.order, b.order] = [b.order, a.order]; if (a.order === b.order) a.order += d; save(a); save(b); return true; }
 function fileMenu(id) {
   const f = files[id]; const sib = sortedFiles(groupOf(f)); const i = sib.indexOf(f);
-  openSheet(`<h2>ファイルの設定</h2>
-    <label class="field"><span>名前</span><input class="inp" id="fmName" value="${esc(f.name)}" maxlength="40"></label>
-    <label class="field"><span>グループ</span><select class="inp" id="fmGroup">${groupOptions(groupOf(f))}</select></label>
+  openSheet(`<h2>メモの設定</h2>
+    <label class="field"><span>名前</span><input class="inp" id="fmName" value="${esc(f.name)}" maxlength="40" placeholder="空欄なら1行目が名前(${esc(memoTitle({ ...f, name: "" }))})"></label>
+    <label class="field"><span>ファイル</span><select class="inp" id="fmGroup">${groupOptions(groupOf(f))}</select></label>
     <div class="btns" style="margin-top:4px"><button class="btn" data-mv="-1" ${i <= 0 ? "disabled style=opacity:.4" : ""}>↑ 上へ</button><button class="btn" data-mv="1" ${i >= sib.length - 1 ? "disabled style=opacity:.4" : ""}>↓ 下へ</button></div>
-    <button class="btn danger block" data-del style="margin-top:14px">このファイルを削除</button>
+    <button class="btn danger block" data-del style="margin-top:14px">このメモを削除</button>
     <div class="btns"><button class="btn" data-back>戻る</button><button class="btn primary" data-ok>決定</button></div>`, s => {
     const apply = () => {
-      const nm = $("#fmName").value.trim() || f.name, g = $("#fmGroup").value || null;
-      if (nm !== f.name || g !== groupOf(f)) { if (g !== groupOf(f)) f.order = Date.now(); f.name = nm; f.group = g; saveFile(f); if (id === curFile) renderFileBar(); }
+      const nm = $("#fmName").value.trim(), g = $("#fmGroup").value || null;
+      if (nm !== (f.name || "") || g !== groupOf(f)) { if (g !== groupOf(f)) f.order = Date.now(); f.name = nm; f.group = g; saveFileQuiet(f); if (id === curFile) renderFileBar(); }
     };
     s.addEventListener("click", e => {
       const b = e.target.closest("button"); if (!b) return;
-      if (b.dataset.mv) { apply(); if (swapOrder(sib, i, +b.dataset.mv, saveFile)) fileMenu(id); }
+      if (b.dataset.mv) { apply(); if (swapOrder(sib, i, +b.dataset.mv, saveFileQuiet)) fileMenu(id); }
       else if ("back" in b.dataset) openFiles();
       else if ("ok" in b.dataset) { apply(); openFiles(); }
-      else if ("del" in b.dataset) confirmSheet("ファイルを削除しますか", `「${f.name}」(${countNodes(f.nodes)}行)を削除します。元に戻せません。`, "削除する", () => { deleteFile(id); openFiles(); });
+      else if ("del" in b.dataset) confirmSheet("メモを削除しますか", `「${memoTitle(f)}」(${countNodes(f.nodes)}行)を削除します。元に戻せません。`, "削除する", () => { deleteFile(id); openFiles(); });
     });
   });
 }
 function deleteFile(id) {
   delete files[id]; Store.remove("file-" + id);
-  if (!Object.keys(files).length) { const f = newFileObj("メモ", null); f.auto = true; files[f.id] = f; }
+  if (!Object.keys(files).length) { const f = newFileObj("", null); f.auto = true; files[f.id] = f; }
   if (id === curFile) { setOutline(allFilesSorted()[0].id); saveView(); }
   renderMemo(); toast("削除しました");
 }
 function groupMenu(gid) {
   const g = meta.groups.find(x => x.id === gid); const list = sortedGroups(); const i = list.indexOf(g); const n = sortedFiles(gid).length;
-  openSheet(`<h2>グループの設定</h2>
+  openSheet(`<h2>ファイルの設定</h2>
     <label class="field"><span>名前</span><input class="inp" id="gmName" value="${esc(g.name)}" maxlength="30"></label>
     <div class="btns" style="margin-top:4px"><button class="btn" data-mv="-1" ${i <= 0 ? "disabled style=opacity:.4" : ""}>↑ 上へ</button><button class="btn" data-mv="1" ${i >= list.length - 1 ? "disabled style=opacity:.4" : ""}>↓ 下へ</button></div>
-    <button class="btn danger block" data-del style="margin-top:14px">このグループを削除</button>
-    <p class="muted small">グループを削除しても、中のファイルは消えません(「グループなし」に移ります)。</p>
+    <button class="btn danger block" data-del style="margin-top:14px">このファイルを削除</button>
+    <p class="muted small">ファイルを削除しても、中のメモは消えません(ファイルの外に出ます)。</p>
     <div class="btns"><button class="btn" data-back>戻る</button><button class="btn primary" data-ok>決定</button></div>`, s => {
     const apply = () => { const nm = $("#gmName").value.trim(); if (nm && nm !== g.name) { g.name = nm; saveMeta(); renderFileBar(); } };
     s.addEventListener("click", e => {
@@ -1247,12 +1271,94 @@ function groupMenu(gid) {
       if (b.dataset.mv) { apply(); if (swapOrder(list, i, +b.dataset.mv, () => {})) { saveMeta(); groupMenu(gid); } }
       else if ("back" in b.dataset) openFiles();
       else if ("ok" in b.dataset) { apply(); openFiles(); }
-      else if ("del" in b.dataset) confirmSheet("グループを削除しますか", `「${g.name}」を削除します。中の ${n} ファイルは「グループなし」に移ります。`, "削除する", () => {
-        for (const f of sortedFiles(gid)) { f.group = null; f.order = Date.now() + Math.random(); saveFile(f); }
+      else if ("del" in b.dataset) confirmSheet("ファイルを削除しますか", `「${g.name}」を削除します。中の ${n} 件のメモは消えず、ファイルの外に出ます。`, "削除する", () => {
+        for (const f of sortedFiles(gid)) { f.group = null; f.order = Date.now() + Math.random(); saveFileQuiet(f); }
         meta.groups = meta.groups.filter(x => x.id !== gid); saveMeta(); renderFileBar(); openFiles();
       });
     });
   });
+}
+
+// ---- 一覧でメモを長押しして動かす:ファイルに重ねる=中へ、メモに重ねる=まとめる、すき間=並べ替え ----
+let ldrag = null, lJust = false;
+function bindListDrag(s) {
+  s.addEventListener("pointerdown", e => {
+    const row = e.target.closest(".frow"); if (!row || e.button > 0 || e.target.closest("[data-fmenu]")) return;
+    clearTimeout(ldrag?.timer);
+    ldrag = { id: row.dataset.fid, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, on: false, pid: e.pointerId, row, s, target: null };
+    row.classList.add("pressing");
+    ldrag.timer = setTimeout(() => { if (ldrag && !ldrag.on) lStart(); }, LONGPRESS_MS);
+  });
+  s.addEventListener("pointermove", e => {
+    if (!ldrag || e.pointerId !== ldrag.pid) return;
+    ldrag.x = e.clientX; ldrag.y = e.clientY;
+    if (!ldrag.on) { if (Math.hypot(e.clientX - ldrag.x0, e.clientY - ldrag.y0) > 8) lCancel(); return; }
+    e.preventDefault(); lOver();
+  });
+  s.addEventListener("pointerup", e => { if (!ldrag || e.pointerId !== ldrag.pid) return; ldrag.on ? lEnd(true) : lCancel(); });
+  s.addEventListener("pointercancel", () => { if (ldrag && !ldrag.on) lCancel(); });
+  s.addEventListener("contextmenu", e => { if (ldrag) e.preventDefault(); });
+}
+function lCancel() { if (!ldrag) return; clearTimeout(ldrag.timer); ldrag.row.classList.remove("pressing"); ldrag = null; }
+function lStart() {
+  const d = ldrag; d.on = true; d.row.classList.remove("pressing"); d.row.classList.add("dragging");
+  try { d.row.setPointerCapture(d.pid); } catch {}
+  try { getSelection().removeAllRanges(); } catch {}
+  ghost.textContent = memoTitle(files[d.id]); ghost.style.display = "block";
+  document.body.classList.add("dragging");
+  try { navigator.vibrate && navigator.vibrate(12); } catch {}
+  lOver();
+  const loop = () => {
+    if (!ldrag || !ldrag.on) return;
+    const r = d.s.getBoundingClientRect();
+    const dy = ldrag.y < r.top + 56 ? -10 : ldrag.y > r.bottom - 48 ? 10 : 0;
+    if (dy) { d.s.scrollTop += dy; lOver(); }
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+}
+function lOver() {
+  const d = ldrag;
+  ghost.style.left = Math.min(innerWidth - 80, d.x + 14) + "px"; ghost.style.top = (d.y - 34) + "px";
+  d.s.querySelectorAll(".drop").forEach(x => x.classList.remove("drop"));
+  dropline.style.display = "none"; d.target = null;
+  const hit = [...d.s.querySelectorAll(".fgrp, .frow:not(.dragging)")].find(el => { const b = el.getBoundingClientRect(); return d.y >= b.top && d.y < b.bottom; });
+  if (!hit) return;
+  if (hit.classList.contains("fgrp")) { d.target = { type: "into", gid: hit.dataset.gid || null }; hit.classList.add("drop"); tick2("g" + hit.dataset.gid); return; }
+  const b = hit.getBoundingClientRect(), rel = (d.y - b.top) / b.height, fid = hit.dataset.fid;
+  if (rel >= 0.25 && rel <= 0.75) { d.target = { type: "onto", fid }; hit.classList.add("drop"); tick2("o" + fid); return; }
+  d.target = { type: rel < 0.25 ? "before" : "after", fid };
+  dropline.style.display = "block"; dropline.style.left = (b.left + 8) + "px"; dropline.style.width = (b.width - 16) + "px";
+  dropline.style.top = ((rel < 0.25 ? b.top : b.bottom) - 1.5) + "px";
+  tick2(d.target.type + fid);
+}
+function tick2(key) { if (ldrag.lastKey === key) return; ldrag.lastKey = key; try { navigator.vibrate && navigator.vibrate(6); } catch {} }
+function lEnd(drop) {
+  const d = ldrag; ldrag = null; if (!d) return;
+  lJust = true; setTimeout(() => lJust = false, 80);
+  ghost.style.display = "none"; dropline.style.display = "none"; document.body.classList.remove("dragging");
+  d.s.querySelectorAll(".drop,.dragging").forEach(x => x.classList.remove("drop", "dragging"));
+  const t = d.target, f = files[d.id];
+  if (!drop || !t || !f || t.fid === f.id) { drawFiles(); return; }
+  const placeNear = (tf, after) => { // tf の前後へ(tf と同じファイルに入れる)
+    const g = groupOf(tf); f.group = g;
+    const list = sortedFiles(g).filter(x => x !== f); list.splice(list.indexOf(tf) + (after ? 1 : 0), 0, f);
+    list.forEach((x, k) => { if (x.order !== k || x === f) { x.order = k; saveFileQuiet(x); } });
+  };
+  if (t.type === "into") {
+    if (groupOf(f) !== t.gid) { f.group = t.gid; f.order = Date.now(); saveFileQuiet(f); const g = meta.groups.find(x => x.id === t.gid); if (g && g.folded) { g.folded = false; saveMeta(); } toast(g ? `「${g.name}」に入れました` : "ファイルの外に出しました"); }
+  } else if (t.type === "before" || t.type === "after") placeNear(files[t.fid], t.type === "after");
+  else if (t.type === "onto") {
+    const tf = files[t.fid];
+    if (groupOf(tf)) { placeNear(tf, true); toast(`「${meta.groups.find(x => x.id === groupOf(tf)).name}」に入れました`); }
+    else { // ファイルに入っていないメモ同士 → 二つを入れた新しいファイルを作る
+      const g = { id: uid(), name: "新しいファイル", order: Date.now() };
+      meta.groups.push(g); saveMeta();
+      tf.group = g.id; tf.order = 0; f.group = g.id; f.order = 1; saveFileQuiet(tf); saveFileQuiet(f);
+      renderFileBar(); nameGroupSheet(g.id); return;
+    }
+  }
+  renderFileBar(); drawFiles();
 }
 
 /* ============================================================
@@ -1688,7 +1794,7 @@ $("#prefsScroll").addEventListener("keydown", e => { if (e.target.id === "appNam
 function guide() {
   openSheet(`<h2>はじめに</h2>
     <p class="small" style="line-height:1.8">このページを<b>開いているあいだ</b>が、作業時間として自動で記録されます。ほかのアプリへ切り替えたり、画面が消えたりすると止まります。無操作で止まることはありません。</p>
-    <p class="small" style="line-height:1.8">メモは<b>ファイル</b>に分けて書けます。上の「≡ ファイル名」から、ファイルの切り替え・追加と、グループへのまとめができます。</p>
+    <p class="small" style="line-height:1.8">メモは上の「＋ 新しいメモ」でいくつでも作れます。「≡」で一覧を開き、メモを長押ししてファイルに重ねれば、<b>ファイル</b>にまとめられます。</p>
     <p class="small" style="line-height:1.8">これはスマホのブラウザで試せる<b>Web試作</b>です。ネイティブ版との違いは次のとおりです。</p>
     <ul class="small" style="line-height:1.8;padding-left:1.2em;margin:0">
       <li>妨害アプリの使用時間は自動取得できないため、「記録」で分数を入力します</li>
