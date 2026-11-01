@@ -30,12 +30,12 @@ object UsageReader {
             (type == UsageEvents.Event.SCREEN_NON_INTERACTIVE || type == UsageEvents.Event.KEYGUARD_SHOWN)
 
     /**
-     * [start, end) のあいだに、各アプリが前面にあった時間(ミリ秒)。
+     * [start, end) のあいだに、各アプリが前面にあった区間(ミリ秒の始まりと終わり)。
      * 画面が消えた・鍵がかかったときは、その時点で区切る。
      */
-    fun foregroundMs(ctx: Context, start: Long, end: Long, packages: Set<String>?): Map<String, Long> {
+    fun foregroundIntervals(ctx: Context, start: Long, end: Long, packages: Set<String>?): Map<String, List<LongArray>> {
         val usm = ctx.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-        val result = HashMap<String, Long>()
+        val result = HashMap<String, MutableList<LongArray>>()
         // 区間の前から前面に出ていたアプリも拾えるよう、少し前から読む
         val events = usm.queryEvents(start - 3 * 3600_000L, end)
         val e = UsageEvents.Event()
@@ -45,7 +45,7 @@ object UsageReader {
             val p = cur ?: return
             val s = maxOf(since, start)
             val t = minOf(at, end)
-            if (t > s && (packages == null || p in packages)) result[p] = (result[p] ?: 0L) + (t - s)
+            if (t > s && (packages == null || p in packages)) result.getOrPut(p) { mutableListOf() }.add(longArrayOf(s, t))
             cur = null
         }
         while (events.hasNextEvent()) {

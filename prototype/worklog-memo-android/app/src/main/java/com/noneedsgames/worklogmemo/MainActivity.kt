@@ -197,13 +197,14 @@ class MainActivity : Activity() {
             return a.toString()
         }
 
-        /** [start, end) に、指定したアプリ(JSON配列)が前面にあった時間。{pkg: ミリ秒} */
-        @JavascriptInterface fun usage(start: Double, end: Double, pkgsJson: String): String {
+        /** [start, end) に、指定したアプリ(JSON配列)が前面にあった区間。{pkg: [[始まり, 終わり], …]} */
+        @JavascriptInterface fun usageIntervals(start: Double, end: Double, pkgsJson: String): String {
             if (!UsageReader.hasAccess(this@MainActivity)) return "{}"
             val arr = JSONArray(pkgsJson)
             val set = (0 until arr.length()).map { arr.getString(it) }.toSet()
-            val m = UsageReader.foregroundMs(this@MainActivity, start.toLong(), end.toLong(), set)
-            val o = JSONObject(); for ((k, v) in m) o.put(k, v)
+            val m = UsageReader.foregroundIntervals(this@MainActivity, start.toLong(), end.toLong(), set)
+            val o = JSONObject()
+            for ((k, list) in m) o.put(k, JSONArray().apply { for (iv in list) put(JSONArray().put(iv[0]).put(iv[1])) })
             return o.toString()
         }
 
