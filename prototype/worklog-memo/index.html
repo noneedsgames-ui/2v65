@@ -316,12 +316,27 @@ details.appd[open]>summary{margin-bottom:8px}
 /* メモのリンク [[名前]] */
 .mlink{color:var(--accent);text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;cursor:pointer;-webkit-user-select:none;user-select:none}
 .mlink.missing{color:var(--text-muted);text-decoration-style:dashed}
-.mlb{color:var(--text-muted);opacity:.45;font-size:.8em}
+.mlb{display:none}
 .lchip.wiki,.lchip.wikiin{background:var(--surface-1);border-style:solid}
 .linksug{display:none;gap:6px;overflow-x:auto;padding:6px 8px;border-top:1px solid var(--line);background:var(--surface-2);scrollbar-width:none}
 .linksug.on{display:flex}
 .linksug button{flex:none;padding:6px 12px;border-radius:999px;background:var(--surface-1);border:1px solid var(--line);font-size:13.5px;white-space:nowrap;max-width:14em;overflow:hidden;text-overflow:ellipsis}
 .linksug button.new{border-style:dashed;color:var(--text-secondary)}
+.linksug .sughint{flex:none;align-self:center;font-size:11px;color:var(--text-muted);padding:0 2px}
+
+/* マスコット「ミモザ」 */
+.mimoza-box{display:flex;align-items:flex-end;gap:4px;margin:4px 0 12px}
+.mimoza-img{flex:none;width:96px;height:96px;image-rendering:pixelated;image-rendering:crisp-edges;cursor:pointer;animation:mimoza-bob 1.6s steps(2) infinite;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+@keyframes mimoza-bob{0%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.mimoza-img.talk{animation:mimoza-talk .32s steps(2) infinite}
+@keyframes mimoza-talk{0%{transform:translateY(0) rotate(0)}50%{transform:translateY(-4px) rotate(-3deg)}}
+.mimoza-bubble{position:relative;flex:1;min-width:0;margin-bottom:46px;background:var(--surface-1);border:2px solid var(--text-primary);border-radius:14px;padding:10px 12px 22px;
+  font-size:14.5px;line-height:1.6;font-weight:600;min-height:56px;cursor:pointer;-webkit-user-select:none;user-select:none}
+.mimoza-bubble::before{content:"";position:absolute;left:-11px;bottom:12px;border:7px solid transparent;border-right:11px solid var(--text-primary);border-left:0}
+.mimoza-bubble::after{content:"";position:absolute;left:-7px;bottom:14px;border:5px solid transparent;border-right:8px solid var(--surface-1);border-left:0}
+.mimoza-bubble .who{display:block;font-size:10.5px;font-weight:800;color:var(--accent);letter-spacing:.08em;margin-bottom:2px}
+.mimoza-bubble .next{position:absolute;right:10px;bottom:4px;font-size:11px;color:var(--text-muted);animation:mimoza-next 1s steps(2) infinite}
+@keyframes mimoza-next{50%{transform:translateY(2px)}}
 
 /* generic */
 .card{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
@@ -1270,19 +1285,26 @@ function openLink(title) {
 }
 // [[ と打つと、メモの名前の候補を出す
 const sug = $("#linksug");
+// 候補を出す合図:「[[」か「/」(日付の 11/1 や A/B のように、数字・英字のすぐ後の / では出さない)
+const SUG_BRACKET = /\[\[([^\[\]\n]*)$/, SUG_SLASH = /(?:^|[^0-9A-Za-z/:])[\/／]([^\s\/／\[\]\n]{0,24})$/;
+let sugMode = null;
 function updateLinkSug(ta) {
-  const before = ta.value.slice(0, ta.selectionStart), m = before.match(/\[\[([^\[\]\n]*)$/);
+  const before = ta.value.slice(0, ta.selectionStart);
+  let m = before.match(SUG_BRACKET); sugMode = m ? "bracket" : null;
+  if (!m) { m = before.match(SUG_SLASH); if (m) sugMode = "slash"; }
   if (!m) { sug.classList.remove("on"); return; }
   const q = m[1].trim().toLowerCase();
   const list = Object.values(files).filter(f => f.id !== curFile).map(f => fullTitle(f) || "").filter(t => t && (!q || t.toLowerCase().includes(q))).slice(0, 12);
-  sug.innerHTML = list.map(t => `<button data-sug="${esc(t)}">${esc(t)}</button>`).join("") + (m[1].trim() && !list.some(t => t.toLowerCase() === q) ? `<button class="new" data-sug="${esc(m[1].trim())}">＋「${esc(m[1].trim())}」</button>` : "");
-  sug.classList.toggle("on", !!sug.innerHTML);
+  sug.innerHTML = `<span class="sughint">${sugMode === "slash" ? "リンクするメモ" : "メモの名前"}</span>` + list.map(t => `<button data-sug="${esc(t)}">${esc(t)}</button>`).join("") + (m[1].trim() && !list.some(t => t.toLowerCase() === q) ? `<button class="new" data-sug="${esc(m[1].trim())}">＋「${esc(m[1].trim())}」</button>` : "");
+  sug.classList.toggle("on", sug.querySelectorAll("button").length > 0);
 }
 sug.addEventListener("pointerdown", e => { if (e.target.closest("button")) e.preventDefault(); });
 sug.addEventListener("mousedown", e => { if (e.target.closest("button")) e.preventDefault(); });
 sug.addEventListener("click", e => {
   const b = e.target.closest("[data-sug]"); const ta = document.activeElement; if (!b || !ta || !ta.classList.contains("ol-t")) return;
-  const c = ta.selectionStart, before = ta.value.slice(0, c).replace(/\[\[([^\[\]\n]*)$/, ""), after = ta.value.slice(c).replace(/^[^\[\]\n]*\]\]/, "");
+  const c = ta.selectionStart;
+  const before = sugMode === "slash" ? ta.value.slice(0, c).replace(/[\/／]([^\s\/／\[\]\n]{0,24})$/, "") : ta.value.slice(0, c).replace(/\[\[([^\[\]\n]*)$/, "");
+  const after = sugMode === "slash" ? ta.value.slice(c) : ta.value.slice(c).replace(/^[^\[\]\n]*\]\]/, "");
   const ins = `[[${b.dataset.sug}]]`;
   ta.value = before + ins + after; const nc = before.length + ins.length; ta.setSelectionRange(nc, nc);
   const n = index[ta.dataset.t]?.n; if (n) { n.t = ta.value; saveOutline(); }
@@ -2711,7 +2733,7 @@ function pickFromGroup(g) { // 矢印の先がファイルなら、中のメモ�
 /* ============================================================
    記録(作業時間 × 妨害アプリ)
    ============================================================ */
-let logLive = null, appDetailsOpen = false;
+let logLive = null, appDetailsOpen = false, mimozaKey = "";
 let logMode = "day", logAnchor = startOfDay(new Date());
 function periodRange() {
   const a = logAnchor;
@@ -2739,7 +2761,8 @@ function renderLog() {
   { const a0 = days[0].getTime(), b0 = addDays(days[days.length - 1], 1).getTime(); logLive = Date.now() >= a0 && Date.now() < b0 ? { a: a0, b: b0, app: WA } : null; }
   const goal = meta.prefs.goal * 60000 * days.length;
   const isToday = logMode === "day" && ymd(days[0]) === ymd(new Date());
-  let html = `<div class="seg" id="logSeg">${[["day", "日別"], ["week", "週別"], ["month", "月別"]].map(([k, l]) => `<button data-m="${k}" class="${logMode === k ? "on" : ""}">${l}</button>`).join("")}</div>
+  const mz = mimozaLogLines(days, W, T, D);
+  let html = Mimoza.html() + `<div class="seg" id="logSeg">${[["day", "日別"], ["week", "週別"], ["month", "月別"]].map(([k, l]) => `<button data-m="${k}" class="${logMode === k ? "on" : ""}">${l}</button>`).join("")}</div>
     <div class="periodnav"><button data-sh="-1" aria-label="前へ">‹</button><span class="lbl">${label}</span><button data-sh="1" aria-label="次へ">›</button></div>
     <div class="tiles">
       <div class="tile"><div class="k"><i class="sw" style="background:var(--series-work)"></i>作業</div><div class="v" id="tileWork">${fmtSec(W)}</div><div class="s">${[goal ? `目標比 ${Math.round(W / goal * 100)}%` : "", WA ? `うちアプリ ${fmtDur(WA)}` : isToday ? "計測中" : ""].filter(Boolean).join(" · ") || "&nbsp;"}</div></div>
@@ -2750,6 +2773,8 @@ function renderLog() {
   if (logMode === "day") html += timerList(days[0].getTime(), addDays(days[0], 1).getTime());
   html += `<details class="card appd" ${appDetailsOpen ? "open" : ""}><summary>アプリの使用時間と、このアプリを開いていた時間</summary>${logMode === "day" ? dayDetail(rows[0]) : periodChart(rows).replace(/^<div class="card">/, '<div>')}</details>`;
   $("#logScroll").innerHTML = html;
+  if (mimozaKey !== mz.lines.join("|")) { mimozaKey = mz.lines.join("|"); Mimoza.say(mz.lines, mz.first ? () => LS.set("mimozaMet", true) : null); }
+  else { Mimoza.el = $("#mimoza"); Mimoza.finish(); } // 同じ話の途中なら、そのまま続きを出す
   $("#logScroll .appd")?.addEventListener("toggle", e => { appDetailsOpen = e.target.open; if (appDetailsOpen) bindChart(); });
   bindChart(); bindStack();
 }
@@ -2771,6 +2796,63 @@ $("#logScroll").addEventListener("change", e => {
   L.usage[k][app] = min * 60000; saveLog(k.slice(0, 7)); renderLog();
 });
 let showTable = false;
+// ---- マスコット「ミモザ」:吹き出しでしゃべる。タップで次のセリフ。ゆくゆくはチュートリアルもまかせる ----
+const MIMOZA_IMG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAAXNSR0IArs4c6QAAA49JREFUaIHtmF9oU1ccxz8ZfRPFhzzUgRtpFr2xVzKHBlYYWxMasPrStLRgnwp9WIkzCEqRlO1hLaN0sHUo9UEQRPsgVn2QPVRoKoIPCmWOtLkQYuwsSxk+jIogruXuIT2nN01Scv80g3E/EG5OOOfc7/f8zvmdcwIuLi4uLi4uLi4uLi4u/w2eRryktX1IF98X01MNeadjtLYP6VP6P/JjNOMEHzjZ2XZa24f0s3O/yPLlyDnaBuMoiuKYiSanOtqJhel5Vhbf8dHnnTy5dtfRvnc1AlAS77RoI7u+oFrbh/S2wbg0sVFMo2maY+9tSEYwznknxf8vsD0aiqKUnsc/AeD+zQeEu1QdYC27LuvtCzZx+KDqeTb7G5qm2X2txHIWEsKFmFC3Xy8sLRPuUon1RggcCAKQK2Zlm9nbczqGQRN7gp3NzXYa7Uud0gE6O05DR/3txB6xMD3PRjGtW10blgwoioKmafSlTumdHadr1lsducXeze8HW1qYrVJnZfGdFQkS0wYUReFE7FNC3f4y8RfiKXxffkgimQBK4ndiMT3lmQymdbCXmSxF4P3eN3pA9cvyhXgKQIr/4etJAAa8XqA0+j+/WeDpvYxHrB1wJqWa7kBRFPYFm/REMsGVySsUHv0JwI93x6RwIwNeL9dfv5ZinVi4RkxFQIiP9UaAzRFPltf5NhyuaDcA3NgU3jYY5/H331iUW4mls5BIkdsZ8Hp59eKFLB/y+Tjk8xGNRtmz/zFtg3E+O/OVJaG1MBUB4+hXo3m0n9WRW9KEeDaP9sPvVIgX08nO+cj0Iq41+oLm0f6qv/uOfMz1+DFCPT8B5XeFyeBRszIku36chtJuHFD9jI9N8PzOeQCE+IXpeVt91x22cJeqG48I9WI8SkRDJwEYTl0E4O3fXwANnEJmxddqE+uNEA2dZDh1UZqwSkOmkOCPv14CW6bGxybYKKZt9dlQA9Xo+S5mq70pA8b5bBURBWM0Ll1NWv6nwnQEzJrYXt9YFiYALl1NyouQGSxNoWomahnLZfI7lo0kkgnTJurOQk/vZTyA3IlzxSy5TB5xKs1l8hUZJ1fMUlhaJqdumSssLZddfH59+ICA6pdtY70R1rLrdV9wbN3IAqqfXCZfEgUVN7LZ23Nlz2oUlpZL/RgiGOr2wwx13RVMGTBe0gXPZ/JomuaptgjXsusVAqrVM0YSSgMjBocZdozGv3GobzXU64SHAAAAAElFTkSuQmCC";
+const Mimoza = {
+  lines: [], i: 0, timer: null, el: null, done: null,
+  html() { return `<div class="mimoza-box" id="mimoza"><img class="mimoza-img" src="${MIMOZA_IMG}" alt="ミモザ" data-mz><div class="mimoza-bubble" data-mz aria-live="polite"><span class="who">ミモザ</span><span class="mz-t"></span><span class="next">▼</span></div></div>`; },
+  // el の中のミモザに、lines を順にしゃべらせる。最後まで聞いたら onDone
+  say(lines, onDone) {
+    this.el = $("#mimoza"); if (!this.el) return;
+    this.lines = lines.filter(Boolean); this.i = 0; this.done = onDone || null;
+    this.type();
+  },
+  type() { // 一文字ずつ出す(タップで一気に)
+    const box = this.el; if (!box || !box.isConnected) return;
+    const t = this.lines[this.i] || "", out = box.querySelector(".mz-t"), img = box.querySelector(".mimoza-img"), nx = box.querySelector(".next");
+    clearInterval(this.timer); let k = 0; out.textContent = ""; img.classList.add("talk"); nx.style.visibility = "hidden";
+    this.timer = setInterval(() => {
+      if (!box.isConnected) return clearInterval(this.timer);
+      out.textContent = t.slice(0, ++k);
+      if (k >= t.length) this.finish();
+    }, 38);
+  },
+  finish() {
+    clearInterval(this.timer); this.timer = null;
+    const box = this.el; if (!box) return;
+    box.querySelector(".mz-t").textContent = this.lines[this.i] || "";
+    box.querySelector(".mimoza-img").classList.remove("talk");
+    box.querySelector(".next").style.visibility = this.lines.length > 1 ? "" : "hidden";
+  },
+  tap() {
+    if (this.timer) return this.finish();          // しゃべっている途中 → 一気に出す
+    if (this.i < this.lines.length - 1) { this.i++; this.type(); }
+    else { if (this.done) { const d = this.done; this.done = null; d(); } if (this.lines.length > 1) { this.i = 0; this.type(); } }
+  },
+};
+document.addEventListener("click", e => { if (e.target.closest("[data-mz]")) Mimoza.tap(); });
+function mimozaLogLines(days, W, T, D) { // 記録画面でミモザが話すこと(そのときの記録に合わせる)
+  if (!LS.get("mimozaMet")) return { first: true, lines: [
+    "やあ！ぼくはミモザ！このあぷりのカイハツシャさ！",
+    "ここでは きみの さぎょうじかんを まとめて みせるよ。",
+    "タイマーで さぎょうの しゅるいを えらんで はかると、グラフが どんどん つみあがるんだ！",
+    "ぼくを タップすると、つぎの おはなしに すすむよ。よろしくね！",
+  ] };
+  const a = days[0].getTime(), b = addDays(days[days.length - 1], 1).getTime();
+  const tt = typeTotals(a, b), top = Object.keys(tt).filter(k => k && k !== "_other").sort((x, y) => tt[y] - tt[x])[0];
+  const when = days.length === 1 ? (ymd(days[0]) === ymd(new Date()) ? "きょう" : "このひ") : days.length === 7 ? "このしゅう" : "このつき";
+  const L = [];
+  if (T > 0) L.push(`${when}は タイマーで ${fmtDur(T)}も がんばったね！`);
+  else L.push(`${when}は まだ タイマーの きろくが ないみたい。いっしょに はかってみよう！`);
+  if (top) L.push(`いちばん おおいのは「${typeName(top)}」だね。そのちょうし！`);
+  else if (T > 0) L.push("さぎょうの しゅるいを えらぶと、なにに じかんを つかったか わかるよ！");
+  const goal = meta.prefs.goal * 60000 * days.length;
+  if (goal) L.push(W >= goal ? "もくひょう たっせい！すごいすごい！" : `もくひょうまで あと ${fmtDur(goal - W)}！`);
+  if (D > 10 * 60000 && D > W * 0.5) L.push(`${meta.apps[0]?.name || "ほかのアプリ"}…ちょっと みすぎかも？ ぼくが みはってようか？`);
+  L.push(["メモで /(スラッシュ)を うつと、ほかのメモに リンクできるよ！", "ボードで ゆびで まるく かこむと、ファイルに なるんだ！", "グラフの ぼうを タップすると、うちわけが みられるよ。", "メモの ぎょうの あたまで「[] 」と うつと、チェックに なるよ！"][Math.floor(Date.now() / 864e5) % 4]);
+  return { first: false, lines: L };
+}
+
 // ---- 作業の種類(タイマーに紐付ける)----
 const typeById = id => meta.workTypes.find(t => t.id === id);
 const typeColor = id => { const i = meta.workTypes.findIndex(t => t.id === id); return i >= 0 && i < 8 ? `var(--tc${i})` : "var(--tcn)"; };
