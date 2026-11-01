@@ -13,6 +13,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.provider.Settings
 import android.view.View
 import android.view.WindowInsets
@@ -39,6 +40,7 @@ class MainActivity : Activity() {
     companion object {
         private const val REQ_PICK = 1001
         private const val REQ_SAVE = 1002
+        private const val REQ_AUTO = 1003
         @Volatile var inFront = false // 前面で使っている間は、知らせを画面の側に任せる
     }
 
@@ -168,12 +170,26 @@ class MainActivity : Activity() {
             REQ_SAVE -> {
                 val text = pendingSave; pendingSave = null
                 if (uri == null || text == null) return // 保存先を選ばずに戻ったときは何も言わない
-                val ok = try {
-                    contentResolver.openOutputStream(uri, "wt")!!.use { it.write(text.toByteArray()) }; true
-                } catch (_: Exception) { false }
+                val ok = try { writeUri(uri, text); true } catch (_: Exception) { false }
                 web.evaluateJavascript("window.onBackupSaved && window.onBackupSaved($ok)", null)
             }
+            REQ_AUTO -> {
+                if (uri == null) return
+                val ok = try { // 次からは尋ねずに書けるよう、保存先の許可を持ち続ける
+                    contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                    backupPrefs().edit().putString("backupUri", uri.toString()).apply(); true
+                } catch (_: Exception) { false }
+                web.evaluateJavascript("window.onBackupChosen && window.onBackupChosen($ok)", null)
+            }
         }
+    }
+
+    private fun backupPrefs() = getSharedPreferences(TimerWidget.PREFS, MODE_PRIVATE)
+
+    /** 保存先へ丸ごと書く。"wt"(切り詰め)を受け付けない保存先には "w" で書く */
+    private fun writeUri(uri: Uri, text: String) {
+        val out = try { contentResolver.openOutputStream(uri, "wt") } catch (_: Exception) { contentResolver.openOutputStream(uri, "w") }
+        out!!.use { it.write(text.toByteArray()) }
     }
 
     inner class Bridge {
@@ -279,6 +295,43 @@ class MainActivity : Activity() {
             try { packageManager.getPackageInfo(packageName, 0).versionName ?: "" } catch (_: Exception) { "" }
 
         @JavascriptInterface fun blockRemainingMs(): Double = BlockService.remainingMs().toDouble()
+
+        /** 自動バックアップの保存先を選んでもらう(保存先の画面で Google ドライブも選べる) */
+        @JavascriptInterface fun chooseBackupFile(name: String) = runOnUiThread {
+            val i = Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                .setType("application/json").putExtra(Intent.EXTRA_TITLE, name)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+            try { startActivityForResult(i, REQ_AUTO) } catch (_: Exception) {
+                web.evaluateJavascript("window.onBackupChosen && window.onBackupChosen(false)", null)
+            }
+        }
+
+        /** 自動バックアップの保存先。{name, drive}。なければ空の文字 */
+        @JavascriptInterface fun backupTarget(): String {
+            val uri = backupPrefs().getString("backupUri", null)?.let { Uri.parse(it) } ?: return ""
+            val name = try {
+                contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { if (it.moveToFirst()) it.getString(0) else null }
+            } catch (_: Exception) { null }
+            return JSONObject().put("name", name ?: "").put("drive", uri.authority?.contains("com.google.android.apps.docs") == true).toString()
+        }
+
+        /** 自動バックアップを書く。結果は onAutoBackupDone で返す(ドライブへの送信は Google ドライブのアプリが行う) */
+        @JavascriptInterface fun writeBackup(text: String) {
+            val uri = backupPrefs().getString("backupUri", null)?.let { Uri.parse(it) }
+            Thread {
+                val ok = uri != null && try { writeUri(uri, text); true } catch (_: Exception) { false }
+                runOnUiThread { web.evaluateJavascript("window.onAutoBackupDone && window.onAutoBackupDone($ok)", null) }
+            }.start()
+        }
+
+        /** 自動バックアップをやめる(保存先のファイルは消さない) */
+        @JavascriptInterface fun clearBackup() {
+            val p = backupPrefs()
+            p.getString("backupUri", null)?.let { s ->
+                try { contentResolver.releasePersistableUriPermission(Uri.parse(s), Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) } catch (_: Exception) {}
+            }
+            p.edit().remove("backupUri").apply()
+        }
 
         /** データの書き出し:保存先を選んでもらい、そこへ文章を書く */
         @JavascriptInterface fun saveTextFile(name: String, text: String) = runOnUiThread {

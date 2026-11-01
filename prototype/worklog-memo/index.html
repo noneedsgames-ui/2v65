@@ -3883,6 +3883,7 @@ function renderPrefs() {
     <div class="card"><h3>データの引っ越し</h3>
       <p class="muted small" style="line-height:1.6;margin:0">メモ・ボード・予定・設定・作業の記録を一つのファイルにして、ブラウザ版とアプリ版のあいだや、別の端末へ移せます。読み込みは今のデータに合わせるので、今のデータは消えません。</p>
       <div class="btns"><button class="btn" id="bkExport">書き出す</button><button class="btn primary" id="bkImport">読み込む</button></div>
+      ${NATIVE ? autoBackupHtml() : ""}
       <p class="muted small" style="margin:8px 0 0">最後に書き出した日:${LS.get("lastExport") ? fmtDate(LS.get("lastExport")) : "まだありません"}</p>
       <label class="row"><input type="checkbox" id="pExport" ${P.exportRemind !== false ? "checked" : ""}><span class="grow">月に一度、書き出しを勧める<div class="muted small">データはこの端末の中だけにあるので、故障や紛失に備えます</div></span></label>
     </div>
@@ -3932,6 +3933,9 @@ $("#prefsScroll").addEventListener("click", e => {
   else if (b.id === "reGuide") guide();
   else if (b.id === "bkExport") exportSheet();
   else if (b.id === "bkImport") importSheet();
+  else if (b.id === "bkAutoSet") autoBackupSheet();
+  else if (b.id === "bkAutoNow") autoBackupTick(true);
+  else if (b.id === "bkAutoOff") confirmSheet("自動バックアップをやめますか", "これ以上は書き込みません。保存先のファイルは消えずに残ります。", "やめる", () => { try { Android.clearBackup(); } catch {} LS.del("autoBackupAt"); LS.del("autoBackupErr"); renderPrefs(); });
   else if (b.id === "trashOpen") trashSheet();
   else if (b.id === "policyOpen") policySheet();
   else if (b.id === "wipeOpen") wipeSheet();
@@ -4191,6 +4195,47 @@ function checkExportNag() {
     $("[data-go]", s).onclick = exportSheet;
   });
 }
+// ---- 自動バックアップ:選んだファイル(Google ドライブなど)を、一日に一度、最新のデータで上書きする ----
+const hasContent = () => Object.values(files).some(f => !f.auto && !isEmptyMemo(f));
+function backupTarget() { try { const s = NATIVE ? Android.backupTarget() : ""; return s ? JSON.parse(s) : null; } catch { return null; } }
+let autoBackupBusy = false;
+function autoBackupTick(force) {
+  if (!NATIVE || autoBackupBusy || !backupTarget()) return;
+  const now = Date.now();
+  if (!force && (document.visibilityState !== "visible" || now - (LS.get("autoBackupAt") || 0) < 864e5 || now - (LS.get("autoBackupTry") || 0) < 36e5)) return;
+  if (!hasContent()) { if (force) toast("まだ保存するものがありません"); return; } // 空のデータで、前のバックアップを上書きしない
+  autoBackupBusy = true; autoBackupTick.force = !!force; LS.set("autoBackupTry", now);
+  try { Android.writeBackup(backupText()); } catch { window.onAutoBackupDone(false); }
+}
+window.onAutoBackupDone = ok => {
+  autoBackupBusy = false;
+  if (ok) { LS.set("autoBackupAt", Date.now()); LS.del("autoBackupErr"); markExported(); if (autoBackupTick.force) toast("バックアップしました"); }
+  else { LS.set("autoBackupErr", Date.now()); renderPrefsIfOpen(); toast("バックアップできませんでした。保存先を確かめてください"); }
+};
+window.onBackupChosen = ok => {
+  if (!ok) { toast("この保存先は使えませんでした"); return; }
+  LS.del("autoBackupErr"); renderPrefsIfOpen(); autoBackupTick(true);
+};
+function autoBackupHtml() {
+  const t = backupTarget(), at = LS.get("autoBackupAt"), err = LS.get("autoBackupErr");
+  if (!t) return `<button class="btn block" id="bkAutoSet" style="margin-top:8px">Google ドライブへ自動でバックアップする</button>`;
+  return `<div class="small" style="margin-top:10px;line-height:1.7"><b>自動バックアップ:</b>${esc(t.name || "選んだファイル")}${t.drive ? "(Google ドライブ)" : ""}<br>最後:${at ? `${fmtDate(at)} ${hm(at)}` : "まだありません"}${err ? `<br><span style="color:var(--danger)">前回は書き込めませんでした。保存先のファイルを消した場合は、選び直してください</span>` : ""}</div>
+    ${t.drive ? "" : `<p class="muted small" style="margin:4px 0 0">保存先が Google ドライブではありません。この端末の中なら、故障や紛失には備えられません。</p>`}
+    <div class="btns"><button class="btn" id="bkAutoOff">やめる</button><button class="btn" id="bkAutoSet">選び直す</button><button class="btn primary" id="bkAutoNow">今すぐ</button></div>`;
+}
+function autoBackupSheet() {
+  openSheet(`<h2>Google ドライブへ自動でバックアップ</h2>
+    <p class="small" style="line-height:1.7;margin-top:-4px">選んだファイルを、アプリを開いたときに一日に一度、最新のデータで上書きします。</p>
+    <ol class="small" style="line-height:1.8;padding-left:1.4em;margin:6px 0">
+      <li>次の画面の左上「≡」を押し、「ドライブ」を選ぶ</li>
+      <li>置きたいフォルダを開き、右下の「保存」を押す</li>
+    </ol>
+    <p class="muted small" style="line-height:1.6">送信は Google ドライブのアプリが行います。開発者には届きません。ファイルにはメモの中身がそのまま入ります。戻すときは「読み込む」でこのファイルを選びます。</p>
+    <div class="btns"><button class="btn" data-x>やめる</button><button class="btn primary" data-go>保存先を選ぶ</button></div>`, s => {
+    $("[data-x]", s).onclick = closeSheet;
+    $("[data-go]", s).onclick = () => { closeSheet(); try { Android.chooseBackupFile("worklog-memo-backup.json"); } catch { toast("保存先を選べませんでした"); } };
+  });
+}
 // ---- ゴミ箱:消したメモは30日間残す ----
 const TRASH_MS = 30 * 864e5;
 const trashList = () => Object.entries(Store.localDocs()).filter(([k, v]) => k.startsWith("trash-") && v.file).map(([key, v]) => ({ key, file: v.file, at: v.at || 0 })).sort((a, b) => b.at - a.at);
@@ -4221,7 +4266,7 @@ function policySheet() {
   openSheet(`<h2>プライバシーポリシー</h2><div class="small" style="line-height:1.8">
     <p>作業記録メモ帳(以下「本アプリ」)は、利用者の作業時間の記録とメモのためのアプリです。</p>
     <p><b>1. 扱う情報</b><br>利用者が書いたメモ、ボードの配置、予定、タイマーの記録 / 本アプリを開いていた時間 / 利用者が選んだアプリの使用時間(「使用状況へのアクセス」を許可した場合のみ) / 端末に入っているアプリの名前の一覧(利用者がアプリを選ぶときのみ)</p>
-    <p><b>2. 情報の保存と送信</b><br>${NATIVE ? "上の情報は、すべて利用者の端末の中にだけ保存します。本アプリは、これらの情報を開発者やほかの第三者に送信しません。本アプリはネットワークに接続せず、端末のクラウドバックアップの対象にもしません。利用者が自分で書き出したファイルの扱いは、利用者に委ねられます。" : "上の情報はこのブラウザの中に保存します。claude.ai で開いたときは、利用者本人専用の領域へも同期します。開発者やほかの第三者には送信しません。"}</p>
+    <p><b>2. 情報の保存と送信</b><br>${NATIVE ? "上の情報は、利用者の端末の中に保存します。本アプリは、これらの情報を開発者やほかの第三者に送信しません。本アプリはネットワークに接続せず、端末のクラウドバックアップの対象にもしません。利用者が書き出しや自動バックアップで選んだ保存先(Google ドライブなど)へは、その内容を書き込みます。その保存先での扱いは、保存先のサービスと利用者に委ねられます。" : "上の情報はこのブラウザの中に保存します。claude.ai で開いたときは、利用者本人専用の領域へも同期します。開発者やほかの第三者には送信しません。"}</p>
     ${NATIVE ? `<p><b>3. 権限</b><br>通知:タイマーのボタンと経過時間を出し、予定やタイマーを知らせるために使います。<br>アラームとリマインダー:その知らせを遅れずに届けるために使います。<br>再起動の知らせの受信:再起動のあと、通知と知らせを預け直すために使います。<br>使用状況へのアクセス:選んだアプリの使用時間を表示し、集中タイマー中に選んだアプリが前面に出たかを判断するために使います。<br>他のアプリの上に重ねて表示:集中タイマー中(最大5分)に、選んだアプリの上を覆う画面を出すために使います。<br>どの権限も、利用者が端末の設定でいつでも外せます。</p>` : ""}
     <p><b>${NATIVE ? 4 : 3}. 情報の削除</b><br>「設定 › このアプリについて › すべてのデータを消す」で消せます。${NATIVE ? "本アプリをアンインストールしても、端末に保存された情報はすべて削除されます。" : ""}</p></div>
     <div class="btns"><button class="btn primary" data-x>閉じる</button></div>`, s => { $("[data-x]", s).onclick = closeSheet; });
@@ -4246,7 +4291,7 @@ async function wipeAll() {
   for (const t of Store.pending.values()) clearTimeout(t);
   Store.pending.clear();
   if (Store.col) { const col = Store.col; Store.col = null; await Promise.allSettled(Object.keys(Store.localDocs()).map(id => col.doc(id).delete())); }
-  if (NATIVE) try { Android.stopBlock(); Android.setEventAlarms("[]"); } catch {}
+  if (NATIVE) try { Android.stopBlock(); Android.setEventAlarms("[]"); Android.clearBackup(); } catch {}
   for (const k of LS.keys()) LS.del(k);
   location.reload();
 }
@@ -4369,6 +4414,7 @@ window.onAndroidResume = () => { // 設定画面から戻ったときなど:許�
   takeNoticeEvents(); syncAlarms(); syncWidget(); // 通知やウィジェットの表示を、画面の側の正しい様子にそろえる
   accessMemo.t = 0; for (const k of Object.keys(usageCache)) delete usageCache[k];
   if ($("#permS") && permSheet.last) permSheet(...permSheet.last);
+  autoBackupTick();
   if (view === "prefs") renderPrefs(); else if (view === "log") renderLog(); else if (view === "timer") renderTimer();
   refreshLive();
 };
@@ -4389,8 +4435,8 @@ function boot() {
   setInterval(() => Work.beat(), 10000);
   setInterval(refreshLive, 1000);
   setInterval(() => { takeNoticeEvents(); Timer.tick(); updateClock(); checkTimerForgot(); }, 1000);
-  setInterval(checkExportNag, 60000);
-  setTimeout(checkExportNag, 4000);
+  setInterval(() => { checkExportNag(); autoBackupTick(); }, 60000);
+  setTimeout(() => { autoBackupTick(); checkExportNag(); }, 4000);
   setInterval(checkEventNotices, 15000);
   setTimeout(checkEventNotices, 1500);
   Store.connect(reloadDocs);
