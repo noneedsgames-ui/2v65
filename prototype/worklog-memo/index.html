@@ -2622,6 +2622,8 @@ function sideMove(src, tgt, zone) {
   const newParent = zone === "into" ? tgt.id : itemParent(tgt);
   if (src.t === "g") { const g = groupById(src.id); if (newParent === g.id || descendantsOf(g).some(x => x.id === newParent)) { toast("ファイルを自分の中には入れられません"); return renderSide(); } }
   const oldParent = itemParent(src);
+  recomputeTree();
+  const intended = treeSnapshot(); intended.set(src.t + ":" + src.id, newParent); // 移したもの以外は、元のファイルのまま
   board.order ||= {};
   const sib = sideKids(newParent).filter(x => !(x.t === src.t && x.id === src.id));
   let at = sib.length;
@@ -2640,7 +2642,37 @@ function sideMove(src, tgt, zone) {
     for (const gid of new Set([newParent, oldParent])) if (gid && groupById(gid)) arrangeGroup(groupById(gid), false);
     recomputeTree();
   }
+  reconcileTree(intended); // 丸が広がって、関係ないファイルやメモを巻き込んでいたら、元の場所へ戻す
   saveBoard(); renderSide(); renderFileBar();
+}
+// ツリー(どれがどのファイルに入っているか)を覚える:"g:丸のid" / "m:メモのid" → 入っているファイルのid
+function treeSnapshot() {
+  const m = new Map();
+  for (const g of board.groups) m.set("g:" + g.id, g.parent || null);
+  for (const id of Object.keys(files)) if (board.cards[id]) m.set("m:" + id, groupOfCard(id)?.id || null);
+  return m;
+}
+function reconcileTree(intended) { // 形から決まった所属が、意図したツリーと違うものを置き直す(浅いものから)
+  const depth = key => { let d = 0, p = intended.get(key), guard = 0; while (p && guard++ < 30) { d++; p = intended.get("g:" + p); } return d; };
+  const keys = [...intended.keys()].sort((a, b) => depth(a) - depth(b));
+  for (let pass = 0; pass < 5; pass++) {
+    recomputeTree();
+    let bad = 0;
+    for (const key of keys) {
+      const [t, id] = [key.slice(0, 1), key.slice(2)], want = intended.get(key);
+      if (t === "g" && !groupById(id)) continue;
+      if (t === "m" && !files[id]) continue;
+      if (want && !groupById(want)) continue;
+      const now = t === "g" ? (groupById(id).parent || null) : (groupOfCard(id)?.id || null);
+      if (now === want) continue;
+      bad++;
+      if (t === "m") want ? placeCardInGroup(id, groupById(want)) : placeCardOutside(id);
+      else want ? placeGroupIn(groupById(id), groupById(want)) : placeGroupOutside(groupById(id));
+      recomputeTree();
+    }
+    if (!bad) return true;
+  }
+  recomputeTree(); return false;
 }
 function contentBounds(skip) { // ボード上の中身の外枠
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
