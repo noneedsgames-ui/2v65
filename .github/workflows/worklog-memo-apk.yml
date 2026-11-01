@@ -1,0 +1,49 @@
+# 作業記録メモ帳(試作)の Android アプリ(APK)を作り、Releases に置く
+name: 作業記録メモ帳 APK
+
+on:
+  push:
+    branches: [ccr-a6f51c3a-jl9xh6]
+    paths:
+      - "prototype/worklog-memo/**"
+      - "prototype/worklog-memo-android/**"
+      - ".github/workflows/worklog-memo-apk.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: prototype/worklog-memo-android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: APK を作る
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk "worklog-memo-${GITHUB_RUN_NUMBER}.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: worklog-memo-apk
+          path: prototype/worklog-memo-android/worklog-memo-*.apk
+      - name: Releases に置く
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: worklog-memo-v${{ github.run_number }}
+          name: 作業記録メモ帳 試作 ${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          body: |
+            作業記録メモ帳(試作)の Android 版です。下の APK をスマホで開いて入れてください。
+            初めて入れるときは「提供元不明のアプリ」の許可が必要です。前の版の上からそのまま入れれば、メモや記録は残ります。
+          files: prototype/worklog-memo-android/worklog-memo-*.apk

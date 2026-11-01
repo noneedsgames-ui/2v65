@@ -246,6 +246,9 @@ body.side-open .side{display:flex}
 .awaybtns .btn{padding:9px 14px}
 .focusnote{border:1.5px solid color-mix(in srgb,var(--danger) 45%,var(--line));background:color-mix(in srgb,var(--danger) 6%,var(--surface-1))}
 
+.autov{width:7.5em;text-align:right;display:flex;justify-content:flex-end;align-items:center;gap:6px}
+.autov em{font-style:normal;font-size:10px;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:0 5px}
+
 /* generic */
 .card{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
 .card h3{margin:0 0 8px;font-size:14px;color:var(--text-secondary);font-weight:600}
@@ -628,10 +631,28 @@ function timerMs(a, b) {
   const live = Timer.liveSegment(); if (live) t += overlap(live.s, Date.now(), a, b);
   return t;
 }
+// ---- Android アプリの中で動いているときは、端末の使用状況から使用時間を読む(window.Android) ----
+const NATIVE = (() => { try { return !!(window.Android && window.Android.isNative()); } catch { return false; } })();
+let accessMemo = { t: 0, v: false };
+const usageAccess = () => { if (!NATIVE) return false; if (Date.now() - accessMemo.t > 1500) { try { accessMemo = { t: Date.now(), v: Android.hasUsageAccess() }; } catch { accessMemo = { t: Date.now(), v: false }; } } return accessMemo.v; };
+const usageCache = {};
+function nativeUsage(dateStr) { // その日の、端末から選んだアプリの前面時間 {pkg: ms}
+  const pkgs = [...meta.apps, ...meta.workApps].map(a => a.pkg).filter(Boolean);
+  const key = pkgs.join(","), c = usageCache[dateStr], today = dateStr === ymd(new Date());
+  if (c && c.key === key && (!today || Date.now() - c.t < 20000)) return c.map;
+  let map = {};
+  if (pkgs.length && usageAccess()) { const a = parseYmd(dateStr).getTime(); try { map = JSON.parse(Android.usage(a, a + 864e5, JSON.stringify(pkgs))); } catch {} }
+  usageCache[dateStr] = { t: Date.now(), key, map };
+  return map;
+}
+const isAuto = a => !!(a && a.pkg && usageAccess()); // 自動で読めるアプリか
+function appMs(dateStr, a) {
+  if (isAuto(a)) return nativeUsage(dateStr)[a.pkg] || 0;
+  return logs[dateStr.slice(0, 7)]?.usage?.[dateStr]?.[a.id] || 0;
+}
 function workAppMs(dateStr, appId) { // 作業に数えるアプリの使用時間
-  const u = logs[dateStr.slice(0, 7)]?.usage?.[dateStr] || {};
-  if (appId) return u[appId] || 0;
-  return (meta.workApps || []).reduce((t, a) => t + (u[a.id] || 0), 0);
+  if (appId) { const a = meta.workApps.find(x => x.id === appId); return a ? appMs(dateStr, a) : 0; }
+  return (meta.workApps || []).reduce((t, a) => t + appMs(dateStr, a), 0);
 }
 function workAppMsRange(a, b) { let t = 0; for (let d = startOfDay(new Date(a)); d.getTime() < b; d = addDays(d, 1)) t += workAppMs(ymd(d)); return t; }
 function addUsage(t, appId, ms) { // その日の、そのアプリの時間に足す
@@ -639,9 +660,8 @@ function addUsage(t, appId, ms) { // その日の、そのアプリの時間に�
   L.usage[k][appId] = (L.usage[k][appId] || 0) + ms; saveLog(k.slice(0, 7));
 }
 function distMs(dateStr, appId) {
-  const u = logs[dateStr.slice(0, 7)]?.usage?.[dateStr] || {};
-  if (appId) return u[appId] || 0;
-  return meta.apps.reduce((t, a) => t + (u[a.id] || 0), 0);
+  if (appId) { const a = meta.apps.find(x => x.id === appId); return a ? appMs(dateStr, a) : 0; }
+  return meta.apps.reduce((t, a) => t + appMs(dateStr, a), 0);
 }
 
 /* ============================================================
@@ -2414,7 +2434,7 @@ let showTable = false;
 function dayDetail(r) {
   const max = Math.max(r.auto, ...meta.workApps.map(a => workAppMs(r.k, a.id)), ...meta.apps.map(a => distMs(r.k, a.id)), 60000);
   const bar = (ms, color) => `<div style="height:10px;border-radius:0 4px 4px 0;background:${color};width:${Math.max(ms ? 1.5 : 0, ms / max * 100)}%"></div>`;
-  const inp = (a, ms) => `<input class="inp num" style="width:5.5em;padding:6px 8px;text-align:right" type="number" inputmode="numeric" min="0" max="1440" value="${Math.round(ms / 60000) || ""}" placeholder="分" data-usage="${r.k}|${a.id}" aria-label="${esc(a.name)}の使用時間(分)">`;
+  const inp = (a, ms) => isAuto(a) ? `<span class="num small autov">${fmtDur(ms)}<em>自動</em></span>` : `<input class="inp num" style="width:5.5em;padding:6px 8px;text-align:right" type="number" inputmode="numeric" min="0" max="1440" value="${Math.round(ms / 60000) || ""}" placeholder="分" data-usage="${r.k}|${a.id}" aria-label="${esc(a.name)}の使用時間(分)">`;
   let h = `<div class="card"><h3>作業時間と妨害アプリ</h3>
     <div class="row"><span style="width:7em" class="small">このアプリ</span><span class="grow">${bar(r.auto, "var(--series-work)")}</span><span class="num small" style="width:7.5em;text-align:right" id="rowWork">${fmtSec(r.auto)}</span></div>`;
   for (const a of meta.workApps) { // 作業に数えるアプリ(作業時間に足す)
@@ -2428,7 +2448,8 @@ function dayDetail(r) {
     h += `<div class="row"><span style="width:7em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" class="small">${esc(a.name)}</span><span class="grow">${bar(ms, "var(--series-dist)")}</span>
       ${inp(a, ms)}</div>`;
   }
-  if (meta.apps.length || meta.workApps.length) h += `<p class="note" style="margin-top:8px">Web試作ではほかのアプリの使用時間を自動で取得できません。端末の「Digital Wellbeing」などで見た分数を入力するか、タイマー中に離れて戻ったときの問いかけで記録してください。🛠 の付いたアプリは作業時間に足します。ネイティブ版では使用状況データから自動で取り込みます。</p>`;
+  if ((meta.apps.length || meta.workApps.length) && NATIVE) h += `<p class="note" style="margin-top:8px">${usageAccess() ? "「自動」の付いたアプリは、端末の使用状況から時間を読んでいます。名前だけで登録したアプリは分数を入力してください。🛠 の付いたアプリは作業時間に足します。" : "端末の使用状況から自動で読むには、「設定」で「使用状況へのアクセス」を許可してください。"}</p>`;
+  else if (meta.apps.length || meta.workApps.length) h += `<p class="note" style="margin-top:8px">Web試作ではほかのアプリの使用時間を自動で取得できません。端末の「Digital Wellbeing」などで見た分数を入力するか、タイマー中に離れて戻ったときの問いかけで記録してください。🛠 の付いたアプリは作業時間に足します。ネイティブ版では使用状況データから自動で取り込みます。</p>`;
   h += `</div>`;
   const a = r.d.getTime(), b = addDays(r.d, 1).getTime();
   h += hourChart(a);
@@ -2553,11 +2574,13 @@ const Timer = {
     const now = Date.now(); const s = this.st;
     s.running = true; s.segStart = now; s.phaseStart = now; s.phase = "focus"; s.cycle = 1;
     this.save(); unlockAudio();
+    startBlock();
   },
   stop() {
     const s = this.st; if (!s.running) return;
     if (!(s.mode === "pomodoro" && s.phase === "break")) this.record(s.segStart, Date.now());
     s.running = false; this.save();
+    if (NATIVE) try { Android.stopBlock(); } catch {}
   },
   // ポモドーロの区切りを、閉じていた間の分も含めて追いつかせる
   tick() {
@@ -2590,8 +2613,9 @@ function renderTimer() {
     <div class="card"><h3>今日のタイマー合計 <span class="num" style="float:right;color:var(--text-primary)" id="tToday"></span></h3>
       ${recent.filter(t => t.e > todayA).sort((a, b) => b.s - a.s).map(t => `<div class="row small"><span class="grow">${esc(t.label || "(ラベルなし)")} <span class="muted">${t.mode === "pomodoro" ? "ポモドーロ" : "ストップウォッチ"}</span></span><span class="num">${hm(t.s)}〜${hm(t.e)} ${fmtDur(t.e - t.s)}</span></div>`).join("") || `<div class="empty">まだ記録はありません</div>`}
     </div>
-    ${s.running && meta.apps.length ? `<div class="card focusnote"><h3>集中中</h3><div class="small">${meta.apps.map(a => esc(a.name)).join("・")} は開かないでください。${P.awayAsk !== false ? "このページを離れて戻ると、何をしていたか聞きます。" : ""}</div></div>` : ""}
-    <details class="card"><summary class="small" style="font-weight:600;color:var(--text-secondary)">タイマー中に妨害アプリを使えなくするには</summary>
+    ${s.running && meta.apps.length ? `<div class="card focusnote"><h3>集中中</h3><div class="small">${meta.apps.map(a => esc(a.name)).join("・")} は開かないでください。${NATIVE && P.block !== false ? "" : P.awayAsk !== false ? "このページを離れて戻ると、何をしていたか聞きます。" : ""}</div>
+      ${NATIVE && P.block !== false ? `<div class="small" id="blockLeft" style="margin-top:6px;font-weight:600"></div><button class="mini" id="blockAgain" style="margin-top:6px;display:none">もう一度ブロックする(最大5分)</button>` : ""}</div>` : ""}
+    <details class="card" style="${NATIVE ? "display:none" : ""}"><summary class="small" style="font-weight:600;color:var(--text-secondary)">タイマー中に妨害アプリを使えなくするには</summary>
       <p class="small" style="line-height:1.7;margin:8px 0 0">Web試作では、ほかのアプリを止めることはできません。Android の<b>集中モード</b>を使うと、選んだアプリをタイマーの間だけ使えなくできます。<br>
       1. 端末の「設定」→「Digital Wellbeing と保護者による使用制限」<br>2. 「集中モード」→ 妨害アプリ(${meta.apps.map(a => esc(a.name)).join("・") || "YouTube など"})を選ぶ<br>3. タイマーを始めるときに「今すぐオンにする」<br>
       <span class="muted">機種によって項目名が違います。ネイティブ版では、タイマー中に妨害アプリを開くと、このアプリの画面で覆って使えなくします。</span></p></details>
@@ -2602,10 +2626,22 @@ $("#timerScroll").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   if (b.dataset.mode && !Timer.st.running) { Timer.st.mode = b.dataset.mode; Timer.save(); renderTimer(); }
   else if (b.id === "tGo") { Timer.st.running ? Timer.stop() : Timer.start(); renderTimer(); }
+  else if (b.id === "blockAgain") { startBlock(); updateClock(); }
   else if (b.dataset.lbl) { Timer.st.label = b.dataset.lbl; Timer.save(); $("#tLabel").value = b.dataset.lbl; }
 });
 $("#timerScroll").addEventListener("input", e => { if (e.target.id === "tLabel") { Timer.st.label = e.target.value; Timer.save(); } });
+// 集中ブロック(Android アプリのみ・試験運用):タイマー中、妨害アプリを開いても画面で覆う。いちどに最大5分
+const BLOCK_MIN = 5;
+function startBlock() {
+  if (!NATIVE || meta.prefs.block === false) return;
+  const pkgs = meta.apps.map(a => a.pkg).filter(Boolean);
+  if (!pkgs.length) { toast("妨害アプリを「端末のアプリから選ぶ」で選ぶと、集中ブロックが使えます"); return; }
+  let ok = false; try { ok = Android.startBlock(JSON.stringify(pkgs), BLOCK_MIN); } catch {}
+  if (!ok) toast("集中ブロックには「使用状況へのアクセス」と「他のアプリの上に重ねて表示」の許可が要ります(設定)");
+}
+const blockLeft = () => { try { return NATIVE ? Android.blockRemainingMs() : 0; } catch { return 0; } };
 function updateClock() {
+  const bl = $("#blockLeft"); if (bl) { const ms = blockLeft(); bl.textContent = ms > 0 ? `妨害アプリを使えなくしています あと ${fmtClock(ms)}` : "集中ブロックは終わりました(試験運用のため、いちどに最大5分)"; $("#blockAgain") && ($("#blockAgain").style.display = ms > 0 ? "none" : ""); }
   const c = $("#clock"); if (!c || view !== "timer") return;
   const s = Timer.st, P = meta.prefs, now = Date.now();
   if (s.mode === "stopwatch") { c.textContent = fmtClock(s.running ? now - s.segStart : 0); $("#phase").textContent = s.running ? "計測中" : ""; }
@@ -2713,6 +2749,28 @@ function editEvent(ev) {
 /* ============================================================
    設定
    ============================================================ */
+const canOverlay = () => { try { return NATIVE && Android.canOverlay(); } catch { return false; } };
+function pickDeviceApps(kind) { // 端末に入っているアプリから、妨害アプリ(d)/作業に数えるアプリ(w)を選ぶ
+  let list = []; try { list = JSON.parse(Android.listApps()); } catch {}
+  const mine = kind === "d" ? meta.apps : meta.workApps, other = kind === "d" ? meta.workApps : meta.apps;
+  const on = new Set(mine.map(a => a.pkg).filter(Boolean)), taken = new Set(other.map(a => a.pkg).filter(Boolean));
+  openSheet(`<h2>${kind === "d" ? "妨害アプリ" : "作業に数えるアプリ"}を選ぶ</h2>
+    <input class="inp" id="paQ" placeholder="絞り込み">
+    <div id="paL" style="max-height:52dvh;overflow:auto;margin-top:6px"></div>
+    <div class="btns"><button class="btn" data-x>やめる</button><button class="btn primary" data-ok>決定</button></div>`, s => {
+    const draw = () => { const q = $("#paQ").value.trim().toLowerCase();
+      $("#paL").innerHTML = list.filter(a => !q || a.label.toLowerCase().includes(q) || a.pkg.includes(q)).map(a => `<label class="row"><input type="checkbox" data-pa="${esc(a.pkg)}" ${on.has(a.pkg) ? "checked" : ""} ${taken.has(a.pkg) ? "disabled" : ""}><span class="grow">${esc(a.label)}${taken.has(a.pkg) ? `<div class="muted small">${kind === "d" ? "作業に数えるアプリ" : "妨害アプリ"}に登録済み</div>` : ""}</span></label>`).join("") || `<div class="empty">アプリが見つかりません</div>`; };
+    $("#paQ").addEventListener("input", draw); draw();
+    $("#paL").addEventListener("change", e => { const c = e.target.closest("[data-pa]"); if (c) c.checked ? on.add(c.dataset.pa) : on.delete(c.dataset.pa); });
+    $("[data-x]", s).onclick = closeSheet;
+    $("[data-ok]", s).onclick = () => {
+      const keep = mine.filter(a => !a.pkg || on.has(a.pkg));
+      for (const p of on) if (!keep.some(a => a.pkg === p)) { const a = list.find(x => x.pkg === p); keep.push({ id: uid(), name: a ? a.label : p, pkg: p }); }
+      if (kind === "d") meta.apps = keep; else meta.workApps = keep;
+      saveMeta(); closeSheet(); renderPrefs(); toast("保存しました");
+    };
+  });
+}
 function renderPrefsIfOpen() { if (view === "prefs") renderPrefs(); }
 function renderPrefs() {
   const P = meta.prefs;
@@ -2721,15 +2779,20 @@ function renderPrefs() {
       ${meta.apps.map(a => `<div class="row"><span class="grow">${esc(a.name)}</span><button class="mini" data-delapp="${a.id}">外す</button></div>`).join("") || `<div class="muted small">まだ指定されていません</div>`}
       <div style="display:flex;gap:8px;margin-top:10px"><input class="inp" id="appName" placeholder="例:YouTube、X、ゲーム" maxlength="30"><button class="btn primary" id="addApp" style="flex:none">追加</button></div>
       <div class="metas" style="margin-top:8px">${["YouTube", "X", "TikTok", "Instagram", "LINE", "ゲーム"].filter(n => !meta.apps.some(a => a.name === n)).map(n => `<button class="mini" data-quickapp="${n}">＋${n}</button>`).join("")}</div>
-      <p class="note">Web試作ではインストール済みアプリの一覧を読めないため、名前で指定します。</p>
+      ${NATIVE ? `<button class="btn block" data-pickapps="d" style="margin-top:10px">端末のアプリから選ぶ</button>` : `<p class="note">Web試作ではインストール済みアプリの一覧を読めないため、名前で指定します。</p>`}
     </div>
     <div class="card"><h3>作業に数えるアプリ</h3>
       ${meta.workApps.map(a => `<div class="row"><span class="grow">🛠 ${esc(a.name)}</span><button class="mini" data-delwork="${a.id}">外す</button></div>`).join("") || `<div class="muted small">まだ指定されていません</div>`}
       <div style="display:flex;gap:8px;margin-top:10px"><input class="inp" id="workName" placeholder="例:ドット絵アプリ、Godot" maxlength="30"><button class="btn primary" id="addWork" style="flex:none">追加</button></div>
       <div class="metas" style="margin-top:8px">${["お絵描き", "ドット絵", "作曲", "Godot", "Unity", "テキストエディタ"].filter(n => !meta.workApps.some(a => a.name === n)).map(n => `<button class="mini" data-quickwork="${n}">＋${n}</button>`).join("")}</div>
-      <p class="note">ここで選んだアプリの使用時間は、作業時間に足します。Web試作では使用時間を自動で読めないため、記録画面での入力か、タイマー中に離れて戻ったときの問いかけで記録します。</p>
+      ${NATIVE ? `<button class="btn block" data-pickapps="w" style="margin-top:10px">端末のアプリから選ぶ</button><p class="note">端末のアプリから選んだものは、使用時間を自動で読んで作業時間に足します。</p>` : `<p class="note">ここで選んだアプリの使用時間は、作業時間に足します。Web試作では使用時間を自動で読めないため、記録画面での入力か、タイマー中に離れて戻ったときの問いかけで記録します。</p>`}
     </div>
-    <div class="card"><h3>使用状況へのアクセス(ネイティブ版で必要)</h3>
+    ${NATIVE ? `<div class="card"><h3>端末の許可</h3>
+      <div class="row"><span class="grow">使用状況へのアクセス<div class="muted small">ほかのアプリの使用時間を読む・集中ブロック</div></span><b class="small" style="color:${usageAccess() ? "var(--accent)" : "var(--danger)"}">${usageAccess() ? "許可済み" : "未許可"}</b><button class="mini" data-perm="usage">設定を開く</button></div>
+      <div class="row"><span class="grow">他のアプリの上に重ねて表示<div class="muted small">集中ブロックで妨害アプリを覆う</div></span><b class="small" style="color:${canOverlay() ? "var(--accent)" : "var(--danger)"}">${canOverlay() ? "許可済み" : "未許可"}</b><button class="mini" data-perm="overlay">設定を開く</button></div>
+      <p class="muted small" style="margin:6px 0 0">設定画面で「作業記録メモ帳」を選び、許可をオンにして戻ってきてください。</p>
+    </div>` : ""}
+    <div class="card" style="${NATIVE ? "display:none" : ""}"><h3>使用状況へのアクセス(ネイティブ版で必要)</h3>
       <p class="small" style="line-height:1.7;margin:0">ネイティブ版では、妨害アプリの使用時間を自動で取り込むために、端末で次の許可を手動で付けます。<br>
       1. 端末の「設定」を開く<br>2. 「アプリ」→「特別なアプリアクセス」→「使用状況へのアクセス」<br>3. 一覧からこのアプリを選び、「使用状況へのアクセスを許可」をオン<br>
       <span class="muted">機種により項目名は「使用履歴へのアクセス」などと異なります。</span></p>
@@ -2740,6 +2803,7 @@ function renderPrefs() {
         <label class="field" style="flex:1"><span>休憩(分)</span><input class="inp" type="number" inputmode="numeric" min="1" max="60" id="pB" value="${P.brk}"></label>
         <label class="field" style="flex:1"><span>1日の目標(分)</span><input class="inp" type="number" inputmode="numeric" min="0" max="1440" id="pG" value="${P.goal || ""}" placeholder="なし"></label>
       </div>
+      ${NATIVE ? `<label class="row"><input type="checkbox" id="pBlock" ${P.block !== false ? "checked" : ""}><span class="grow">タイマー中に妨害アプリを使えなくする(試験運用)<div class="muted small">タイマーを始めると、妨害アプリを開いても画面で覆って使えなくします。いちどに最大5分まで</div></span></label>` : ""}
       <label class="row"><input type="checkbox" id="pAway" ${P.awayAsk !== false ? "checked" : ""}><span class="grow">タイマー中に離れたら、戻ったときに何をしていたか聞く<div class="muted small">1分以上離れたとき。選んだアプリの時間として記録します</div></span></label>
     </div>
     <div class="card"><h3>テンプレート</h3><p class="muted small" style="margin:0">1行目が親、行頭に空白を2つ入れた行がその子になります。</p>
@@ -2775,6 +2839,8 @@ $("#prefsScroll").addEventListener("click", e => {
   if (b.dataset.arc) { meta.prefs.arrows = { ...arrowPrefs(), [b.dataset.arc]: b.dataset.col }; saveMeta(); renderPrefs(); return; }
   if (b.dataset.agw) { meta.prefs.arrows = { ...arrowPrefs(), groupW: +b.dataset.agw }; saveMeta(); renderPrefs(); return; }
   if (b.id === "arrowReset") { delete meta.prefs.arrows; saveMeta(); renderPrefs(); toast("初期に戻しました"); return; }
+  if (b.dataset.perm) { try { b.dataset.perm === "usage" ? Android.openUsageAccessSettings() : Android.openOverlaySettings(); } catch {} return; }
+  if (b.dataset.pickapps) { pickDeviceApps(b.dataset.pickapps); return; }
   if (b.id === "addWork" || b.dataset.quickwork) {
     const name = (b.dataset.quickwork || $("#workName").value).trim(); if (!name) return;
     if (meta.workApps.some(a => a.name === name) || meta.apps.some(a => a.name === name)) { toast("すでに指定済みです"); return; }
@@ -2810,6 +2876,7 @@ $("#prefsScroll").addEventListener("click", e => {
 });
 $("#prefsScroll").addEventListener("change", e => {
   const P = meta.prefs, t = e.target;
+  if (t.id === "pBlock") { P.block = t.checked; saveMeta(); toast("保存しました"); return; }
   if (t.id === "pAway") { P.awayAsk = t.checked; saveMeta(); toast("保存しました"); return; }
   if (t.dataset.bc) { P.boardColors = { ...boardColors(), [t.dataset.bc]: t.checked }; saveMeta(); toast("保存しました"); return; }
   if (t.id === "pF") P.focus = Math.max(1, Math.min(180, Math.round(+t.value) || 25));
@@ -2833,13 +2900,14 @@ function guide() {
   openSheet(`<h2>はじめに</h2>
     <p class="small" style="line-height:1.8">このページを<b>開いているあいだ</b>が、作業時間として自動で記録されます。ほかのアプリへ切り替えたり、画面が消えたりすると止まります。無操作で止まることはありません。</p>
     <p class="small" style="line-height:1.8">メモは上の「＋ 新しいメモ」でいくつでも作れます。「◧ ボード」を開くと、すべてのメモがカードで並び、自由に動かして<b>矢印でつなげられます</b>。</p>
-    <p class="small" style="line-height:1.8">これはスマホのブラウザで試せる<b>Web試作</b>です。ネイティブ版との違いは次のとおりです。</p>
-    <ul class="small" style="line-height:1.8;padding-left:1.2em;margin:0">
+    ${NATIVE ? `<p class="small" style="line-height:1.8">ほかのアプリの使用時間を読んだり、タイマー中に妨害アプリを使えなくしたりするには、「設定 › 端末の許可」から二つの許可をオンにしてください。</p>` : ""}
+    <p class="small" style="line-height:1.8;${NATIVE ? "display:none" : ""}">これはスマホのブラウザで試せる<b>Web試作</b>です。ネイティブ版との違いは次のとおりです。</p>
+    <ul class="small" style="line-height:1.8;padding-left:1.2em;margin:0;${NATIVE ? "display:none" : ""}">
       <li>妨害アプリの使用時間は自動取得できないため、「記録」で分数を入力します</li>
       <li>予定の通知は、ページを開いている間だけ鳴ります</li>
       <li>インストール済みアプリの一覧は読めないため、名前で指定します</li>
     </ul>
-    <p class="small" style="line-height:1.8">ネイティブ版で必要になる「使用状況へのアクセス」の許可手順は、「設定」に載せてあります。</p>
+    <p class="small" style="line-height:1.8;${NATIVE ? "display:none" : ""}">ネイティブ版で必要になる「使用状況へのアクセス」の許可手順は、「設定」に載せてあります。</p>
     <div class="btns"><button class="btn primary" data-ok>書きはじめる</button></div>`, s => {
     $("[data-ok]", s).onclick = () => { meta.guideSeen = true; saveMeta(); closeSheet(); show("memo"); focusStart(); };
   });
@@ -2868,6 +2936,7 @@ function handleAway() {
   const a = LS.get("away"); LS.del("away"); if (!a) return;
   const dur = Date.now() - a.s;
   if (dur < 60000 || meta.prefs.awayAsk === false) return;
+  if (NATIVE && usageAccess() && [...meta.apps, ...meta.workApps].every(a => a.pkg)) return; // 端末から自動で読めるので聞かない
   const btn = (x, kind) => `<button class="btn${kind === "w" ? " primary" : ""}" data-away="${x.id}" style="${kind === "d" ? "color:var(--danger)" : ""}">${kind === "w" ? "🛠 " : ""}${esc(x.name)}</button>`;
   openSheet(`<h2>集中中に ${fmtDur(dur)} 離れていました</h2>
     <p class="muted small" style="margin-top:-4px">${hm(a.s)}〜${hm(Date.now())}。何を使っていましたか?選ぶと、そのアプリの時間として記録します。</p>
@@ -2907,6 +2976,18 @@ function focusStart() { // 起動直後にすぐ書けるよう、前回の行(�
   const vis = flatVisible(); const id = focusId && vis.includes(focusId) ? focusId : vis[vis.length - 1];
   if (id) { focusAt(id, index[id].n.t.length); renderOutline(); }
 }
+// Android の戻るボタン:開いているものを一つずつ閉じる。何もなければアプリを閉じる
+window.androidBack = () => {
+  if ($("#veil").classList.contains("on")) { closeSheet(); return true; }
+  if (document.body.classList.contains("side-open") && !isWide()) { setSide(false); return true; }
+  if (view !== "memo") { show("memo"); return true; }
+  return false;
+};
+window.onAndroidResume = () => { // 設定画面から戻ったときなど:許可と使用時間を読み直す
+  accessMemo.t = 0; for (const k of Object.keys(usageCache)) delete usageCache[k];
+  if (view === "prefs") renderPrefs(); else if (view === "log") renderLog(); else if (view === "timer") renderTimer();
+  refreshLive();
+};
 function boot() {
   { const so = LS.get("sideOpen"); document.body.classList.toggle("side-open", so === null ? innerWidth >= 720 : !!so); }
   if (!Object.keys(Store.localDocs()).length) LS.set("fresh", true); // 何も入っていない端末
