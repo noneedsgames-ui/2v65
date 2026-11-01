@@ -119,22 +119,45 @@ body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 .fb-open{flex:1;min-width:0;display:flex;align-items:center;gap:6px;padding:9px 6px 9px 14px;text-align:left;font-size:15px}
 .fb-open b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fb-new{flex:none;font-size:13px;font-weight:600;padding:6px 10px;border-radius:999px;background:var(--accent);color:var(--accent-ink);white-space:nowrap}
-.fgrp.drop,.frow.drop{outline:2px solid var(--accent);outline-offset:-2px;border-radius:10px}
-.frow.dragging{opacity:.3}
-.frow.pressing{background:var(--surface-2);transition:background .35s}
-.fhint{font-size:12px;color:var(--text-muted);margin:8px 0 2px}
 .fb-ic{color:var(--text-secondary);font-size:17px}
-.fb-g{color:var(--text-muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%}
+.fb-board{color:var(--accent);font-weight:600;font-size:14px;white-space:nowrap}
+.fb-sep{color:var(--text-muted)}
 .fb-cv{color:var(--text-muted);font-size:12px;margin-left:auto}
-.fgrp{display:flex;align-items:center;gap:6px;padding:10px 0 4px;border-top:1px solid var(--line);margin-top:6px}
-.fg-fold{width:22px;flex:none;color:var(--text-secondary)}
-.fg-name{flex:1;text-align:left;font-weight:700;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.frow{display:flex;align-items:center;gap:6px;border-radius:10px}
-.frow.in{padding-left:28px}
-.frow.cur{background:var(--surface-2)}
-.fopen{flex:1;min-width:0;text-align:left;padding:9px 8px;display:flex;flex-direction:column;gap:2px}
-.fopen b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fempty{padding:4px 0 6px 36px}
+
+/* board */
+.board{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;
+  background-color:var(--bg);background-image:radial-gradient(var(--line) 1px,transparent 1.2px);background-size:22px 22px}
+.world{position:absolute;left:0;top:0;transform-origin:0 0}
+.edges{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none}
+.edge{stroke:var(--text-secondary);stroke-width:1.8;fill:none}
+.edge.tmp{stroke:var(--accent);stroke-dasharray:5 4}
+.edge-hit{stroke:transparent;stroke-width:24;fill:none;pointer-events:stroke}
+.edge-label{font-size:12px;fill:var(--text-secondary);paint-order:stroke;stroke:var(--bg);stroke-width:4px;pointer-events:all}
+.bcard{position:absolute;background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:9px 14px 8px 12px;box-shadow:0 1px 3px #0001}
+.bcard.cur{border-color:var(--accent);border-width:1.5px}
+.bcard.moving{box-shadow:0 8px 20px #0003;z-index:2}
+.bcard.linktarget{outline:2.5px solid var(--accent);outline-offset:2px}
+.bc-t{font-weight:700;font-size:15px;line-height:1.35;overflow-wrap:anywhere}
+.bc-p{font-size:12px;color:var(--text-secondary);margin-top:4px;line-height:1.5}
+.bc-p div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bc-m{font-size:10px;color:var(--text-muted);margin-top:4px}
+.bc-h{position:absolute;right:-11px;bottom:-11px;width:22px;height:22px;border-radius:50%;background:var(--surface-1);border:2px solid var(--accent)}
+.bc-h::before{content:"";position:absolute;inset:-9px}
+.bc-h::after{content:"";position:absolute;left:5px;top:5px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.c-red{background:color-mix(in srgb,#e34948 15%,var(--surface-1));border-color:color-mix(in srgb,#e34948 45%,var(--line))}
+.c-orange{background:color-mix(in srgb,#eb6834 15%,var(--surface-1));border-color:color-mix(in srgb,#eb6834 45%,var(--line))}
+.c-yellow{background:color-mix(in srgb,#eda100 18%,var(--surface-1));border-color:color-mix(in srgb,#eda100 50%,var(--line))}
+.c-green{background:color-mix(in srgb,#1baf7a 15%,var(--surface-1));border-color:color-mix(in srgb,#1baf7a 45%,var(--line))}
+.c-blue{background:color-mix(in srgb,#2a78d6 15%,var(--surface-1));border-color:color-mix(in srgb,#2a78d6 45%,var(--line))}
+.c-purple{background:color-mix(in srgb,#6250d6 15%,var(--surface-1));border-color:color-mix(in srgb,#6250d6 45%,var(--line))}
+.bctl{position:absolute;right:12px;bottom:12px;display:flex;gap:6px}
+.bctl button{min-width:42px;height:42px;padding:0 10px;border-radius:12px;background:var(--surface-1);border:1px solid var(--line);font-size:18px;box-shadow:0 1px 3px #0002}
+.bctl button[data-z="fit"]{font-size:13px;font-weight:600}
+.bhint{position:absolute;left:12px;right:170px;bottom:12px;font-size:11.5px;line-height:1.55;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--line);border-radius:10px;padding:8px 10px;pointer-events:none}
+@media (max-width:420px){.bhint{right:12px;bottom:64px}}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.sw2{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface-1);font-size:10px;color:var(--text-muted)}
+.sw2.on{outline:2.5px solid var(--accent);outline-offset:2px}
 
 /* generic */
 .card{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
@@ -215,7 +238,7 @@ textarea.inp{line-height:1.6;resize:vertical}
 <main>
   <!-- メモ -->
   <section class="view" id="v-memo">
-    <div class="filebar"><button class="fb-open" id="fileBar" aria-label="メモの一覧を開く"><span class="fb-ic">≡</span><span class="fb-g" id="fbGroup"></span><b id="fbName"></b><span class="fb-cv">▾</span></button>
+    <div class="filebar"><button class="fb-open" id="fileBar" aria-label="ボードを開く"><span class="fb-board">◧ ボード</span><span class="fb-sep">›</span><b id="fbName"></b></button>
       <button class="fb-new" id="newMemo">＋ 新しいメモ</button></div>
     <div class="toolbar">
       <button class="tb" id="btnSearch">検索</button>
@@ -234,6 +257,17 @@ textarea.inp{line-height:1.6;resize:vertical}
       <button data-op="child" aria-label="子を追加">＋子</button>
       <button data-op="tpl" class="ot-tpl" aria-label="テンプレートを入れる">テンプレ</button>
       <button data-op="more" aria-label="この行の操作">⋯</button>
+    </div>
+  </section>
+
+  <!-- ボード(すべてのメモ) -->
+  <section class="view" id="v-board">
+    <div class="filebar"><button class="fb-open" id="boardBack"><span class="fb-board">← メモへ戻る</span></button>
+      <button class="fb-new" id="boardNew">＋ 新しいメモ</button></div>
+    <div class="board" id="board">
+      <div class="world" id="world"><svg class="edges" id="edges"></svg><div id="cards"></div></div>
+      <div class="bhint" id="bhint">カードはドラッグで移動、タップで開く、長押しで色や削除。カードの右下の●を別のカードへ引くと矢印、空いた所で離すと新しいメモ。空いた所はドラッグで移動、二本指で拡大縮小、2回タップで新しいメモ。</div>
+      <div class="bctl"><button data-z="out" aria-label="縮小">−</button><button data-z="in" aria-label="拡大">＋</button><button data-z="fit">全体</button></div>
     </div>
   </section>
 
@@ -413,7 +447,7 @@ function mergeLog(l, r) {
 
 /* ============================================================
    データモデル
-   file-<id> : メモ1件(名前・入っているファイル・入れ子の行)/ meta : 設定・予定・ファイル(メモのまとまり)
+   file-<id> : メモ1件(名前・入れ子の行)/ board : ボード上のカードの位置・色と矢印 / meta : 設定・予定
    outline : 1枚だった頃のメモ(移行元)/ memo-<id> : タブ形式だった頃のメモ(移行元)
    log-YYYY-MM : その月の作業区間・タイマー記録・妨害アプリ使用時間
    ============================================================ */
@@ -441,6 +475,7 @@ function loadAll() {
   }
   meta.groups ||= [];
   loadFiles(docs);
+  loadBoard(docs);
 }
 const saveMeta = () => Store.put("meta", meta);
 function logOf(key) { return logs[key] ||= { sessions: [], timers: [], usage: {} }; }
@@ -500,14 +535,23 @@ function distMs(dateStr, appId) {
 /* ============================================================
    画面切り替え(#memo #log #timer #plan #prefs)
    ============================================================ */
-const VIEWS = ["memo", "log", "timer", "plan", "prefs"];
+const VIEWS = ["memo", "board", "log", "timer", "plan", "prefs"];
 let view = "memo";
 function show(v, push = true) {
   if (!VIEWS.includes(v)) v = "memo";
   view = v;
   for (const x of VIEWS) $("#v-" + x).classList.toggle("on", x === v);
-  for (const b of $("#nav").children) b.classList.toggle("on", b.dataset.v === v);
+  for (const b of $("#nav").children) b.classList.toggle("on", b.dataset.v === (v === "board" ? "memo" : v));
   if (push && location.hash !== "#" + v) { try { history.replaceState(null, "", "#" + v); } catch { location.hash = v; } }
+  if (v === "board") {
+    renderBoard();
+    if (!LS.get("boardView")) fitView();
+    else { // いまのメモのカードが画面の外なら、そこへ寄せる
+      const el = cardsEl.querySelector(`[data-card="${curFile}"]`);
+      if (el) { const r = boardEl.getBoundingClientRect(), b = el.getBoundingClientRect();
+        if (b.right < r.left + 20 || b.left > r.right - 20 || b.bottom < r.top + 20 || b.top > r.bottom - 20) centerOn(curFile); }
+    }
+  }
   if (v === "log") renderLog();
   if (v === "timer") renderTimer();
   if (v === "plan") renderPlan();
@@ -527,7 +571,10 @@ function openSheet(html, mount) {
   mount && mount($("#sheet"));
 }
 function closeSheet() { $("#veil").classList.remove("on"); $("#sheet").innerHTML = ""; }
-$("#veil").addEventListener("click", e => { if (e.target.id === "veil") closeSheet(); });
+// 背景で押し始めたタップでだけ閉じる(長押しでシートが開いた直後、指を離したタップで閉じないように)
+let veilDown = false;
+$("#veil").addEventListener("pointerdown", e => { veilDown = e.target.id === "veil"; });
+$("#veil").addEventListener("click", e => { if (e.target.id === "veil" && veilDown) closeSheet(); veilDown = false; });
 function confirmSheet(title, body, okLabel, onOk) {
   openSheet(`<h2>${esc(title)}</h2><p class="muted">${esc(body)}</p>
     <div class="btns"><button class="btn" data-x>やめる</button><button class="btn primary" style="background:var(--danger)" data-ok>${esc(okLabel)}</button></div>`,
@@ -550,7 +597,7 @@ function reindex() {
   const walk = (list, parent) => list.forEach(n => { n.c ||= []; index[n.id] = { n, parent, list }; walk(n.c, n); });
   walk(outline.nodes, null);
 }
-// ---- メモ(複数)と、メモをまとめるファイル。内部では メモ=files、ファイル=meta.groups ----
+// ---- メモ(複数)。ボードの上に、すべてのメモがカードとして並ぶ ----
 let files = {};       // id -> { id, name, group, order, nodes, created, updated }
 let curFile = null;
 function newFileObj(name, group) {
@@ -560,7 +607,7 @@ function newFileObj(name, group) {
 function loadFiles(docs) {
   files = {};
   for (const [id, v] of Object.entries(docs)) if (id.startsWith("file-") && v && v.id) files[v.id] = v;
-  if (!Object.keys(files).length) { // 以前の版のメモを「メモ」ファイルへ移す
+  if (!Object.keys(files).length) { // 以前の版のメモを、メモ1件として移す
     let nodes = docs.outline?.nodes, ts = docs.outline?._ts;
     if (!nodes) {
       nodes = migrateMemos();
@@ -587,15 +634,15 @@ function setOutline(id) {
   zoomId = st.zoom && index[st.zoom] ? st.zoom : null;
   focusId = st.focus && index[st.focus] ? st.focus : null;
 }
-function saveView() { // 開いているファイルと、ファイルごとの絞り込み・最後の行は端末ごとに覚える
+function saveView() { // 開いているメモと、メモごとの絞り込み・最後の行は端末ごとに覚える
   const v = LS.get("view") || {}; v.cur = curFile; v.files ||= {};
   v.files[curFile] = { zoom: zoomId, focus: focusId };
   LS.set("view", v);
 }
-const groupOf = f => (f.group && meta.groups.some(g => g.id === f.group) ? f.group : null);
+const groupOf = f => null; // ファイル(まとまり)はボードに置き換えた
 const sortedGroups = () => meta.groups.slice().sort((a, b) => a.order - b.order);
 const sortedFiles = gid => Object.values(files).filter(f => groupOf(f) === gid).sort((a, b) => a.order - b.order || a.created - b.created);
-const allFilesSorted = () => [...sortedGroups().flatMap(g => sortedFiles(g.id)), ...sortedFiles(null)];
+const allFilesSorted = () => Object.values(files).sort((a, b) => b.updated - a.updated); // 新しく書いたメモから
 const saveFile = f => { f.updated = Date.now(); delete f.auto; Store.put("file-" + f.id, f); };
 // すべてのファイルの行を id で引けるように(ファイルをまたぐ検索・関連付け用)
 let gindex = {};
@@ -651,7 +698,7 @@ function backlinks() {
   return b;
 }
 const label = id => ((gindex[id] || index[id])?.n.t || "(空の行)").slice(0, 40);
-const labelX = id => (gindex[id] && gindex[id].f !== curFile ? memoTitle(files[gindex[id].f]) + " › " : "") + label(id); // ほかのファイルの行は名前を添える
+const labelX = id => (gindex[id] && gindex[id].f !== curFile ? memoTitle(files[gindex[id].f]) + " › " : "") + label(id); // ほかのメモの行は、メモの名前を添える
 
 let pendingCaret = null;
 let editId = null; // 入力欄として描く行(書いている1行だけ)。ほかの行はただの文字表示にして、長押しでキーボードや文字選択が起きないようにする
@@ -916,13 +963,12 @@ box.addEventListener("pointercancel", e => {
 });
 // 持ち上げ中は指の動きでスクロールさせない(タッチの座標もこちらで拾う)
 document.addEventListener("touchmove", e => {
-  if (ldrag && ldrag.on) { e.preventDefault(); const t = e.touches[0]; if (t) { ldrag.x = t.clientX; ldrag.y = t.clientY; lOver(); } return; }
   if (!drag || !drag.on) return;
   e.preventDefault();
   const t = e.touches[0]; if (t) { drag.x = t.clientX; drag.y = t.clientY; dragOver(); }
 }, { passive: false });
-document.addEventListener("touchend", () => { if (ldrag && ldrag.on) { lEnd(true); return; } if (drag && drag.on) endDrag(true); });
-document.addEventListener("touchcancel", () => { if (ldrag && ldrag.on) { lEnd(false); return; } if (drag && drag.on) endDrag(false); });
+document.addEventListener("touchend", () => { if (drag && drag.on) endDrag(true); });
+document.addEventListener("touchcancel", () => { if (drag && drag.on) endDrag(false); });
 function subtreeIds(id) { const out = new Set([id]); const w = n => n.c.forEach(c => { out.add(c.id); w(c); }); w(index[id].n); return out; }
 function startDrag() {
   flushOutline();
@@ -1040,7 +1086,7 @@ function lineMenu(id) {
     });
   });
 }
-function allPaths() { // いま開いているファイルを先に、すべてのファイルの行を「ファイル名 › 親 › …」付きで
+function allPaths() { // いま開いているメモを先に、すべてのメモの行を「メモの名前 › 親 › …」付きで
   const out = [];
   for (const f of [files[curFile], ...allFilesSorted().filter(x => x.id !== curFile)]) {
     const walk = (l, p) => l.forEach(n => { out.push({ id: n.id, t: n.t, path: p, f: f.id }); walk(n.c, p + " › " + (n.t || "…").slice(0, 16)); });
@@ -1087,7 +1133,7 @@ function openSearch(q) {
     const items = allPaths();
     const run = () => {
       const v = $("#q").value.trim().toLowerCase();
-      if (!v) { $("#qres").innerHTML = `<div class="empty">すべてのファイルの行から探します。行の中に「#武器」のように書くとタグになります</div>`; return; }
+      if (!v) { $("#qres").innerHTML = `<div class="empty">すべてのメモの行から探します。行の中に「#武器」のように書くとタグになります</div>`; return; }
       const hits = items.filter(x => v.startsWith("#") ? (x.t.toLowerCase().match(/#[^\s#、。,,.]+/g) || []).includes(v) : x.t.toLowerCase().includes(v)).slice(0, 200);
       $("#qres").innerHTML = hits.length ? hits.map(x => {
         const i = x.t.toLowerCase().indexOf(v);
@@ -1149,9 +1195,7 @@ function memoTitle(f) {
   return (first(f.nodes) || "新しいメモ").slice(0, 30);
 }
 function renderFileBar() {
-  const f = files[curFile]; const g = meta.groups.find(x => x.id === groupOf(f));
-  $("#fbGroup").textContent = g ? g.name + " ›" : "";
-  $("#fbName").textContent = memoTitle(f);
+  $("#fbName").textContent = memoTitle(files[curFile]);
 }
 const isEmptyMemo = f => !f.name && f.nodes.length === 1 && !f.nodes[0].t && !f.nodes[0].c.length;
 function openFile(id) {
@@ -1160,214 +1204,319 @@ function openFile(id) {
   const prev = curFile;
   setOutline(id); saveView();
   // 名前も中身もないまま離れたメモは、ほかにメモがあれば片づける
-  if (prev !== id && files[prev] && isEmptyMemo(files[prev]) && Object.keys(files).length > 1) { delete files[prev]; Store.remove("file-" + prev); }
+  if (prev !== id && files[prev] && isEmptyMemo(files[prev]) && Object.keys(files).length > 1) removeMemo(prev, true);
   show("memo"); renderMemo();
 }
-function newMemo(gid) { // ボタン一つで新しいメモ。名前は書いた1行目
-  const f = newFileObj("", gid);
+function createMemo(firstLine, at) {
+  const f = newFileObj("", null);
+  if (firstLine) f.nodes[0].t = firstLine;
   files[f.id] = f; Store.put("file-" + f.id, f);
+  board.cards[f.id] = freeSpot(at.x, at.y); saveBoard();
+  return f;
+}
+function newMemo() { // メモ画面の「＋ 新しいメモ」:ボード上ではいまのメモの右隣に置き、すぐ書く
+  const c = board.cards[curFile] || { x: 40, y: 40 };
+  const f = createMemo("", { x: c.x + 200, y: c.y });
   closeSheet(); openFile(f.id); focusStart();
 }
-$("#newMemo").onclick = () => newMemo(groupOf(files[curFile]));
-
-// ---- メモの一覧とファイル(メモのまとまり) ----
-$("#fileBar").onclick = () => openFiles();
+$("#newMemo").onclick = () => newMemo();
+$("#fileBar").onclick = () => { flushOutline(); show("board"); };
 function fmtWhen(t) { const d = new Date(t); return ymd(d) === ymd(new Date()) ? hm(t) : `${d.getMonth() + 1}/${d.getDate()}`; }
 const countNodes = l => l.reduce((t, n) => t + 1 + countNodes(n.c || []), 0);
-const saveFileQuiet = f => { delete f.auto; Store.put("file-" + f.id, f); }; // 並べ替え・移動では更新日時を変えない
-function fileRow(f, inGroup) {
-  return `<div class="frow${inGroup ? " in" : ""}${f.id === curFile ? " cur" : ""}" data-fid="${f.id}"><button class="fopen" data-fopen="${f.id}"><b>${esc(memoTitle(f))}</b><span class="muted small">${countNodes(f.nodes)}行 · ${fmtWhen(f.updated)}</span></button>` +
-    `<button class="mini" data-fmenu="${f.id}" aria-label="メモの設定">⋯</button></div>`;
-}
-function openFiles() {
-  flushOutline();
-  openSheet(`<h2>メモ</h2>
-    <div class="btns" style="margin-top:0"><button class="btn primary" data-fa="newmemo">＋ 新しいメモ</button><button class="btn" data-fa="newgroup">＋ ファイル</button></div>
-    <p class="fhint">メモを長押しして、ファイルに重ねると中へ入ります。メモ同士を重ねると、二つを入れた新しいファイルができます。</p>
-    <div id="flist" style="margin-top:2px"></div>`, s => {
-    drawFiles();
-    bindListDrag(s);
-    s.addEventListener("click", e => {
-      if (lJust) return;
-      const b = e.target.closest("button"); if (!b) return;
-      const d = b.dataset;
-      if (d.fopen) { closeSheet(); openFile(d.fopen); }
-      else if (d.fmenu) fileMenu(d.fmenu);
-      else if (d.gfold) { const g = meta.groups.find(x => x.id === d.gfold); g.folded = !g.folded; saveMeta(); drawFiles(); }
-      else if ("gadd" in d) newMemo(d.gadd || null);
-      else if (d.gmenu) groupMenu(d.gmenu);
-      else if (d.fa === "newmemo") newMemo(null);
-      else if (d.fa === "newgroup") newGroupSheet();
-    });
-  });
-}
-function drawFiles() {
-  const box = $("#flist"); if (!box) return;
-  let h = "";
-  for (const g of sortedGroups()) {
-    const fs = sortedFiles(g.id);
-    h += `<div class="fgrp" data-gid="${g.id}"><button class="fg-fold" data-gfold="${g.id}" aria-label="${g.folded ? "開く" : "畳む"}">${g.folded ? "▸" : "▾"}</button>` +
-      `<button class="fg-name" data-gfold="${g.id}">📁 ${esc(g.name)} <span class="muted small">${fs.length}</span></button>` +
-      `<button class="mini" data-gadd="${g.id}" aria-label="このファイルに新しいメモ">＋</button><button class="mini" data-gmenu="${g.id}" aria-label="ファイルの設定">⋯</button></div>`;
-    if (!g.folded) h += fs.map(f => fileRow(f, true)).join("") || `<div class="muted small fempty">メモがありません</div>`;
-  }
-  const loose = sortedFiles(null);
-  if (meta.groups.length) h += `<div class="fgrp" data-gid=""><span class="fg-fold"></span><span class="fg-name" style="color:var(--text-secondary)">ファイルに入れていないメモ <span class="muted small">${loose.length}</span></span></div>`;
-  h += loose.map(f => fileRow(f, false)).join("");
-  box.innerHTML = h;
-}
-const groupOptions = sel => `<option value="">ファイルに入れない</option>` + sortedGroups().map(g => `<option value="${g.id}" ${g.id === sel ? "selected" : ""}>${esc(g.name)}</option>`).join("");
-function newGroupSheet(then) {
-  openSheet(`<h2>新しいファイル</h2>
-    <label class="field"><span>名前</span><input class="inp" id="gnName" value="新しいファイル" maxlength="30"></label>
-    <div class="btns"><button class="btn" data-back>戻る</button><button class="btn primary" data-ok>作成</button></div>`, s => {
-    const i = $("#gnName"); i.focus(); i.select();
-    i.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) $("[data-ok]", s).click(); });
-    $("[data-back]", s).onclick = openFiles;
-    $("[data-ok]", s).onclick = () => { meta.groups.push({ id: uid(), name: $("#gnName").value.trim() || "新しいファイル", order: Date.now() }); saveMeta(); openFiles(); };
-  });
-}
-function nameGroupSheet(gid) { // メモ同士を重ねて作ったファイルに、その場で名前を付ける
-  const g = meta.groups.find(x => x.id === gid);
-  openSheet(`<h2>ファイルの名前</h2>
-    <p class="muted small" style="margin-top:-4px">${sortedFiles(gid).map(f => esc(memoTitle(f))).join("、")} をまとめました。</p>
-    <label class="field"><span>名前</span><input class="inp" id="ngName" value="${esc(g.name)}" maxlength="30"></label>
-    <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
-    const i = $("#ngName"); i.focus(); i.select();
-    i.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) $("[data-ok]", s).click(); });
-    $("[data-ok]", s).onclick = () => { g.name = $("#ngName").value.trim() || g.name; saveMeta(); renderFileBar(); openFiles(); };
-  });
-}
-function swapOrder(list, i, d, save) { const j = i + d; if (j < 0 || j >= list.length) return false; const a = list[i], b = list[j]; [a.order, b.order] = [b.order, a.order]; if (a.order === b.order) a.order += d; save(a); save(b); return true; }
-function fileMenu(id) {
-  const f = files[id]; const sib = sortedFiles(groupOf(f)); const i = sib.indexOf(f);
-  openSheet(`<h2>メモの設定</h2>
-    <label class="field"><span>名前</span><input class="inp" id="fmName" value="${esc(f.name)}" maxlength="40" placeholder="空欄なら1行目が名前(${esc(memoTitle({ ...f, name: "" }))})"></label>
-    <label class="field"><span>ファイル</span><select class="inp" id="fmGroup">${groupOptions(groupOf(f))}</select></label>
-    <div class="btns" style="margin-top:4px"><button class="btn" data-mv="-1" ${i <= 0 ? "disabled style=opacity:.4" : ""}>↑ 上へ</button><button class="btn" data-mv="1" ${i >= sib.length - 1 ? "disabled style=opacity:.4" : ""}>↓ 下へ</button></div>
-    <button class="btn danger block" data-del style="margin-top:14px">このメモを削除</button>
-    <div class="btns"><button class="btn" data-back>戻る</button><button class="btn primary" data-ok>決定</button></div>`, s => {
-    const apply = () => {
-      const nm = $("#fmName").value.trim(), g = $("#fmGroup").value || null;
-      if (nm !== (f.name || "") || g !== groupOf(f)) { if (g !== groupOf(f)) f.order = Date.now(); f.name = nm; f.group = g; saveFileQuiet(f); if (id === curFile) renderFileBar(); }
-    };
-    s.addEventListener("click", e => {
-      const b = e.target.closest("button"); if (!b) return;
-      if (b.dataset.mv) { apply(); if (swapOrder(sib, i, +b.dataset.mv, saveFileQuiet)) fileMenu(id); }
-      else if ("back" in b.dataset) openFiles();
-      else if ("ok" in b.dataset) { apply(); openFiles(); }
-      else if ("del" in b.dataset) confirmSheet("メモを削除しますか", `「${memoTitle(f)}」(${countNodes(f.nodes)}行)を削除します。元に戻せません。`, "削除する", () => { deleteFile(id); openFiles(); });
-    });
-  });
-}
-function deleteFile(id) {
+const saveFileQuiet = f => { delete f.auto; Store.put("file-" + f.id, f); };
+function removeMemo(id, quiet) {
   delete files[id]; Store.remove("file-" + id);
-  if (!Object.keys(files).length) { const f = newFileObj("", null); f.auto = true; files[f.id] = f; }
+  delete board.cards[id];
+  board.edges = board.edges.filter(e => e.a !== id && e.b !== id);
+  saveBoard();
+  if (!Object.keys(files).length) { const f = newFileObj("", null); f.auto = true; files[f.id] = f; placeMissing(); }
   if (id === curFile) { setOutline(allFilesSorted()[0].id); saveView(); }
-  renderMemo(); toast("削除しました");
-}
-function groupMenu(gid) {
-  const g = meta.groups.find(x => x.id === gid); const list = sortedGroups(); const i = list.indexOf(g); const n = sortedFiles(gid).length;
-  openSheet(`<h2>ファイルの設定</h2>
-    <label class="field"><span>名前</span><input class="inp" id="gmName" value="${esc(g.name)}" maxlength="30"></label>
-    <div class="btns" style="margin-top:4px"><button class="btn" data-mv="-1" ${i <= 0 ? "disabled style=opacity:.4" : ""}>↑ 上へ</button><button class="btn" data-mv="1" ${i >= list.length - 1 ? "disabled style=opacity:.4" : ""}>↓ 下へ</button></div>
-    <button class="btn danger block" data-del style="margin-top:14px">このファイルを削除</button>
-    <p class="muted small">ファイルを削除しても、中のメモは消えません(ファイルの外に出ます)。</p>
-    <div class="btns"><button class="btn" data-back>戻る</button><button class="btn primary" data-ok>決定</button></div>`, s => {
-    const apply = () => { const nm = $("#gmName").value.trim(); if (nm && nm !== g.name) { g.name = nm; saveMeta(); renderFileBar(); } };
-    s.addEventListener("click", e => {
-      const b = e.target.closest("button"); if (!b) return;
-      if (b.dataset.mv) { apply(); if (swapOrder(list, i, +b.dataset.mv, () => {})) { saveMeta(); groupMenu(gid); } }
-      else if ("back" in b.dataset) openFiles();
-      else if ("ok" in b.dataset) { apply(); openFiles(); }
-      else if ("del" in b.dataset) confirmSheet("ファイルを削除しますか", `「${g.name}」を削除します。中の ${n} 件のメモは消えず、ファイルの外に出ます。`, "削除する", () => {
-        for (const f of sortedFiles(gid)) { f.group = null; f.order = Date.now() + Math.random(); saveFileQuiet(f); }
-        meta.groups = meta.groups.filter(x => x.id !== gid); saveMeta(); renderFileBar(); openFiles();
-      });
-    });
-  });
+  if (!quiet) toast("削除しました");
 }
 
-// ---- 一覧でメモを長押しして動かす:ファイルに重ねる=中へ、メモに重ねる=まとめる、すき間=並べ替え ----
-let ldrag = null, lJust = false;
-function bindListDrag(s) {
-  s.addEventListener("pointerdown", e => {
-    const row = e.target.closest(".frow"); if (!row || e.button > 0 || e.target.closest("[data-fmenu]")) return;
-    clearTimeout(ldrag?.timer);
-    ldrag = { id: row.dataset.fid, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, on: false, pid: e.pointerId, row, s, target: null };
-    row.classList.add("pressing");
-    ldrag.timer = setTimeout(() => { if (ldrag && !ldrag.on) lStart(); }, LONGPRESS_MS);
-  });
-  s.addEventListener("pointermove", e => {
-    if (!ldrag || e.pointerId !== ldrag.pid) return;
-    ldrag.x = e.clientX; ldrag.y = e.clientY;
-    if (!ldrag.on) { if (Math.hypot(e.clientX - ldrag.x0, e.clientY - ldrag.y0) > 8) lCancel(); return; }
-    e.preventDefault(); lOver();
-  });
-  s.addEventListener("pointerup", e => { if (!ldrag || e.pointerId !== ldrag.pid) return; ldrag.on ? lEnd(true) : lCancel(); });
-  s.addEventListener("pointercancel", () => { if (ldrag && !ldrag.on) lCancel(); });
-  s.addEventListener("contextmenu", e => { if (ldrag) e.preventDefault(); });
+/* ============================================================
+   ボード:すべてのメモをカードとして並べ、矢印でつなぐ
+   board : { cards: { メモid: { x, y, c:色 } }, edges: [{ id, a, b, dir: to|both|none, label }] }
+   ============================================================ */
+let board = { cards: {}, edges: [] };
+const CARD_W = 172;
+const COLORS = ["", "red", "orange", "yellow", "green", "blue", "purple"];
+const COLOR_NAMES = { "": "なし", red: "赤", orange: "橙", yellow: "黄", green: "緑", blue: "青", purple: "紫" };
+function loadBoard(docs) {
+  board = docs.board ? docs.board : { cards: {}, edges: [] };
+  board.cards ||= {}; board.edges ||= [];
+  placeMissing();
 }
-function lCancel() { if (!ldrag) return; clearTimeout(ldrag.timer); ldrag.row.classList.remove("pressing"); ldrag = null; }
-function lStart() {
-  const d = ldrag; d.on = true; d.row.classList.remove("pressing"); d.row.classList.add("dragging");
-  try { d.row.setPointerCapture(d.pid); } catch {}
-  try { getSelection().removeAllRanges(); } catch {}
-  ghost.textContent = memoTitle(files[d.id]); ghost.style.display = "block";
-  document.body.classList.add("dragging");
-  try { navigator.vibrate && navigator.vibrate(12); } catch {}
-  lOver();
-  const loop = () => {
-    if (!ldrag || !ldrag.on) return;
-    const r = d.s.getBoundingClientRect();
-    const dy = ldrag.y < r.top + 56 ? -10 : ldrag.y > r.bottom - 48 ? 10 : 0;
-    if (dy) { d.s.scrollTop += dy; lOver(); }
-    requestAnimationFrame(loop);
-  };
-  requestAnimationFrame(loop);
+let boardTimer = null;
+function saveBoard() { clearTimeout(boardTimer); boardTimer = setTimeout(() => Store.put("board", board), 300); }
+function freeSpot(x, y) { // ほかのカードに重ならない場所を、下へ・右へと探す
+  for (let i = 0; i < 80; i++) {
+    if (!Object.entries(board.cards).some(([id, c]) => files[id] && Math.abs(c.x - x) < 185 && Math.abs(c.y - y) < 115)) return { x, y };
+    y += 125; if (i % 6 === 5) { x += 200; y -= 750; }
+  }
+  return { x, y };
 }
-function lOver() {
-  const d = ldrag;
-  ghost.style.left = Math.min(innerWidth - 80, d.x + 14) + "px"; ghost.style.top = (d.y - 34) + "px";
-  d.s.querySelectorAll(".drop").forEach(x => x.classList.remove("drop"));
-  dropline.style.display = "none"; d.target = null;
-  const hit = [...d.s.querySelectorAll(".fgrp, .frow:not(.dragging)")].find(el => { const b = el.getBoundingClientRect(); return d.y >= b.top && d.y < b.bottom; });
-  if (!hit) return;
-  if (hit.classList.contains("fgrp")) { d.target = { type: "into", gid: hit.dataset.gid || null }; hit.classList.add("drop"); tick2("g" + hit.dataset.gid); return; }
-  const b = hit.getBoundingClientRect(), rel = (d.y - b.top) / b.height, fid = hit.dataset.fid;
-  if (rel >= 0.25 && rel <= 0.75) { d.target = { type: "onto", fid }; hit.classList.add("drop"); tick2("o" + fid); return; }
-  d.target = { type: rel < 0.25 ? "before" : "after", fid };
-  dropline.style.display = "block"; dropline.style.left = (b.left + 8) + "px"; dropline.style.width = (b.width - 16) + "px";
-  dropline.style.top = ((rel < 0.25 ? b.top : b.bottom) - 1.5) + "px";
-  tick2(d.target.type + fid);
+// ボードにまだ置かれていないメモを並べる。以前ファイルにまとめていたメモは、同じ列にそろえる
+function placeMissing() {
+  const ids = Object.keys(files).filter(id => !board.cards[id]);
+  if (!ids.length) return;
+  const placed = Object.entries(board.cards).filter(([id]) => files[id]).map(([, c]) => c);
+  const y0 = placed.length ? Math.max(...placed.map(c => c.y)) + 170 : 40;
+  const gs = meta.groups || [];
+  const key = f => { const i = gs.findIndex(g => g.id === f.group); return i < 0 ? 1e9 : (gs[i].order || i); };
+  const list = ids.map(id => files[id]).sort((a, b) => key(a) - key(b) || (a.order || 0) - (b.order || 0) || a.created - b.created);
+  let col = 0, row = 0, last = null, real = false;
+  for (const f of list) {
+    if (last !== null && key(f) !== last) { row++; col = 0; }
+    if (col >= 4) { row++; col = 0; }
+    last = key(f);
+    board.cards[f.id] = { x: 40 + col * 200, y: y0 + row * 150 };
+    col++; if (!f.auto) real = true;
+  }
+  if (real) saveBoard();
 }
-function tick2(key) { if (ldrag.lastKey === key) return; ldrag.lastKey = key; try { navigator.vibrate && navigator.vibrate(6); } catch {} }
-function lEnd(drop) {
-  const d = ldrag; ldrag = null; if (!d) return;
-  lJust = true; setTimeout(() => lJust = false, 80);
-  ghost.style.display = "none"; dropline.style.display = "none"; document.body.classList.remove("dragging");
-  d.s.querySelectorAll(".drop,.dragging").forEach(x => x.classList.remove("drop", "dragging"));
-  const t = d.target, f = files[d.id];
-  if (!drop || !t || !f || t.fid === f.id) { drawFiles(); return; }
-  const placeNear = (tf, after) => { // tf の前後へ(tf と同じファイルに入れる)
-    const g = groupOf(tf); f.group = g;
-    const list = sortedFiles(g).filter(x => x !== f); list.splice(list.indexOf(tf) + (after ? 1 : 0), 0, f);
-    list.forEach((x, k) => { if (x.order !== k || x === f) { x.order = k; saveFileQuiet(x); } });
-  };
-  if (t.type === "into") {
-    if (groupOf(f) !== t.gid) { f.group = t.gid; f.order = Date.now(); saveFileQuiet(f); const g = meta.groups.find(x => x.id === t.gid); if (g && g.folded) { g.folded = false; saveMeta(); } toast(g ? `「${g.name}」に入れました` : "ファイルの外に出しました"); }
-  } else if (t.type === "before" || t.type === "after") placeNear(files[t.fid], t.type === "after");
-  else if (t.type === "onto") {
-    const tf = files[t.fid];
-    if (groupOf(tf)) { placeNear(tf, true); toast(`「${meta.groups.find(x => x.id === groupOf(tf)).name}」に入れました`); }
-    else { // ファイルに入っていないメモ同士 → 二つを入れた新しいファイルを作る
-      const g = { id: uid(), name: "新しいファイル", order: Date.now() };
-      meta.groups.push(g); saveMeta();
-      tf.group = g.id; tf.order = 0; f.group = g.id; f.order = 1; saveFileQuiet(tf); saveFileQuiet(f);
-      renderFileBar(); nameGroupSheet(g.id); return;
+function previewLines(f) {
+  const out = []; const titleFromLine = !f.name;
+  let skipped = false;
+  const walk = (l, d) => { for (const n of l) { if (out.length >= 4) return; const t = (n.t || "").trim();
+    if (t) { if (titleFromLine && !skipped) skipped = true; else out.push("　".repeat(Math.min(d, 3)) + "・" + t); }
+    walk(n.c || [], d + 1); } };
+  walk(f.nodes, 0);
+  return out;
+}
+
+// ---- 表示 ----
+const BV = Object.assign({ tx: 20, ty: 20, k: 1 }, LS.get("boardView") || {});
+const boardEl = $("#board"), worldEl = $("#world"), edgesEl = $("#edges"), cardsEl = $("#cards");
+function applyView() {
+  worldEl.style.transform = `translate(${BV.tx}px,${BV.ty}px) scale(${BV.k})`;
+  clearTimeout(applyView._t); applyView._t = setTimeout(() => LS.set("boardView", BV), 400);
+}
+function renderBoard() {
+  cardsEl.innerHTML = Object.keys(files).filter(id => board.cards[id]).map(id => {
+    const f = files[id], c = board.cards[id];
+    const pv = previewLines(f);
+    return `<div class="bcard${c.c ? " c-" + c.c : ""}${id === curFile ? " cur" : ""}" data-card="${id}" style="left:${c.x}px;top:${c.y}px;width:${CARD_W}px">
+      <div class="bc-t">${esc(memoTitle(f))}</div>${pv.length ? `<div class="bc-p">${pv.map(t => `<div>${esc(t)}</div>`).join("")}</div>` : ""}
+      <div class="bc-m">${countNodes(f.nodes)}行 · ${fmtWhen(f.updated)}</div>
+      <div class="bc-h" data-handle="${id}" aria-label="引いて矢印をつなぐ"></div></div>`;
+  }).join("");
+  drawEdges();
+  applyView();
+  $("#bhint").style.display = LS.get("boardHintDone") ? "none" : "";
+}
+function cardBox(id) {
+  const el = cardsEl.querySelector(`[data-card="${id}"]`), c = board.cards[id];
+  if (!el || !c) return null;
+  return { x: c.x, y: c.y, w: el.offsetWidth, h: el.offsetHeight, cx: c.x + el.offsetWidth / 2, cy: c.y + el.offsetHeight / 2 };
+}
+function clipToBox(b, dx, dy, gap) { // 中心から (dx,dy) 方向へ進み、カードの縁で止める
+  if (!dx && !dy) return { x: b.cx, y: b.cy };
+  const t = Math.min(dx ? (b.w / 2 + gap) / Math.abs(dx) : Infinity, dy ? (b.h / 2 + gap) / Math.abs(dy) : Infinity);
+  return { x: b.cx + dx * t, y: b.cy + dy * t };
+}
+let tmpLine = null; // 矢印を引いている途中の線
+function drawEdges() {
+  let h = `<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--text-secondary)"/></marker>
+    <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>`;
+  for (const e of board.edges) {
+    const A = cardBox(e.a), B = cardBox(e.b); if (!A || !B) continue;
+    const dx = B.cx - A.cx, dy = B.cy - A.cy;
+    const p1 = clipToBox(A, dx, dy, 3), p2 = clipToBox(B, -dx, -dy, 3);
+    const d = `M${p1.x},${p1.y} L${p2.x},${p2.y}`;
+    const me = e.dir === "none" ? "" : ` marker-end="url(#ah)"`, ms = e.dir === "both" ? ` marker-start="url(#ah)"` : "";
+    h += `<path class="edge" d="${d}"${me}${ms}/><path class="edge-hit" d="${d}" data-edge="${e.id}"/>`;
+    if (e.label) {
+      const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+      h += `<text class="edge-label" x="${mx}" y="${my - 6}" text-anchor="middle" data-edge="${e.id}">${esc(e.label)}</text>`;
     }
   }
-  renderFileBar(); drawFiles();
+  if (tmpLine) h += `<path class="edge tmp" d="M${tmpLine.x1},${tmpLine.y1} L${tmpLine.x2},${tmpLine.y2}" marker-end="url(#ah2)"/>`;
+  edgesEl.innerHTML = h;
+}
+function toWorld(sx, sy) { const r = boardEl.getBoundingClientRect(); return { x: (sx - r.left - BV.tx) / BV.k, y: (sy - r.top - BV.ty) / BV.k }; }
+function zoomAt(f, sx, sy) {
+  const r = boardEl.getBoundingClientRect(); const px = sx - r.left, py = sy - r.top;
+  const nk = Math.max(0.25, Math.min(2.5, BV.k * f));
+  const wx = (px - BV.tx) / BV.k, wy = (py - BV.ty) / BV.k;
+  BV.k = nk; BV.tx = px - wx * nk; BV.ty = py - wy * nk; applyView();
+}
+function fitView() {
+  const ids = Object.keys(files).filter(id => board.cards[id]); if (!ids.length) return;
+  const bs = ids.map(cardBox).filter(Boolean); if (!bs.length) return;
+  const x0 = Math.min(...bs.map(b => b.x)), y0 = Math.min(...bs.map(b => b.y));
+  const x1 = Math.max(...bs.map(b => b.x + b.w)), y1 = Math.max(...bs.map(b => b.y + b.h));
+  const r = boardEl.getBoundingClientRect(), pad = 30;
+  const k = Math.max(0.25, Math.min(1.2, (r.width - pad * 2) / (x1 - x0), (r.height - pad * 2) / (y1 - y0)));
+  BV.k = k; BV.tx = (r.width - (x1 - x0) * k) / 2 - x0 * k; BV.ty = Math.max(pad, (r.height - (y1 - y0) * k) / 2) - y0 * k;
+  applyView();
+}
+function centerOn(id) {
+  const b = cardBox(id); if (!b) return;
+  const r = boardEl.getBoundingClientRect();
+  BV.tx = r.width / 2 - b.cx * BV.k; BV.ty = r.height / 3 - b.cy * BV.k; applyView();
+}
+
+// ---- 指の操作:カード=動かす/タップで開く/長押しでメニュー、●=矢印、空き=動かす、二本指=拡大縮小 ----
+const ptrs = new Map(); let gest = null, lastTap = null;
+boardEl.addEventListener("pointerdown", e => {
+  if (e.target.closest(".bctl")) return;
+  if (e.button > 0) return;
+  try { boardEl.setPointerCapture(e.pointerId); } catch {}
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size === 2) { // 二本目の指 → 拡大縮小に切り替え
+    if (gest && gest.timer) clearTimeout(gest.timer);
+    if (gest && gest.type === "card" && gest.moved) saveBoard();
+    tmpLine = null; cardsEl.querySelectorAll(".moving,.linktarget").forEach(x => x.classList.remove("moving", "linktarget"));
+    const [p, q] = [...ptrs.values()];
+    gest = { type: "pinch", d0: Math.hypot(p.x - q.x, p.y - q.y), k0: BV.k, mx: (p.x + q.x) / 2, my: (p.y + q.y) / 2, tx0: BV.tx, ty0: BV.ty };
+    drawEdges(); return;
+  }
+  if (ptrs.size > 2) return;
+  const handle = e.target.closest("[data-handle]"), card = e.target.closest("[data-card]"), edge = e.target.closest("[data-edge]");
+  const base = { x0: e.clientX, y0: e.clientY, moved: false, pid: e.pointerId };
+  if (handle) {
+    const id = handle.dataset.handle, b = cardBox(id), w = toWorld(e.clientX, e.clientY);
+    gest = { ...base, type: "link", from: id }; tmpLine = { x1: b.cx, y1: b.cy, x2: w.x, y2: w.y };
+  } else if (card) {
+    const id = card.dataset.card, c = board.cards[id];
+    gest = { ...base, type: "card", id, el: card, cx: c.x, cy: c.y };
+    gest.timer = setTimeout(() => { if (gest && gest.type === "card" && !gest.moved) { gest.long = true; try { navigator.vibrate && navigator.vibrate(12); } catch {} cardMenu(id); } }, 550);
+  } else if (edge) gest = { ...base, type: "edge", id: edge.dataset.edge, tx: BV.tx, ty: BV.ty };
+  else gest = { ...base, type: "pan", tx: BV.tx, ty: BV.ty };
+});
+boardEl.addEventListener("pointermove", e => {
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (!gest) return;
+  if (gest.type === "pinch") {
+    if (ptrs.size < 2) return;
+    const [p, q] = [...ptrs.values()];
+    const d = Math.hypot(p.x - q.x, p.y - q.y), mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2;
+    const r = boardEl.getBoundingClientRect();
+    const nk = Math.max(0.25, Math.min(2.5, gest.k0 * d / (gest.d0 || 1)));
+    const wx = (gest.mx - r.left - gest.tx0) / gest.k0, wy = (gest.my - r.top - gest.ty0) / gest.k0;
+    BV.k = nk; BV.tx = mx - r.left - wx * nk; BV.ty = my - r.top - wy * nk; applyView();
+    return;
+  }
+  if (e.pointerId !== gest.pid) return;
+  const dx = e.clientX - gest.x0, dy = e.clientY - gest.y0;
+  if (!gest.moved && Math.hypot(dx, dy) > 6) { gest.moved = true; clearTimeout(gest.timer); if (gest.type === "edge") gest.type = "pan"; if (gest.type === "card") gest.el.classList.add("moving"); }
+  if (!gest.moved) return;
+  if (gest.type === "pan") { BV.tx = gest.tx + dx; BV.ty = gest.ty + dy; applyView(); }
+  else if (gest.type === "card" && !gest.long) {
+    const c = board.cards[gest.id]; c.x = Math.round(gest.cx + dx / BV.k); c.y = Math.round(gest.cy + dy / BV.k);
+    gest.el.style.left = c.x + "px"; gest.el.style.top = c.y + "px"; drawEdges();
+  } else if (gest.type === "link") {
+    const w = toWorld(e.clientX, e.clientY); tmpLine.x2 = w.x; tmpLine.y2 = w.y;
+    const over = cardUnder(e.clientX, e.clientY);
+    cardsEl.querySelectorAll(".linktarget").forEach(x => x.classList.remove("linktarget"));
+    if (over && over.dataset.card !== gest.from) over.classList.add("linktarget");
+    drawEdges();
+  }
+});
+function cardUnder(x, y) {
+  return [...cardsEl.querySelectorAll("[data-card]")].find(el => { const b = el.getBoundingClientRect(); return x >= b.left && x <= b.right && y >= b.top && y <= b.bottom; });
+}
+function endGesture(e, cancel) {
+  ptrs.delete(e.pointerId);
+  const g = gest;
+  if (!g) return;
+  if (g.type === "pinch") { if (ptrs.size === 0) gest = null; return; }
+  if (e.pointerId !== g.pid) return;
+  gest = null; clearTimeout(g.timer);
+  cardsEl.querySelectorAll(".moving,.linktarget").forEach(x => x.classList.remove("moving", "linktarget"));
+  if (cancel) { tmpLine = null; drawEdges(); return; }
+  if (g.type === "card") {
+    if (g.moved && !g.long) { saveBoard(); hintDone(); }
+    else if (!g.moved && !g.long) openFile(g.id);
+  } else if (g.type === "link") {
+    tmpLine = null;
+    const over = cardUnder(e.clientX, e.clientY);
+    if (over && over.dataset.card !== g.from) { addEdge(g.from, over.dataset.card); hintDone(); }
+    else if (!over && g.moved) { // 空いた所で離した → そこに新しいメモを作ってつなぐ
+      const w = toWorld(e.clientX, e.clientY);
+      quickMemoSheet({ x: Math.round(w.x - CARD_W / 2), y: Math.round(w.y - 30) }, g.from);
+    }
+    drawEdges();
+  } else if (g.type === "edge" && !g.moved) edgeMenu(g.id);
+  else if (g.type === "pan" && !g.moved) { // 空いた所をすばやく2回タップ → そこに新しいメモ
+    const now = Date.now();
+    if (lastTap && now - lastTap.t < 350 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 24) {
+      lastTap = null; const w = toWorld(e.clientX, e.clientY);
+      quickMemoSheet({ x: Math.round(w.x - CARD_W / 2), y: Math.round(w.y - 30) });
+    } else lastTap = { t: now, x: e.clientX, y: e.clientY };
+  }
+}
+boardEl.addEventListener("pointerup", e => endGesture(e, false));
+boardEl.addEventListener("pointercancel", e => endGesture(e, true));
+boardEl.addEventListener("contextmenu", e => e.preventDefault());
+boardEl.addEventListener("wheel", e => { e.preventDefault(); zoomAt(Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY); }, { passive: false });
+$("#v-board .bctl").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const r = boardEl.getBoundingClientRect();
+  if (b.dataset.z === "in") zoomAt(1.25, r.left + r.width / 2, r.top + r.height / 2);
+  else if (b.dataset.z === "out") zoomAt(0.8, r.left + r.width / 2, r.top + r.height / 2);
+  else if (b.dataset.z === "fit") fitView();
+});
+function hintDone() { if (!LS.get("boardHintDone")) { LS.set("boardHintDone", true); $("#bhint").style.display = "none"; } }
+$("#boardBack").onclick = () => show("memo");
+$("#boardNew").onclick = () => { const r = boardEl.getBoundingClientRect(); const w = toWorld(r.left + r.width / 2, r.top + r.height / 3); quickMemoSheet({ x: Math.round(w.x - CARD_W / 2), y: Math.round(w.y) }); };
+
+function addEdge(a, b) {
+  if (board.edges.some(e => (e.a === a && e.b === b) || (e.a === b && e.b === a && e.dir === "both"))) { toast("すでにつながっています"); return; }
+  board.edges.push({ id: uid(), a, b, dir: "to", label: "" }); saveBoard(); drawEdges();
+  try { navigator.vibrate && navigator.vibrate(8); } catch {}
+}
+// ボード上で新しいメモを作る(1行目だけ書いて、ボードに残るか、そのまま書きに行くか)
+function quickMemoSheet(at, linkFrom) {
+  openSheet(`<h2>新しいメモ</h2>${linkFrom ? `<p class="muted small" style="margin-top:-4px">「${esc(memoTitle(files[linkFrom]))}」から矢印でつなぎます</p>` : ""}
+    <label class="field"><span>1行目(カードの名前になります)</span><input class="inp" id="qmT" maxlength="80" placeholder="例:ボス戦の流れ"></label>
+    <div class="btns"><button class="btn" data-x>やめる</button><button class="btn" data-ok>ボードに置く</button><button class="btn primary" data-go>置いて書く</button></div>`, s => {
+    const i = $("#qmT"); i.focus();
+    const make = () => { const f = createMemo(i.value.trim(), at); if (linkFrom && files[linkFrom]) addEdge(linkFrom, f.id); return f; };
+    i.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) $("[data-ok]", s).click(); });
+    $("[data-x]", s).onclick = closeSheet;
+    $("[data-ok]", s).onclick = () => { make(); closeSheet(); renderBoard(); hintDone(); };
+    $("[data-go]", s).onclick = () => { const f = make(); closeSheet(); openFile(f.id); focusStart(); };
+  });
+}
+function cardMenu(id) {
+  const f = files[id], c = board.cards[id];
+  const n = board.edges.filter(e => e.a === id || e.b === id).length;
+  openSheet(`<h2>${esc(memoTitle(f))}</h2>
+    <button class="btn primary block" data-open>開いて書く</button>
+    <label class="field"><span>名前</span><input class="inp" id="cmName" value="${esc(f.name || "")}" maxlength="40" placeholder="空欄なら1行目が名前(${esc(memoTitle({ ...f, name: "" }))})"></label>
+    <div class="field"><span>色</span><div class="swatches">${COLORS.map(k => `<button class="sw2${k ? " c-" + k : ""}${(c.c || "") === k ? " on" : ""}" data-col="${k}" aria-label="${COLOR_NAMES[k]}">${k ? "" : "なし"}</button>`).join("")}</div></div>
+    <button class="btn danger block" data-del style="margin-top:8px">このメモを削除</button>
+    <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
+    const apply = () => { const nm = $("#cmName").value.trim(); if (nm !== (f.name || "")) { f.name = nm; saveFileQuiet(f); if (id === curFile) renderFileBar(); } };
+    s.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if ("col" in b.dataset) { c.c = b.dataset.col || undefined; if (!c.c) delete c.c; saveBoard(); s.querySelectorAll(".sw2").forEach(x => x.classList.toggle("on", x === b)); renderBoard(); }
+      else if ("open" in b.dataset) { apply(); closeSheet(); openFile(id); }
+      else if ("ok" in b.dataset) { apply(); closeSheet(); renderBoard(); }
+      else if ("del" in b.dataset) confirmSheet("メモを削除しますか", `「${memoTitle(f)}」(${countNodes(f.nodes)}行)${n ? `と、つながっている矢印 ${n} 本` : ""}を削除します。元に戻せません。`, "削除する", () => { removeMemo(id); renderBoard(); renderFileBar(); });
+    });
+  });
+}
+function edgeMenu(eid) {
+  const e = board.edges.find(x => x.id === eid); if (!e) return;
+  const A = memoTitle(files[e.a]), B = memoTitle(files[e.b]);
+  openSheet(`<h2>矢印</h2><p class="muted small" style="margin-top:-4px">${esc(A)} → ${esc(B)}</p>
+    <label class="field"><span>ラベル(矢印に添える言葉)</span><input class="inp" id="emL" value="${esc(e.label || "")}" maxlength="30" placeholder="例:倒すと解放"></label>
+    <div class="field"><span>向き</span><div class="seg" id="emDir">${[["to", "→ 片向き"], ["both", "↔ 両向き"], ["none", "― 線だけ"]].map(([k, l]) => `<button data-dir="${k}" class="${(e.dir || "to") === k ? "on" : ""}">${l}</button>`).join("")}</div></div>
+    <div class="btns" style="margin-top:4px"><button class="btn" data-rev>向きを反対にする</button></div>
+    <button class="btn danger block" data-del style="margin-top:12px">この矢印を削除</button>
+    <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
+    s.addEventListener("click", ev => {
+      const b = ev.target.closest("button"); if (!b) return;
+      if (b.dataset.dir) { e.dir = b.dataset.dir; s.querySelectorAll("#emDir button").forEach(x => x.classList.toggle("on", x === b)); saveBoard(); drawEdges(); }
+      else if ("rev" in b.dataset) { [e.a, e.b] = [e.b, e.a]; saveBoard(); drawEdges(); toast("向きを反対にしました"); s.querySelector("p").textContent = `${memoTitle(files[e.a])} → ${memoTitle(files[e.b])}`; }
+      else if ("del" in b.dataset) { board.edges = board.edges.filter(x => x !== e); saveBoard(); closeSheet(); drawEdges(); }
+      else if ("ok" in b.dataset) { e.label = $("#emL").value.trim(); saveBoard(); closeSheet(); drawEdges(); }
+    });
+  });
 }
 
 /* ============================================================
@@ -1803,7 +1952,7 @@ $("#prefsScroll").addEventListener("keydown", e => { if (e.target.id === "appNam
 function guide() {
   openSheet(`<h2>はじめに</h2>
     <p class="small" style="line-height:1.8">このページを<b>開いているあいだ</b>が、作業時間として自動で記録されます。ほかのアプリへ切り替えたり、画面が消えたりすると止まります。無操作で止まることはありません。</p>
-    <p class="small" style="line-height:1.8">メモは上の「＋ 新しいメモ」でいくつでも作れます。「≡」で一覧を開き、メモを長押ししてファイルに重ねれば、<b>ファイル</b>にまとめられます。</p>
+    <p class="small" style="line-height:1.8">メモは上の「＋ 新しいメモ」でいくつでも作れます。「◧ ボード」を開くと、すべてのメモがカードで並び、自由に動かして<b>矢印でつなげられます</b>。</p>
     <p class="small" style="line-height:1.8">これはスマホのブラウザで試せる<b>Web試作</b>です。ネイティブ版との違いは次のとおりです。</p>
     <ul class="small" style="line-height:1.8;padding-left:1.2em;margin:0">
       <li>妨害アプリの使用時間は自動取得できないため、「記録」で分数を入力します</li>
@@ -1874,6 +2023,7 @@ function boot() {
     if (files[cf] && cf !== curFile) setOutline(cf);
     if (f && index[f]) focusId = f; zoomId = z && index[z] ? z : null;
     if (!document.activeElement?.closest?.(".ol-t")) renderMemo(); if (view !== "memo") show(view, false); refreshLive();
+    if (view === "board") renderBoard();
   });
 }
 boot();
