@@ -111,6 +111,8 @@ body.editing.kb nav.bottom{display:none}
   box-shadow:0 4px 14px #0003;border-radius:8px;padding:6px 10px;font-size:14px;max-width:60vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 
+.tplbox{border-top:1px solid var(--line);padding:12px 0 4px;margin-top:10px}
+
 /* generic */
 .card{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
 .card h3{margin:0 0 8px;font-size:14px;color:var(--text-secondary);font-weight:600}
@@ -1080,6 +1082,7 @@ $("#logScroll").addEventListener("click", e => {
   else if (b.dataset.sh) shiftPeriod(+b.dataset.sh);
   else if (b.dataset.gotoday) { logMode = "day"; logAnchor = parseYmd(b.dataset.gotoday); renderLog(); }
   else if (b.dataset.table != null) { showTable = !showTable; renderLog(); }
+  else if (b.dataset.hlist != null) { showHourList = !showHourList; renderLog(); }
   else if (b.dataset.goapps != null) show("prefs");
 });
 $("#logScroll").addEventListener("change", e => {
@@ -1104,11 +1107,7 @@ function dayDetail(r) {
   if (meta.apps.length) h += `<p class="note" style="margin-top:8px">Web試作ではほかのアプリの使用時間を自動で取得できません。端末の「Digital Wellbeing」などで見た分数を入力してください。ネイティブ版では使用状況データから自動で取り込みます。</p>`;
   h += `</div>`;
   const a = r.d.getTime(), b = addDays(r.d, 1).getTime();
-  const ss = [];
-  for (const k of monthKeysBetween(a, b)) for (const [s, e] of (logs[k]?.sessions || [])) if (overlap(s, e, a, b)) ss.push([Math.max(s, a), Math.min(e, b)]);
-  if (Work.live && overlap(Work.live.s, Date.now(), a, b)) ss.push([Math.max(Work.live.s, a), Date.now(), true]);
-  ss.sort((x, y) => x[0] - y[0]);
-  h += `<div class="card"><h3>アプリを開いていた区間</h3>${ss.length ? ss.slice().reverse().map(([s, e, live]) => `<div class="row small num"><span class="grow">${hm(s)} 〜 ${live ? "いま" : hm(e)}</span><span ${live ? 'id="liveSess"' : ""}>${fmtSec(e - s)}</span></div>`).join("") : `<div class="empty">記録はまだありません</div>`}</div>`;
+  h += hourChart(a);
   const tr = [];
   for (const k of monthKeysBetween(a, b)) for (const t of (logs[k]?.timers || [])) if (overlap(t.s, t.e, a, b)) tr.push(t);
   if (tr.length) h += `<div class="card"><h3>タイマーの記録</h3>${tr.sort((x, y) => y.s - x.s).map(t => `<div class="row small"><span class="grow">${esc(t.label || "(ラベルなし)")} <span class="muted">${t.mode === "pomodoro" ? "ポモドーロ" : "ストップウォッチ"}</span></span><span class="num">${hm(t.s)}〜${hm(t.e)} ${fmtDur(t.e - t.s)}</span></div>`).join("")}</div>`;
@@ -1142,7 +1141,61 @@ function periodChart(rows) {
   return h + `</div>`;
 }
 let chartRows = [];
+// ---- 1日の中で、アプリを開いていた時間を1時間ごとの棒で ----
+function hourSegs(a) {
+  const b = a + 864e5, segs = [];
+  for (const k of monthKeysBetween(a, b)) for (const [s, e] of (logs[k]?.sessions || [])) if (overlap(s, e, a, b)) segs.push([Math.max(s, a), Math.min(e, b)]);
+  if (Work.live && overlap(Work.live.s, Date.now(), a, b)) segs.push([Math.max(Work.live.s, a), Math.min(Date.now(), b), true]);
+  return segs.sort((x, y) => x[0] - y[0]);
+}
+const HC = { W: 340, H: 150, top: 10, bottom: 20, left: 30, right: 4 };
+HC.ph = HC.H - HC.top - HC.bottom; HC.gw = (HC.W - HC.left - HC.right) / 24; HC.bw = HC.gw - 2;
+const hcY = ms => HC.top + HC.ph - Math.min(ms, 36e5) / 36e5 * HC.ph;
+function hcBar(hh, ms) { // 角を丸めた棒(下端は基線に接する)
+  if (ms <= 0) return "";
+  const x = HC.left + HC.gw * hh + 1, y0 = hcY(0), h = Math.max(1.5, y0 - hcY(ms)), r = Math.min(3, h, HC.bw / 2);
+  return `M${x},${y0} V${y0 - h + r} Q${x},${y0 - h} ${x + r},${y0 - h} H${x + HC.bw - r} Q${x + HC.bw},${y0 - h} ${x + HC.bw},${y0 - h + r} V${y0} Z`;
+}
+let hourData = null;
+function hourChart(a) {
+  const segs = hourSegs(a);
+  const per = [...Array(24)].map((_, hh) => segs.reduce((t, [s, e]) => t + overlap(s, e, a + hh * 36e5, a + (hh + 1) * 36e5), 0));
+  hourData = { a, segs, per };
+  let g = "";
+  for (const m of [0, 15, 30, 45, 60]) g += `<line class="grid" x1="${HC.left}" x2="${HC.W - HC.right}" y1="${hcY(m * 6e4)}" y2="${hcY(m * 6e4)}"/><text class="axis" x="${HC.left - 4}" y="${hcY(m * 6e4) + 3}" text-anchor="end">${m}分</text>`;
+  for (let hh = 0; hh < 24; hh++) {
+    g += `<path id="hb${hh}" d="${hcBar(hh, per[hh])}" fill="var(--series-work)"/>`;
+    if (hh % 3 === 0) g += `<text class="axis" x="${HC.left + HC.gw * hh + HC.gw / 2}" y="${HC.H - 5}" text-anchor="middle">${hh}</text>`;
+    g += `<rect x="${HC.left + HC.gw * hh}" y="${HC.top}" width="${HC.gw}" height="${HC.ph + HC.bottom}" fill="transparent" data-h="${hh}"/>`;
+  }
+  const busiest = per.indexOf(Math.max(...per));
+  return `<div class="card"><h3>アプリを開いていた時間(1時間ごと)</h3>
+    <div class="legend"><span class="muted">${segs.length ? `いちばん長かったのは ${busiest}時台(${fmtSec(per[busiest])})。棒をタップで詳細` : "記録はまだありません"}</span></div>
+    <div class="chart" id="hchart"><svg viewBox="0 0 ${HC.W} ${HC.H}" role="img" aria-label="1時間ごとの、アプリを開いていた時間">${g}</svg><div class="tip" id="htip"></div></div>
+    ${segs.length ? `<button class="mini" data-hlist style="margin-top:8px">${showHourList ? "区間の一覧を隠す" : "区間を一覧で見る"}</button>` : ""}
+    ${showHourList ? `<div style="margin-top:6px">${segs.slice().reverse().map(([s, e, live]) => `<div class="row small num"><span class="grow">${hm(s)} 〜 ${live ? "いま" : hm(e)}</span><span ${live ? 'id="liveSess"' : ""}>${fmtSec(e - s)}</span></div>`).join("")}</div>` : ""}
+  </div>`;
+}
+let showHourList = false;
+function bindHourChart() {
+  const c = $("#hchart"); if (!c || !hourData) return;
+  const tip = $("#htip");
+  const show = el => {
+    const hh = +el.dataset.h, a = hourData.a + hh * 36e5, b = a + 36e5;
+    const ms = hh === new Date().getHours() && ymd(new Date(hourData.a)) === ymd(new Date()) ? workMs(a, b) : hourData.per[hh];
+    const parts = hourSegs(hourData.a).filter(([s, e]) => overlap(s, e, a, b)).map(([s, e, live]) => `${hm(s)}〜${live && e >= Date.now() - 2000 ? "いま" : hm(e)}`);
+    tip.innerHTML = `<b>${hh}時台</b> ${fmtSec(ms)}${parts.length ? "<br>" + parts.slice(0, 4).join("<br>") + (parts.length > 4 ? `<br>ほか${parts.length - 4}区間` : "") : ""}`;
+    tip.style.display = "block";
+    const bx = el.getBoundingClientRect(), cb = c.getBoundingClientRect();
+    tip.style.left = Math.min(cb.width - 70, Math.max(70, bx.left - cb.left + bx.width / 2)) + "px";
+    tip.style.top = "4px";
+  };
+  c.addEventListener("pointermove", e => { const el = e.target.closest("[data-h]"); el ? show(el) : (tip.style.display = "none"); });
+  c.addEventListener("pointerleave", () => tip.style.display = "none");
+  c.addEventListener("click", e => { const el = e.target.closest("[data-h]"); if (el) show(el); });
+}
 function bindChart() {
+  bindHourChart();
   const c = $("#chart"); if (!c) return;
   const tip = $("#tip");
   const showTip = el => {
@@ -1354,8 +1407,12 @@ function renderPrefs() {
       </div>
     </div>
     <div class="card"><h3>テンプレート</h3><p class="muted small" style="margin:0">1行目が親、行頭に空白を2つ入れた行がその子になります。</p>
-      ${Object.keys(P.templates).map(k => `<label class="field"><span>${esc(k)}</span><textarea class="inp" rows="6" data-tplk="${esc(k)}">${esc(P.templates[k])}</textarea></label>`).join("")}
-      <button class="mini" id="tplReset">初期の内容に戻す</button>
+      ${Object.keys(P.templates).map(k => `<div class="tplbox">
+        <div style="display:flex;gap:6px;align-items:center"><input class="inp" style="font-weight:700" value="${esc(k)}" data-tplname="${esc(k)}" maxlength="20" aria-label="テンプレート名">
+          <button class="mini" style="flex:none;white-space:nowrap" data-tpldel="${esc(k)}">削除</button></div>
+        <textarea class="inp" rows="6" data-tplk="${esc(k)}" style="margin-top:6px" aria-label="${esc(k)}の中身">${esc(P.templates[k])}</textarea></div>`).join("") || `<div class="muted small" style="margin:10px 0">テンプレートがありません</div>`}
+      <div class="btns"><button class="btn primary" id="tplAdd">＋ テンプレートを追加</button></div>
+      <button class="mini" id="tplReset" style="margin-top:10px">初期の3つ(素材・アイテム・設定)を戻す</button>
     </div>
     <div class="card"><h3>保存</h3>
       <div class="small">状態:<b>${esc(Store.status)}</b></div>
@@ -1373,7 +1430,20 @@ $("#prefsScroll").addEventListener("click", e => {
   } else if (b.dataset.delapp) {
     const a = meta.apps.find(x => x.id === b.dataset.delapp);
     confirmSheet("妨害アプリから外しますか", `「${a.name}」を外します。入力済みの時間は集計に出なくなります。`, "外す", () => { meta.apps = meta.apps.filter(x => x.id !== a.id); saveMeta(); renderPrefs(); });
-  } else if (b.id === "tplReset") { meta.prefs.templates = { ...DEFAULT_TPL }; saveMeta(); renderPrefs(); toast("戻しました"); }
+  } else if (b.id === "tplReset") { // 追加したものは残し、初期の3つだけを初期の中身で戻す
+    meta.prefs.templates = { ...DEFAULT_TPL, ...Object.fromEntries(Object.entries(meta.prefs.templates).filter(([k]) => !(k in DEFAULT_TPL))) };
+    saveMeta(); renderPrefs(); toast("初期の3つを戻しました");
+  } else if (b.id === "tplAdd") {
+    const T = meta.prefs.templates; let name = "新しいテンプレート", i = 2;
+    while (name in T) name = `新しいテンプレート${i++}`;
+    T[name] = "【見出し】\n  項目:\n  項目:";
+    saveMeta(); renderPrefs();
+    const inp = [...document.querySelectorAll("[data-tplname]")].find(x => x.dataset.tplname === name);
+    if (inp) { inp.scrollIntoView({ block: "center" }); inp.focus(); inp.select(); }
+  } else if (b.dataset.tpldel) {
+    const k = b.dataset.tpldel;
+    confirmSheet("テンプレートを削除しますか", `「${k}」を削除します。メモに入れ済みの行はそのまま残ります。`, "削除する", () => { delete meta.prefs.templates[k]; saveMeta(); renderPrefs(); toast("削除しました"); });
+  }
   else if (b.id === "reGuide") guide();
 });
 $("#prefsScroll").addEventListener("change", e => {
@@ -1382,6 +1452,14 @@ $("#prefsScroll").addEventListener("change", e => {
   else if (t.id === "pB") P.brk = Math.max(1, Math.min(60, Math.round(+t.value) || 5));
   else if (t.id === "pG") P.goal = Math.max(0, Math.min(1440, Math.round(+t.value) || 0));
   else if (t.dataset.tplk) P.templates[t.dataset.tplk] = t.value;
+  else if (t.dataset.tplname != null) { // 名前の変更(並び順は保つ)
+    const old = t.dataset.tplname, nw = t.value.trim();
+    if (nw === old) return;
+    if (!nw) { toast("名前を入れてください"); t.value = old; return; }
+    if (nw in P.templates) { toast("同じ名前のテンプレートがあります"); t.value = old; return; }
+    P.templates = Object.fromEntries(Object.entries(P.templates).map(([k, v]) => [k === old ? nw : k, v]));
+    saveMeta(); renderPrefs(); toast("名前を変えました"); return;
+  }
   else return;
   saveMeta(); toast("保存しました");
 });
@@ -1412,6 +1490,10 @@ function refreshLive() {
     const tw = $("#tileWork"); if (tw) tw.textContent = fmtSec(workMs(logLive.a, logLive.b));
     const rw = $("#rowWork"); if (rw) rw.textContent = fmtSec(workMs(logLive.a, logLive.b));
     const ls = $("#liveSess"); if (ls && Work.live) ls.textContent = fmtSec(Date.now() - Math.max(Work.live.s, logLive.a));
+    if (hourData && logMode === "day") { // いまの時台の棒を伸ばす
+      const hh = new Date().getHours(), ha = hourData.a + hh * 36e5;
+      if (Date.now() >= hourData.a && Date.now() < hourData.a + 864e5) { const bar = $("#hb" + hh); if (bar) bar.setAttribute("d", hcBar(hh, workMs(ha, ha + 36e5))); }
+    }
   }
 }
 document.addEventListener("visibilitychange", () => {
