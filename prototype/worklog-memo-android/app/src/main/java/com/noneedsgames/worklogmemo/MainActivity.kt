@@ -3,6 +3,9 @@ package com.noneedsgames.worklogmemo
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.NotificationManager
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -32,6 +35,12 @@ class MainActivity : Activity() {
     private var pendingWidget: String? = null // ウィジェットから頼まれた操作(画面の読み込みが済んだら渡す)
     private var pendingSave: String? = null // 書き出す文章(保存先を選び終えたら書く)
     private var pendingPick: ValueCallback<Array<Uri>>? = null // 読み込むファイルの選択を待っている画面側の受け口
+
+    companion object {
+        private const val REQ_PICK = 1001
+        private const val REQ_SAVE = 1002
+        @Volatile var inFront = false // 前面で使っている間は、知らせを画面の側に任せる
+    }
 
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -139,12 +148,13 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        inFront = true
         web.onResume()
         // 設定画面から戻ったときなどに、許可や使用時間を読み直させる
         web.evaluateJavascript("window.onAndroidResume && window.onAndroidResume()", null)
     }
 
-    override fun onPause() { web.onPause(); super.onPause() }
+    override fun onPause() { inFront = false; web.onPause(); super.onPause() }
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() { handleBack() } // Android 12 以前
@@ -235,11 +245,38 @@ class MainActivity : Activity() {
         @JavascriptInterface fun setBlockApps(pkgsJson: String) = TimerNotice.setBlockApps(this@MainActivity, pkgsJson)
 
         /** ロック画面の通知を出す・消す */
-        @JavascriptInterface fun setTimerNotice(on: Boolean) {
-            TimerNotice.setEnabled(this@MainActivity, on)
-            if (on && Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+        @JavascriptInterface fun setTimerNotice(on: Boolean) = TimerNotice.setEnabled(this@MainActivity, on)
+
+        /** 予定の知らせを預ける。[{id, at, title, body}] */
+        @JavascriptInterface fun setEventAlarms(json: String) = Alarms.setEvents(this@MainActivity, json)
+
+        @JavascriptInterface fun hasNotifyPerm(): Boolean = getSystemService(NotificationManager::class.java).areNotificationsEnabled()
+
+        /** 通知の許可を尋ねる。理由を説明した画面の流れの中から呼ぶ */
+        @JavascriptInterface fun requestNotifyPerm() {
+            if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
                 runOnUiThread { requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 2) }
         }
+
+        @JavascriptInterface fun openNotifySettings() = runOnUiThread {
+            try { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)) } catch (_: Exception) {}
+        }
+
+        @JavascriptInterface fun canExactAlarm(): Boolean = Alarms.canExact(this@MainActivity)
+
+        @JavascriptInterface fun openExactSettings() = runOnUiThread {
+            if (Build.VERSION.SDK_INT >= 31) try {
+                startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:$packageName")))
+            } catch (_: Exception) {}
+        }
+
+        /** WebView では文字のコピーが断られることがあるので、端末の機能で写す。大きすぎて写せなければ false */
+        @JavascriptInterface fun copyText(text: String): Boolean = try {
+            getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("作業記録メモ帳", text)); true
+        } catch (_: Exception) { false }
+
+        @JavascriptInterface fun versionName(): String =
+            try { packageManager.getPackageInfo(packageName, 0).versionName ?: "" } catch (_: Exception) { "" }
 
         @JavascriptInterface fun blockRemainingMs(): Double = BlockService.remainingMs().toDouble()
 
@@ -255,8 +292,4 @@ class MainActivity : Activity() {
         }
     }
 
-    private companion object {
-        const val REQ_PICK = 1001
-        const val REQ_SAVE = 1002
-    }
 }

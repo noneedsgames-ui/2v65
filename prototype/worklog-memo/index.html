@@ -736,7 +736,7 @@ function loadAll() {
   loadBoard(docs);
 }
 const syncBlockApps = () => { if (NATIVE) try { Android.setBlockApps(JSON.stringify(meta.prefs.block === false ? [] : meta.apps.map(a => a.pkg).filter(Boolean))); } catch {} }; // 通知から始めるときのブロックの対象
-const saveMeta = () => { Store.put("meta", meta); syncBlockApps(); };
+const saveMeta = () => { Store.put("meta", meta); syncBlockApps(); syncAlarms(); syncWidget(); };
 function logOf(key) { return logs[key] ||= { sessions: [], timers: [], usage: {} }; }
 const saveLog = key => Store.put("log-" + key, logs[key]);
 
@@ -1233,6 +1233,7 @@ function copyChooser(list, what) { // 文章の形を選んでコピー
   });
 }
 async function copyText(text, what) {
+  if (NATIVE) try { if (Android.copyText(text)) { toast(`${what}をコピーしました`); return; } } catch {}
   try { await navigator.clipboard.writeText(text); toast(`${what}をコピーしました`); return; } catch {}
   // コピーできない環境では、文章を出して手でコピーしてもらう
   openSheet(`<h2>${esc(what)}</h2><p class="muted small" style="margin-top:-4px">この画面ではそのままコピーできませんでした。下の文章を長押しして「すべて選択」→「コピー」してください。</p>
@@ -1784,6 +1785,7 @@ function fmtWhen(t) { const d = new Date(t); return ymd(d) === ymd(new Date()) ?
 const countNodes = l => l.reduce((t, n) => t + 1 + countNodes(n.c || []), 0);
 const saveFileQuiet = f => { delete f.auto; Store.put("file-" + f.id, f); };
 function removeMemo(id, quiet) {
+  const gone = files[id]; if (gone && !gone.auto && !isEmptyMemo(gone)) Store.put("trash-" + id, { file: JSON.parse(JSON.stringify(gone)), at: Date.now() }); // 消したメモは、しばらくゴミ箱に残す
   delete files[id]; Store.remove("file-" + id);
   for (const [bid, b] of Object.entries(boards)) { // どのボードからも消す
     if (!b.cards[id] && !b.edges.some(e => e.a === id || e.b === id)) continue;
@@ -2211,7 +2213,7 @@ boardEl.addEventListener("pointerdown", e => {
     const g = groupById(glabel.dataset.group), desc = descendantsOf(g);
     const cardIds = [g, ...desc].flatMap(x => x.members || []);
     gest = { ...base, type: "group", id: g.id, from: g.parent || null, skip: new Set([g.id, ...desc.map(x => x.id)]),
-      pts: [g, ...desc].map(x => [x, x.pts.map(p => p.slice())]), cards: cardIds.map(m => [m, board.cards[m].x, board.cards[m].y]) };
+      pts: [g, ...desc].map(x => [x, x.pts.map(p => p.slice())]), cards: cardIds.filter(m => board.cards[m]).map(m => [m, board.cards[m].x, board.cards[m].y]) };
   } else if (edge) gest = { ...base, type: "edge", id: edge.dataset.edge, tx: BV.tx, ty: BV.ty };
   else gest = { ...base, type: "pan", tx: BV.tx, ty: BV.ty };
 });
@@ -2487,7 +2489,7 @@ function cardMenu(id) {
       else if ("ok" in b.dataset) { apply(); closeSheet(); renderBoard(); }
       else if ("onb" in b.dataset) { apply(); closeSheet(); placeOnBoardSheet(id); }
       else if ("unb" in b.dataset) { apply(); closeSheet(); removeFromBoard(id); recomputeTree(); renderBoardView(); renderFileBar(); toast(`◧ ${boardName(curBoard)} から外しました(メモは残っています)`); }
-      else if ("del" in b.dataset) confirmSheet("メモを削除しますか", `「${memoTitle(f)}」(${countNodes(f.nodes)}行)${n ? `と、つながっている矢印 ${n} 本` : ""}を削除します。元に戻せません。`, "削除する", () => { removeMemo(id); renderBoard(); recomputeTree(); renderBoardView(); renderFileBar(); });
+      else if ("del" in b.dataset) confirmSheet("メモを削除しますか", `「${memoTitle(f)}」(${countNodes(f.nodes)}行)${n ? `と、つながっている矢印 ${n} 本` : ""}を削除します。メモは30日間、「設定 › ゴミ箱」から戻せます。`, "削除する", () => { removeMemo(id); renderBoard(); recomputeTree(); renderBoardView(); renderFileBar(); });
     });
   });
 }
@@ -2702,6 +2704,7 @@ function sEnd(drop) {
 }
 document.addEventListener("touchmove", e => { if (sdrag && sdrag.on) { e.preventDefault(); const t = e.touches[0]; if (t) { sdrag.x = t.clientX; sdrag.y = t.clientY; sOver(); } } }, { passive: false });
 document.addEventListener("touchend", () => { if (sdrag && sdrag.on) sEnd(true); });
+document.addEventListener("touchcancel", () => { if (sdrag && sdrag.on) sEnd(false); });
 
 // ---- ボードの表示の切り替え:図/リスト ----
 let boardMode = ["list", "tag"].includes(LS.get("boardMode")) ? LS.get("boardMode") : "map";
@@ -3219,6 +3222,7 @@ $("#logScroll").addEventListener("click", e => {
   else if (b.dataset.hlist != null) { showHourList = !showHourList; renderLog(); }
   else if (b.dataset.goapps != null) show("prefs");
   else if (b.dataset.trec) { const [k, id] = b.dataset.trec.split("|"); recordSheet(k, id); }
+  else if (b.dataset.tadd) addRecordSheet(+b.dataset.tadd);
 });
 let showTable = false;
 // ---- マスコット「ミモザ」:吹き出しでしゃべる。タップで次のセリフ。ゆくゆくはチュートリアルもまかせる ----
@@ -3374,23 +3378,66 @@ function typeCard(days) { // 作業時間の内訳(このアプリ+作業の種�
   h += `<div style="margin-top:10px">${keys.map(k => `<div class="tshare"><span style="width:7.5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span class="tdot" style="--tc:${seriesColor(k)}"></span>${esc(seriesName(k))}</span><span class="bar" style="--tc:${seriesColor(k)}"><i style="width:${(totals[k] / all * 100).toFixed(1)}%"></i></span><span class="num" style="width:5.2em;text-align:right">${fmtDur(totals[k])}</span><span class="num muted" style="width:3em;text-align:right">${Math.round(totals[k] / all * 100)}%</span></div>`).join("")}</div>`;
   return h + `</div>`;
 }
-function timerList(a, b) { // その日のタイマーの記録(タップで種類の付け替え・削除)
+function timerList(a, b) { // その日のタイマーの記録(タップで種類と時刻の修正・削除)
   const tr = [];
   for (const k of monthKeysBetween(a, b)) for (const t of (logs[k]?.timers || [])) if (overlap(t.s, t.e, a, b)) tr.push([k, t]);
-  if (!tr.length) return "";
-  return `<div class="card"><h3>タイマーの記録 <span class="muted small" style="font-weight:400">タップで種類を付け替え</span></h3>${tr.sort((x, y) => y[1].s - x[1].s).map(([k, t]) => `<button class="row small" style="width:100%;text-align:left" data-trec="${k}|${t.id}"><span class="grow"><span class="tdot" style="--tc:${seriesColor(seriesKey(t.type))}"></span>${esc(typeName(t.type))}${t.label ? ` · ${esc(t.label)}` : ""} <span class="muted">${t.mode === "pomodoro" ? "ポモドーロ" : "ストップウォッチ"}</span></span><span class="num">${hm(t.s)}〜${hm(t.e)} ${fmtDur(t.e - t.s)}</span></button>`).join("")}</div>`;
+  const addBtn = `<button class="mini" data-tadd="${a}" style="margin-top:8px">＋ 記録を足す</button>`;
+  if (!tr.length) return `<div class="card"><h3>タイマーの記録</h3><div class="muted small">この日の記録はありません。計り忘れた分は、ここから足せます。</div>${addBtn}</div>`;
+  return `<div class="card"><h3>タイマーの記録 <span class="muted small" style="font-weight:400">タップで種類や時刻を直す</span></h3>${tr.sort((x, y) => y[1].s - x[1].s).map(([k, t]) => `<button class="row small" style="width:100%;text-align:left" data-trec="${k}|${t.id}"><span class="grow"><span class="tdot" style="--tc:${seriesColor(seriesKey(t.type))}"></span>${esc(typeName(t.type))}${t.label ? ` · ${esc(t.label)}` : ""} <span class="muted">${t.manual ? "手で足した記録" : t.mode === "pomodoro" ? "ポモドーロ" : "ストップウォッチ"}</span></span><span class="num">${hm(t.s)}〜${hm(t.e)} ${fmtDur(t.e - t.s)}</span></button>`).join("")}${addBtn}</div>`;
+}
+const dtLocal = t => `${ymd(new Date(t))}T${hm(t)}`; // 日時の入力欄の形
+function recOverlap(s, e, exceptId) { // タイマーの記録どうしが重なると、同じ時間を二度数えてしまう
+  for (const k of monthKeysBetween(s, e)) for (const r of (logs[k]?.timers || [])) if (r.id !== exceptId && overlap(r.s, r.e, s, e)) return true;
+  const lv = Timer.liveSegment(); return !!(lv && overlap(lv.s, Date.now(), s, e));
+}
+function readRecTimes(s0, e0, exceptId) { // 入力欄の時刻を読む。変えていなければ、秒まで元のまま
+  const sv = $("#rsS").value, ev = $("#rsE").value;
+  const s = sv === dtLocal(s0) ? s0 : new Date(sv).getTime(), e = ev === dtLocal(e0) ? e0 : new Date(ev).getTime();
+  if (!(s < e)) { toast("終わりは始まりより後にしてください"); return null; }
+  if (e > Date.now() + 60000) { toast("これから先の時刻は入れられません"); return null; }
+  if (recOverlap(s, e, exceptId)) { toast("ほかのタイマーの記録と重なっています"); return null; }
+  return { s, e };
+}
+const recTimeFields = (s, e) => `<label class="field"><span>始まり</span><input class="inp" type="datetime-local" id="rsS" value="${dtLocal(s)}"></label>
+    <label class="field"><span>終わり</span><input class="inp" type="datetime-local" id="rsE" value="${dtLocal(e)}"></label>`;
+function addRecordSheet(day) { // 計り忘れた分を足す
+  const now = Date.now(), isToday = ymd(new Date(day)) === ymd(new Date(now));
+  const e0 = isToday ? now : day + 11 * 36e5, s0 = isToday ? Math.max(day, now - 36e5) : day + 10 * 36e5;
+  let sel = Timer.st.type && typeById(Timer.st.type) ? Timer.st.type : "";
+  openSheet(`<h2>タイマーの記録を足す</h2>${recTimeFields(s0, e0)}
+    <div class="field"><span>作業の種類</span><div class="typechips" id="rsT">${[{ id: "", name: "種類なし" }, ...meta.workTypes].map(x => `<button class="tchip${sel === x.id ? " on" : ""}" data-rt="${x.id}" style="--tc:${seriesColor(seriesKey(x.id))}"><i></i>${esc(x.name)}</button>`).join("")}</div></div>
+    <label class="field"><span>ラベル</span><input class="inp" id="rsL" maxlength="40"></label>
+    <div class="btns"><button class="btn" data-x>やめる</button><button class="btn primary" data-ok>足す</button></div>`, s => {
+    s.addEventListener("click", ev => {
+      const b = ev.target.closest("button"); if (!b) return;
+      if ("rt" in b.dataset) { sel = b.dataset.rt; s.querySelectorAll("[data-rt]").forEach(x => x.classList.toggle("on", x === b)); }
+      else if ("x" in b.dataset) closeSheet();
+      else if ("ok" in b.dataset) {
+        const t = readRecTimes(s0, e0, null); if (!t) return;
+        const r = { id: uid(), label: $("#rsL").value.trim(), mode: "stopwatch", manual: true, s: t.s, e: t.e }; if (sel) r.type = sel;
+        const k = ym(new Date(t.s)); logOf(k).timers.push(r); saveLog(k); closeSheet(); renderLog(); toast("記録を足しました");
+      }
+    });
+  });
 }
 function recordSheet(key, id) {
   const L = logs[key]; const t = L?.timers.find(x => x.id === id); if (!t) return;
   let sel = t.type || "";
   openSheet(`<h2>タイマーの記録</h2><p class="muted small" style="margin-top:-4px">${hm(t.s)}〜${hm(t.e)}(${fmtDur(t.e - t.s)})</p>
+    ${recTimeFields(t.s, t.e)}
     <div class="field"><span>作業の種類</span><div class="typechips" id="rsT">${[{ id: "", name: "種類なし" }, ...meta.workTypes].map(x => `<button class="tchip${sel === x.id ? " on" : ""}" data-rt="${x.id}" style="--tc:${seriesColor(seriesKey(x.id))}"><i></i>${esc(x.name)}</button>`).join("")}</div></div>
     <label class="field"><span>ラベル</span><input class="inp" id="rsL" value="${esc(t.label || "")}" maxlength="40"></label>
     <div class="btns"><button class="btn danger" data-del>この記録を削除</button><button class="btn primary" data-ok>決定</button></div>`, s => {
     s.addEventListener("click", e => {
       const b = e.target.closest("button"); if (!b) return;
       if ("rt" in b.dataset) { sel = b.dataset.rt; s.querySelectorAll("[data-rt]").forEach(x => x.classList.toggle("on", x === b)); }
-      else if ("ok" in b.dataset) { if (sel) t.type = sel; else delete t.type; t.label = $("#rsL").value.trim(); saveLog(key); closeSheet(); renderLog(); }
+      else if ("ok" in b.dataset) {
+        const tm = readRecTimes(t.s, t.e, t.id); if (!tm) return;
+        if (sel) t.type = sel; else delete t.type; t.label = $("#rsL").value.trim(); t.s = tm.s; t.e = tm.e;
+        const nk = ym(new Date(t.s)); // 始まりの月の記録へ入れ直す
+        if (nk !== key) { L.timers = L.timers.filter(x => x !== t); logOf(nk).timers.push(t); saveLog(nk); }
+        saveLog(key); closeSheet(); renderLog();
+      }
       else if ("del" in b.dataset) confirmSheet("記録を削除しますか", `${hm(t.s)}〜${hm(t.e)} の記録を削除します。`, "削除する", () => { L.timers = L.timers.filter(x => x !== t); saveLog(key); renderLog(); });
     });
   });
@@ -3540,19 +3587,26 @@ const Timer = {
     if (e - s < 5000) return;
     const key = ym(new Date(s));
     const r = { id: uid(), label: this.st.label, mode: this.st.mode, s, e }; if (this.st.type) r.type = this.st.type;
+    if (this.st.mode === "pomodoro" && this.st.runStart) r.run = this.st.runStart;
     logOf(key).timers.push(r);
     saveLog(key);
   },
   start(at) { // at:ロック画面の通知で押した時刻(妨害アプリのブロックは、押したときに端末の側で始めてある)
     const now = at || Date.now(); const s = this.st;
-    s.running = true; s.segStart = now; s.phaseStart = now; s.phase = "focus"; s.cycle = 1;
+    s.running = true; s.segStart = now; s.runStart = now; s.phaseStart = now; s.phase = "focus"; s.cycle = 1; delete s.warnAt;
     this.save();
     if (!at) { unlockAudio(); startBlock(); }
   },
   stop(at) {
     const s = this.st; if (!s.running) return;
-    if (!(s.mode === "pomodoro" && s.phase === "break")) this.record(s.segStart, at || Date.now());
-    s.running = false; this.save();
+    const end = at || Date.now();
+    if (at && s.mode === "pomodoro" && s.runStart) { // 止めた時刻より後に自動で積んだ区切りを取り消す
+      for (const k of monthKeysBetween(s.runStart, Date.now())) { const L = logs[k]; if (!L) continue; let ch = false;
+        L.timers = (L.timers || []).filter(r => { if (r.run !== s.runStart) return true; if (r.s >= end) { ch = true; return false; } if (r.e > end) { r.e = end; ch = true; } return true; });
+        if (ch) saveLog(k); }
+    }
+    if (!(s.mode === "pomodoro" && s.phase === "break") && end > s.segStart) this.record(s.segStart, end);
+    s.running = false; delete s.warnAt; this.save();
     if (NATIVE) try { Android.stopBlock(); } catch {}
   },
   // ポモドーロの区切りを、閉じていた間の分も含めて追いつかせる
@@ -3585,7 +3639,7 @@ function renderTimer() {
     <label class="field"><span>作業内容のラベル(くわしく)</span><input class="inp" id="tLabel" value="${esc(s.label)}" placeholder="例:マップ制作、敵AI" maxlength="40"></label>
     ${labels.length ? `<div class="metas">${labels.map(l => `<button class="mini" data-lbl="${esc(l)}">${esc(l)}</button>`).join("")}</div>` : ""}
     <div class="card"><h3>今日のタイマー合計 <span class="num" style="float:right;color:var(--text-primary)" id="tToday"></span></h3>
-      ${recent.filter(t => t.e > todayA).sort((a, b) => b.s - a.s).map(t => `<div class="row small"><span class="grow"><span class="tdot" style="--tc:${seriesColor(seriesKey(t.type))}"></span>${esc(typeName(t.type))}${t.label ? " · " + esc(t.label) : ""} <span class="muted">${t.mode === "pomodoro" ? "ポモドーロ" : "ストップウォッチ"}</span></span><span class="num">${hm(t.s)}〜${hm(t.e)} ${fmtDur(t.e - t.s)}</span></div>`).join("") || `<div class="empty">まだ記録はありません</div>`}
+      ${recent.filter(t => t.e > todayA).sort((a, b) => b.s - a.s).map(t => `<div class="row small"><span class="grow"><span class="tdot" style="--tc:${seriesColor(seriesKey(t.type))}"></span>${esc(typeName(t.type))}${t.label ? " · " + esc(t.label) : ""} <span class="muted">${t.manual ? "手で足した記録" : t.mode === "pomodoro" ? "ポモドーロ" : "ストップウォッチ"}</span></span><span class="num">${hm(t.s)}〜${hm(t.e)} ${fmtDur(t.e - t.s)}</span></div>`).join("") || `<div class="empty">まだ記録はありません</div>`}
     </div>
     ${s.running && meta.apps.length ? `<div class="card focusnote"><h3>集中中</h3><div class="small">${meta.apps.map(a => esc(a.name)).join("・")} は開かないでください。</div>
       ${NATIVE && P.block !== false ? `<div class="small" id="blockLeft" style="margin-top:6px;font-weight:600"></div><button class="mini" id="blockAgain" style="margin-top:6px;display:none">もう一度ブロックする(最大5分)</button>` : ""}</div>` : ""}
@@ -3613,7 +3667,7 @@ function startBlock() {
   const pkgs = meta.apps.map(a => a.pkg).filter(Boolean);
   if (!pkgs.length) { toast("妨害アプリを「端末のアプリから選ぶ」で選ぶと、集中ブロックが使えます"); return; }
   let ok = false; try { ok = Android.startBlock(JSON.stringify(pkgs), BLOCK_MIN); } catch {}
-  if (!ok) toast("集中ブロックには「使用状況へのアクセス」と「他のアプリの上に重ねて表示」の許可が要ります(設定)");
+  if (!ok) permAsk(["usage", "overlay"], "タイマー中に妨害アプリを覆うには、次の許可が要ります。", "集中ブロックには「使用状況へのアクセス」と「他のアプリの上に重ねて表示」の許可が要ります(設定)");
 }
 const blockLeft = () => { try { return NATIVE ? Android.blockRemainingMs() : 0; } catch { return 0; } };
 function updateClock() {
@@ -3635,6 +3689,7 @@ let actx = null;
 function unlockAudio() { try { actx ||= new (window.AudioContext || window.webkitAudioContext)(); actx.resume && actx.resume(); } catch {} }
 document.addEventListener("pointerdown", unlockAudio, { once: true });
 function chime(msg) {
+  if (NATIVE && document.visibilityState !== "visible") return; // 裏にいるときは、端末の通知が知らせる
   try {
     if (actx) { [0, 0.25].forEach((d, i) => { const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = i ? 1320 : 880; g.gain.setValueAtTime(0.0001, actx.currentTime + d); g.gain.exponentialRampToValueAtTime(0.25, actx.currentTime + d + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + d + 0.4); o.connect(g).connect(actx.destination); o.start(actx.currentTime + d); o.stop(actx.currentTime + d + 0.45); }); }
   } catch {}
@@ -3645,6 +3700,17 @@ function banner(msg) {
   const b = $("#banner"); b.innerHTML = `${esc(msg)}<span style="float:right;opacity:.7">✕</span>`; b.classList.add("on");
   b.onclick = () => b.classList.remove("on");
   clearTimeout(banner._t); banner._t = setTimeout(() => b.classList.remove("on"), 12000);
+}
+function syncAlarms() { // これからの予定の知らせを端末に預ける(アプリを閉じていても届く)
+  if (!NATIVE) return;
+  const now = Date.now(), list = [];
+  for (const ev of meta.events) {
+    if (ev.notify == null || ev.notify < 0) continue;
+    const at = parseYmd(ev.date).getTime() + (toMin(ev.start) - ev.notify) * 60000;
+    if (at > now) list.push({ id: ev.id, at, title: ev.title, body: `${ev.start} 開始${ev.notify ? `(${ev.notify}分前)` : ""}` });
+  }
+  list.sort((a, b) => a.at - b.at);
+  try { Android.setEventAlarms(JSON.stringify(list.slice(0, 100))); } catch {}
 }
 function checkEventNotices() {
   const now = Date.now(); const done = LS.get("notified") || {};
@@ -3686,7 +3752,7 @@ function renderPlan() {
     h += evs.map(e => `<button class="ev" data-ev="${e.id}"><span class="t">${esc(e.start)}〜${esc(e.end || "")}</span><span class="grow"><span class="ti">${esc(e.title)}</span>
       ${e.note ? `<div class="muted small">${esc(e.note)}</div>` : ""}<div class="muted small">${e.notify >= 0 && e.notify != null ? `🔔 ${e.notify ? e.notify + "分前" : "開始時"}に通知` : "通知なし"}</div></span></button>`).join("");
   }
-  h += `<p class="note" style="margin-top:14px">予定の通知は、${NATIVE ? "このアプリ" : "このページ"}を開いている間だけ音と表示で知らせます。閉じているあいだは届きません。</p><div style="height:64px"></div>`;
+  h += `<p class="note" style="margin-top:14px">${NATIVE ? "予定の時刻が来ると、アプリを閉じていても通知で知らせます。端末の省電力の状態によっては、数分遅れることがあります(「設定 › 端末の許可」のアラームとリマインダーを許可すると、遅れにくくなります)。" : "予定の通知は、このページを開いている間だけ音と表示で知らせます。閉じているあいだは届きません。"}</p><div style="height:64px"></div>`;
   $("#planScroll").innerHTML = h;
 }
 $("#planScroll").addEventListener("click", e => {
@@ -3717,7 +3783,7 @@ function editEvent(ev) {
       const i = meta.events.findIndex(x => x.id === e.id);
       if (i >= 0) meta.events[i] = e; else meta.events.push(e);
       saveMeta(); closeSheet(); planAnchor = parseYmd(e.date); renderPlan(); toast("保存しました");
-      if (e.notify >= 0) try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission().catch(() => {}); } catch {}
+      if (e.notify >= 0) try { if (NATIVE) Android.requestNotifyPerm(); else if ("Notification" in window && Notification.permission === "default") Notification.requestPermission().catch(() => {}); } catch {}
     };
     $("[data-del]", s) && ($("[data-del]", s).onclick = () => confirmSheet("予定を削除しますか", `「${e.title}」を削除します。`, "削除する", () => { meta.events = meta.events.filter(x => x.id !== e.id); saveMeta(); renderPlan(); }));
     if (!ev) $("#eT").focus();
@@ -3746,6 +3812,7 @@ function pickDeviceApps(kind) { // 端末に入っているアプリから、妨
       for (const p of on) if (!keep.some(a => a.pkg === p)) { const a = list.find(x => x.pkg === p); keep.push({ id: uid(), name: a ? a.label : p, pkg: p }); }
       if (kind === "d") meta.apps = keep; else meta.workApps = keep;
       saveMeta(); closeSheet(); renderPrefs(); toast("保存しました");
+      if (on.size) permAsk(kind === "d" && meta.prefs.block !== false ? ["usage", "overlay"] : ["usage"], "選んだアプリを使うには、次の許可が要ります。", "");
     };
   });
 }
@@ -3768,8 +3835,7 @@ function renderPrefs() {
       ${NATIVE ? `<button class="btn block" data-pickapps="w" style="margin-top:10px">端末のアプリから選ぶ</button><p class="note">選んだアプリは、使用時間を端末から読んで作業時間に足します。</p>` : `<p class="note">ブラウザ版からは端末のアプリを読めないので、Android アプリ版で選びます。</p>`}
     </div>
     ${NATIVE ? `<div class="card"><h3>端末の許可</h3>
-      <div class="row"><span class="grow">使用状況へのアクセス<div class="muted small">ほかのアプリの使用時間を読む・集中ブロック</div></span><b class="small" style="color:${usageAccess() ? "var(--accent)" : "var(--danger)"}">${usageAccess() ? "許可済み" : "未許可"}</b><button class="mini" data-perm="usage">設定を開く</button></div>
-      <div class="row"><span class="grow">他のアプリの上に重ねて表示<div class="muted small">集中ブロックで妨害アプリを覆う</div></span><b class="small" style="color:${canOverlay() ? "var(--accent)" : "var(--danger)"}">${canOverlay() ? "許可済み" : "未許可"}</b><button class="mini" data-perm="overlay">設定を開く</button></div>
+      ${Object.keys(PERMS).map(permRow).join("")}
       <p class="muted small" style="margin:6px 0 0">設定画面で「作業記録メモ帳」を選び、許可をオンにして戻ってきてください。</p>
     </div>` : ""}
     <div class="card" style="${NATIVE ? "display:none" : ""}"><h3>使用状況へのアクセス(Android アプリ版で必要)</h3>
@@ -3783,6 +3849,7 @@ function renderPrefs() {
         <label class="field" style="flex:1"><span>休憩(分)</span><input class="inp" type="number" inputmode="numeric" min="1" max="60" id="pB" value="${P.brk}"></label>
         <label class="field" style="flex:1"><span>1日の目標(分)</span><input class="inp" type="number" inputmode="numeric" min="0" max="1440" id="pG" value="${P.goal || ""}" placeholder="なし"></label>
       </div>
+      <label class="field"><span>タイマーの止め忘れを尋ねるまで</span><select class="inp" id="pWarn">${[[0, "尋ねない"], [1, "1時間"], [2, "2時間"], [3, "3時間"], [4, "4時間"], [6, "6時間"], [8, "8時間"]].map(([v, l]) => `<option value="${v}" ${(P.timerWarnH ?? 3) == v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
       ${NATIVE ? `<label class="row"><input type="checkbox" id="pBlock" ${P.block !== false ? "checked" : ""}><span class="grow">タイマー中に妨害アプリを使えなくする(試験運用)<div class="muted small">タイマーを始めると、妨害アプリを開いても画面で覆って使えなくします。いちどに最大5分まで</div></span></label>` : ""}
       ${NATIVE ? `<label class="row"><input type="checkbox" id="pLockNote" ${P.lockNote !== false ? "checked" : ""}><span class="grow">ロック画面に通知を出す<div class="muted small">ロックを解かずにストップウォッチを始める・止める。出ないときは、端末の設定でこのアプリのロック画面の通知を許可してください</div></span></label>` : ""}
     </div>
@@ -3809,21 +3876,33 @@ function renderPrefs() {
     </div>
     <div class="card"><h3>保存</h3>
       <div class="small">状態:<b>${esc(Store.status)}</b></div>
+      <div class="small" style="margin-top:4px">使っている容量:<b>${(storageUsed() / 1e6).toFixed(1)}MB</b> / 約5MB${storageUsed() > 4e6 ? `<span style="color:var(--danger)"> もうすぐいっぱいです。書き出して、使わないメモを消してください</span>` : ""}</div>
       <p class="muted small" style="line-height:1.6">入力はまずこの端末に保存し、claude.ai にサインインして開いている場合は、あなた専用の領域へ追って同期します。ほかの人からは見えません。</p>
       <button class="mini" id="reGuide">はじめにの案内をもう一度見る</button>
     </div>
     <div class="card"><h3>データの引っ越し</h3>
       <p class="muted small" style="line-height:1.6;margin:0">メモ・ボード・予定・設定・作業の記録を一つのファイルにして、ブラウザ版とアプリ版のあいだや、別の端末へ移せます。読み込みは今のデータに合わせるので、今のデータは消えません。</p>
       <div class="btns"><button class="btn" id="bkExport">書き出す</button><button class="btn primary" id="bkImport">読み込む</button></div>
+      <p class="muted small" style="margin:8px 0 0">最後に書き出した日:${LS.get("lastExport") ? fmtDate(LS.get("lastExport")) : "まだありません"}</p>
+      <label class="row"><input type="checkbox" id="pExport" ${P.exportRemind !== false ? "checked" : ""}><span class="grow">月に一度、書き出しを勧める<div class="muted small">データはこの端末の中だけにあるので、故障や紛失に備えます</div></span></label>
     </div>
-    <p class="muted small" style="text-align:center">作業記録メモ帳</p>`;
+    <div class="card"><h3>ゴミ箱</h3>
+      <p class="muted small" style="margin:0 0 8px">消したメモは30日間残り、ここから戻せます。</p>
+      <button class="btn block" id="trashOpen">ゴミ箱を開く(${trashList().length}件)</button>
+    </div>
+    <div class="card"><h3>このアプリについて</h3>
+      <div class="small">作業記録メモ帳${appVersion() ? ` · 版 ${esc(appVersion())}` : ""}</div>
+      <button class="btn block" id="policyOpen" style="margin-top:8px">プライバシーポリシー</button>
+      <button class="btn danger block" id="wipeOpen" style="margin-top:8px">すべてのデータを消す</button>
+    </div>
+    `;
 }
 $("#prefsScroll").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   if (b.dataset.arc) { meta.prefs.arrows = { ...arrowPrefs(), [b.dataset.arc]: b.dataset.col }; saveMeta(); renderPrefs(); return; }
   if (b.dataset.agw) { meta.prefs.arrows = { ...arrowPrefs(), groupW: +b.dataset.agw }; saveMeta(); renderPrefs(); return; }
   if (b.id === "arrowReset") { delete meta.prefs.arrows; saveMeta(); renderPrefs(); toast("初期に戻しました"); return; }
-  if (b.dataset.perm) { try { b.dataset.perm === "usage" ? Android.openUsageAccessSettings() : Android.openOverlaySettings(); } catch {} return; }
+  if (b.dataset.perm) { try { PERMS[b.dataset.perm].open(); } catch {} return; }
   if (b.dataset.pickapps) { pickDeviceApps(b.dataset.pickapps); return; }
   if (b.id === "wtAdd") { addTypeSheet(() => renderPrefs()); return; }
   if (b.dataset.wtmv) { const [id, d] = b.dataset.wtmv.split("|"); const L = meta.workTypes, i = L.findIndex(t => t.id === id), j = i + +d; if (j >= 0 && j < L.length) { [L[i], L[j]] = [L[j], L[i]]; saveMeta(); renderPrefs(); } return; }
@@ -3853,12 +3932,17 @@ $("#prefsScroll").addEventListener("click", e => {
   else if (b.id === "reGuide") guide();
   else if (b.id === "bkExport") exportSheet();
   else if (b.id === "bkImport") importSheet();
+  else if (b.id === "trashOpen") trashSheet();
+  else if (b.id === "policyOpen") policySheet();
+  else if (b.id === "wipeOpen") wipeSheet();
 });
 $("#prefsScroll").addEventListener("change", e => {
   const P = meta.prefs, t = e.target;
   if (t.dataset.wtname) { const w = typeById(t.dataset.wtname), nm = t.value.trim(); if (w && nm && !meta.workTypes.some(x => x !== w && x.name === nm)) { w.name = nm; saveMeta(); toast("保存しました"); } else if (w) t.value = w.name; return; }
   if (t.id === "pBlock") { P.block = t.checked; saveMeta(); toast("保存しました"); return; }
-  if (t.id === "pLockNote") { P.lockNote = t.checked; saveMeta(); try { Android.setTimerNotice(t.checked); } catch {} toast("保存しました"); return; }
+  if (t.id === "pLockNote") { P.lockNote = t.checked; saveMeta(); try { Android.setTimerNotice(t.checked); if (t.checked) Android.requestNotifyPerm(); } catch {} toast("保存しました"); return; }
+  if (t.id === "pWarn") { P.timerWarnH = +t.value; delete Timer.st.warnAt; LS.set("timer", Timer.st); saveMeta(); toast("保存しました"); return; }
+  if (t.id === "pExport") { P.exportRemind = t.checked; saveMeta(); toast("保存しました"); return; }
   if (t.dataset.bc) { P.boardColors = { ...boardColors(), [t.dataset.bc]: t.checked }; saveMeta(); toast("保存しました"); return; }
   if (t.id === "pF") P.focus = Math.max(1, Math.min(180, Math.round(+t.value) || 25));
   else if (t.id === "pB") P.brk = Math.max(1, Math.min(60, Math.round(+t.value) || 5));
@@ -3886,9 +3970,17 @@ function backupText() {
   for (const [id, v] of Object.entries(Store.localDocs())) if (/^(meta|board|board-.+|file-.+|log-\d{4}-\d{2})$/.test(id)) docs[id] = v;
   return JSON.stringify({ app: BACKUP_APP, version: 1, exportedAt: Date.now(), docs });
 }
+const BK_TEXT = new Set(["t", "name", "title", "note", "label", "tagName", "at", "start", "end", "tags", "mainBoardName", "templates"]); // 画面に出すときに必ず無害にしている欄
+function backupSafe(v, key) { // それ以外の欄(ID や色など)に、画面を壊す文字が入っていないか。書き換えられたファイルで悪さをさせない
+  if (BK_TEXT.has(key)) return true;
+  if (typeof v === "string") return !/[<>"'`&]/.test(v);
+  if (Array.isArray(v)) return v.every(x => backupSafe(x, key));
+  if (v && typeof v === "object") return Object.entries(v).every(([k, x]) => !/[<>"'`&]/.test(k) && backupSafe(x, k));
+  return true;
+}
 function parseBackup(text) { // 形が合わなければ null。おかしな文書は読み飛ばす
   let o; try { o = JSON.parse(text); } catch { return null; }
-  if (!o || o.app !== BACKUP_APP || !o.docs || typeof o.docs !== "object") return null;
+  if (!o || o.app !== BACKUP_APP || !o.docs || typeof o.docs !== "object" || !backupSafe(o.docs, "")) return null;
   const docs = {}, isObj = v => v && typeof v === "object" && !Array.isArray(v);
   for (const [id, v] of Object.entries(o.docs)) {
     if (!isObj(v)) continue;
@@ -3979,11 +4071,12 @@ async function saveBackupFile() {
   const text = backupText(), filename = `worklog-memo-${ymd(new Date())}.json`;
   if (NATIVE) { try { Android.saveTextFile(filename, text); } catch { toast("保存できませんでした。文章としてコピーしてください"); } return; }
   const dl = window.claude && typeof window.claude.use === "function" ? await window.claude.use("downloads").catch(() => null) : null;
-  if (dl) { try { await dl.save({ filename, data: text }); } catch (e) { if (e?.code !== "declined") toast("保存できませんでした。文章としてコピーしてください"); } return; }
+  if (dl) { try { await dl.save({ filename, data: text }); markExported(); } catch (e) { if (e?.code !== "declined") toast("保存できませんでした。文章としてコピーしてください"); } return; }
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "application/json" })); a.download = filename;
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  markExported();
 }
-window.onBackupSaved = ok => toast(ok ? "ファイルに保存しました" : "保存できませんでした");
+window.onBackupSaved = ok => { if (ok) markExported(); toast(ok ? "ファイルに保存しました" : "保存できませんでした"); };
 function exportSheet() {
   openSheet(`<h2>データを書き出す</h2>
     <p class="muted small" style="line-height:1.6">保存したファイルを、移したい先の「設定 › データの引っ越し › 読み込む」で選びます。ファイルにはメモの中身がそのまま入っています。</p>
@@ -3993,13 +4086,13 @@ function exportSheet() {
     <div class="btns"><button class="btn" data-x>閉じる</button></div>`, s => {
     $("[data-x]", s).onclick = closeSheet;
     $("[data-file]", s).onclick = saveBackupFile;
-    $("[data-copy]", s).onclick = () => copyText(backupText(), "データ");
+    $("[data-copy]", s).onclick = () => { markExported(); copyText(backupText(), "データ"); };
   });
 }
 function importSheet() {
   const read = text => {
     const b = parseBackup(text);
-    if (!b) { toast("このアプリの書き出したデータではありません"); return; }
+    if (!b) { toast("このアプリの書き出したデータではないか、壊れているため読み込めません"); return; }
     flushMemoEdit();
     const { changes, st } = planImport(b.docs, Store.localDocs());
     if (!Object.keys(changes).length) { toast("新しく読み込むものはありません"); return; }
@@ -4024,26 +4117,180 @@ function importSheet() {
   });
 }
 
-function guide() {
-  openSheet(`<h2>はじめに</h2>
-    <p class="small" style="line-height:1.8">${NATIVE ? "このアプリ" : "このページ"}を<b>開いているあいだ</b>が、作業時間として自動で記録されます。ほかのアプリへ切り替えたり、画面が消えたりすると止まります。無操作で止まることはありません。</p>
-    <p class="small" style="line-height:1.8">メモは上の「＋ 新しいメモ」でいくつでも作れます。「◧ ボード」を開くと、すべてのメモがカードで並び、自由に動かして<b>矢印でつなげられます</b>。</p>
-    ${NATIVE ? `<p class="small" style="line-height:1.8">ほかのアプリの使用時間を読んだり、タイマー中に妨害アプリを使えなくしたりするには、「設定 › 端末の許可」から二つの許可をオンにしてください。</p>` : ""}
-    <p class="small" style="line-height:1.8;${NATIVE ? "display:none" : ""}">これは<b>ブラウザ版</b>です。Android アプリ版との違いは次のとおりです。</p>
-    <ul class="small" style="line-height:1.8;padding-left:1.2em;margin:0;${NATIVE ? "display:none" : ""}">
-      <li>予定の通知は、ページを開いている間だけ鳴ります</li>
-      <li>端末のアプリを読めないため、妨害アプリと作業に数えるアプリは選べません</li>
-    </ul>
-    <p class="small" style="line-height:1.8;${NATIVE ? "display:none" : ""}">Android アプリ版で必要になる「使用状況へのアクセス」の許可手順は、「設定」に載せてあります。</p>
-    <div class="btns"><button class="btn primary" data-ok>書きはじめる</button></div>`, s => {
-    $("[data-ok]", s).onclick = () => { meta.guideSeen = true; saveMeta(); closeSheet(); show("memo"); focusStart(); };
+// ---- 端末の許可:何のために要るのかを説明してから、設定の画面へ案内する ----
+const hasNotify = () => { try { return !NATIVE || Android.hasNotifyPerm(); } catch { return false; } };
+const canExactAlarm = () => { try { return !NATIVE || Android.canExactAlarm(); } catch { return false; } };
+const PERMS = {
+  notify: { name: "通知", why: "予定の時刻、ポモドーロの区切り、止め忘れを知らせ、ロック画面にタイマーのボタンを出します", ok: hasNotify, open: () => Android.openNotifySettings() },
+  usage: { name: "使用状況へのアクセス", why: "選んだアプリの使用時間を読み、妨害アプリが開かれたかを判断します。読んだ内容は端末の外へ送りません", ok: () => usageAccess(), open: () => Android.openUsageAccessSettings() },
+  overlay: { name: "他のアプリの上に重ねて表示", why: "タイマー中に、選んだ妨害アプリの上を覆います", ok: () => canOverlay(), open: () => Android.openOverlaySettings() },
+  exact: { name: "アラームとリマインダー", why: "予定やポモドーロの知らせを遅れずに届けます。許可しなくても届きますが、数分遅れることがあります", optional: true, ok: canExactAlarm, open: () => Android.openExactSettings() },
+};
+const permRow = k => { const p = PERMS[k], ok = p.ok(); return `<div class="row"><span class="grow">${p.name}<div class="muted small">${p.why}</div></span><b class="small" style="flex:none;color:${ok ? "var(--accent)" : p.optional ? "var(--text-secondary)" : "var(--danger)"}">${ok ? "許可済み" : "未許可"}</b><button class="mini" style="flex:none" data-perm="${k}">設定を開く</button></div>`; };
+function permSheet(kinds, intro) {
+  permSheet.last = [kinds, intro];
+  openSheet(`<div id="permS"><h2>許可のお願い</h2><p class="muted small" style="margin-top:-4px">${esc(intro)}設定の画面で「作業記録メモ帳」を選び、オンにして戻ってきてください。</p>
+    ${kinds.map(permRow).join("")}
+    <div class="btns"><button class="btn" data-x>閉じる</button></div></div>`, s => {
+    s.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.perm) { try { PERMS[b.dataset.perm].open(); } catch {} }
+      else if ("x" in b.dataset) closeSheet();
+    });
   });
+}
+function permAsk(kinds, intro, fallback) { // 足りない許可を案内する。同じ案内は一日に一度まで
+  if (!NATIVE) return;
+  const missing = kinds.filter(k => !PERMS[k].ok()); if (!missing.length) return;
+  if (Date.now() - (LS.get("permAskAt") || 0) < 864e5) { if (fallback) toast(fallback); return; }
+  LS.set("permAskAt", Date.now());
+  permSheet(missing, intro);
+}
+// ---- タイマーの止め忘れ:長く動いていたら尋ねる。止めた時刻を直せば、その後の分は記録に入らない ----
+const timerWarnMs = () => { const h = meta?.prefs?.timerWarnH ?? 3; return h > 0 ? h * 36e5 : 0; };
+function checkTimerForgot() {
+  const s = Timer.st, w = timerWarnMs();
+  if (!s.running || !w || document.visibilityState !== "visible" || $("#veil").classList.contains("on") || document.body.classList.contains("editing")) return;
+  if (Date.now() < (s.warnAt || (s.runStart || s.segStart) + w)) return;
+  timerForgotSheet();
+}
+function timerForgotSheet() {
+  const s = Timer.st, w = timerWarnMs(), began = s.runStart || s.segStart, now = Date.now();
+  s.warnAt = now + 10 * 60000; Timer.save(); // 答えずに閉じたら、しばらくしてまた尋ねる
+  const done = msg => { closeSheet(); if (view === "timer") renderTimer(); if (view === "log") renderLog(); refreshLive(); if (msg) toast(msg); };
+  openSheet(`<h2>${TIMER_NAME[s.mode]}が ${fmtDur(now - began)} 動いています</h2>
+    <p class="muted small" style="margin-top:-4px">${fmtDate(began)} ${hm(began)} から計っています。止め忘れていませんか?</p>
+    <label class="field"><span>本当に終わった時刻</span><input class="inp" type="datetime-local" id="tfAt" value="${dtLocal(now)}"></label>
+    <button class="btn block" data-at>この時刻で止める</button>
+    <div class="btns"><button class="btn" data-go>まだ計っている</button><button class="btn primary" data-now>いま止める</button></div>`, sh => {
+    sh.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if ("go" in b.dataset) { Timer.st.warnAt = Date.now() + w; Timer.save(); done(); }
+      else if ("now" in b.dataset) { Timer.stop(); done("止めました"); }
+      else if ("at" in b.dataset) {
+        const t = new Date($("#tfAt").value).getTime();
+        if (!(t > began) || t > Date.now()) { toast(`${hm(began)} より後で、いまより前の時刻にしてください`); return; }
+        Timer.tick(t, true); Timer.stop(t); done(`${hm(t)} で止めました`);
+      }
+    });
+  });
+}
+// ---- 書き出しの催促:データはこの端末の中だけなので、故障や紛失に備える ----
+const fmtDate = t => { const d = new Date(t); return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`; };
+const markExported = () => { LS.set("lastExport", Date.now()); renderPrefsIfOpen(); };
+function checkExportNag() {
+  const now = Date.now(), last = LS.get("lastExport");
+  if (meta.prefs.exportRemind === false || Store.col || document.visibilityState !== "visible" || $("#veil").classList.contains("on") || document.body.classList.contains("editing")) return;
+  if (!Object.values(files).some(f => !f.auto && !isEmptyMemo(f))) return;
+  if (now - (last || LS.get("firstSeen") || now) < 30 * 864e5 || now - (LS.get("exportNagAt") || 0) < 7 * 864e5) return;
+  LS.set("exportNagAt", now);
+  openSheet(`<h2>データを書き出しませんか</h2>
+    <p class="muted small" style="margin-top:-4px;line-height:1.6">最後に書き出した日:${last ? fmtDate(last) : "まだありません"}。メモや記録はこの端末の中だけにあるので、故障や紛失のときに失われます。ファイルに保存して、別の場所へ控えておくと安心です。</p>
+    <div class="btns"><button class="btn" data-x>あとで</button><button class="btn primary" data-go>書き出す</button></div>`, s => {
+    $("[data-x]", s).onclick = closeSheet;
+    $("[data-go]", s).onclick = exportSheet;
+  });
+}
+// ---- ゴミ箱:消したメモは30日間残す ----
+const TRASH_MS = 30 * 864e5;
+const trashList = () => Object.entries(Store.localDocs()).filter(([k, v]) => k.startsWith("trash-") && v.file).map(([key, v]) => ({ key, file: v.file, at: v.at || 0 })).sort((a, b) => b.at - a.at);
+function purgeTrash() { for (const x of trashList()) if (Date.now() - x.at > TRASH_MS) Store.remove(x.key); }
+function trashSheet() {
+  const L = trashList();
+  openSheet(`<h2>ゴミ箱</h2><p class="muted small" style="margin-top:-4px">消したメモは30日間ここに残ります。戻すとメインのボードに置かれます(矢印や丸の所属は戻りません)。</p>
+    ${L.map(x => `<div class="row"><span class="grow"><b>${esc(memoTitle(x.file))}</b><div class="muted small">${countNodes(x.file.nodes)}行 · ${fmtDate(x.at)} に消しました</div></span><button class="mini" style="flex:none" data-tr="${esc(x.key)}">戻す</button><button class="mini" style="flex:none" data-tx="${esc(x.key)}">完全に消す</button></div>`).join("") || `<div class="empty">ゴミ箱は空です</div>`}
+    <div class="btns"><button class="btn" data-x>閉じる</button></div>`, s => {
+    s.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if ("x" in b.dataset) closeSheet();
+      else if (b.dataset.tx) { Store.remove(b.dataset.tx); trashSheet(); renderPrefsIfOpen(); }
+      else if (b.dataset.tr) {
+        const f = LS.get("doc:" + b.dataset.tr)?.file; if (!f) return;
+        if (files[f.id]) f.id = uid(); // 同じメモが別に戻っていれば、並べて残す
+        files[f.id] = f; saveFileQuiet(f); Store.remove(b.dataset.tr);
+        withBoard("main", placeMissing); saveBoardOf("main"); renderFileBar();
+        toast(`「${memoTitle(f)}」を戻しました`); trashSheet(); renderPrefsIfOpen();
+      }
+    });
+  });
+}
+// ---- このアプリについて ----
+const appVersion = () => { try { return NATIVE ? Android.versionName() : ""; } catch { return ""; } };
+function storageUsed() { let n = 0; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.startsWith("wm:")) n += k.length + (localStorage.getItem(k) || "").length; } } catch {} return n; }
+function policySheet() {
+  openSheet(`<h2>プライバシーポリシー</h2><div class="small" style="line-height:1.8">
+    <p>作業記録メモ帳(以下「本アプリ」)は、利用者の作業時間の記録とメモのためのアプリです。</p>
+    <p><b>1. 扱う情報</b><br>利用者が書いたメモ、ボードの配置、予定、タイマーの記録 / 本アプリを開いていた時間 / 利用者が選んだアプリの使用時間(「使用状況へのアクセス」を許可した場合のみ) / 端末に入っているアプリの名前の一覧(利用者がアプリを選ぶときのみ)</p>
+    <p><b>2. 情報の保存と送信</b><br>${NATIVE ? "上の情報は、すべて利用者の端末の中にだけ保存します。本アプリは、これらの情報を開発者やほかの第三者に送信しません。本アプリはネットワークに接続せず、端末のクラウドバックアップの対象にもしません。利用者が自分で書き出したファイルの扱いは、利用者に委ねられます。" : "上の情報はこのブラウザの中に保存します。claude.ai で開いたときは、利用者本人専用の領域へも同期します。開発者やほかの第三者には送信しません。"}</p>
+    ${NATIVE ? `<p><b>3. 権限</b><br>通知:タイマーのボタンと経過時間を出し、予定やタイマーを知らせるために使います。<br>アラームとリマインダー:その知らせを遅れずに届けるために使います。<br>再起動の知らせの受信:再起動のあと、通知と知らせを預け直すために使います。<br>使用状況へのアクセス:選んだアプリの使用時間を表示し、集中タイマー中に選んだアプリが前面に出たかを判断するために使います。<br>他のアプリの上に重ねて表示:集中タイマー中(最大5分)に、選んだアプリの上を覆う画面を出すために使います。<br>どの権限も、利用者が端末の設定でいつでも外せます。</p>` : ""}
+    <p><b>${NATIVE ? 4 : 3}. 情報の削除</b><br>「設定 › このアプリについて › すべてのデータを消す」で消せます。${NATIVE ? "本アプリをアンインストールしても、端末に保存された情報はすべて削除されます。" : ""}</p></div>
+    <div class="btns"><button class="btn primary" data-x>閉じる</button></div>`, s => { $("[data-x]", s).onclick = closeSheet; });
+}
+function wipeSheet() {
+  openSheet(`<h2>すべてのデータを消す</h2>
+    <p class="small" style="line-height:1.7;margin-top:-4px;color:var(--danger)">メモ、ボード、予定、タイマーの記録、作業時間、設定、ゴミ箱を、すべて消します。<b>元に戻せません。</b></p>
+    <p class="muted small">残しておきたいものがあれば、先に「書き出す」でファイルに保存してください。</p>
+    <button class="btn block" data-exp>先に書き出す</button>
+    <label class="field"><span>消すときは「消す」と入力してください</span><input class="inp" id="wpIn" maxlength="4"></label>
+    <div class="btns"><button class="btn" data-x>やめる</button><button class="btn danger" data-ok>すべて消す</button></div>`, s => {
+    $("[data-x]", s).onclick = closeSheet;
+    $("[data-exp]", s).onclick = exportSheet;
+    $("[data-ok]", s).onclick = () => { if ($("#wpIn").value.trim() === "消す") wipeAll(); else toast("「消す」と入力してください"); };
+  });
+}
+async function wipeAll() {
+  // 閉じる直前の保存で書き戻さないよう、待っている保存をすべて捨てる
+  clearTimeout(outlineTimer); outlineTimer = null; clearTimeout(applyView._t);
+  for (const id of Object.keys(boardTimers)) { clearTimeout(boardTimers[id]); delete boardTimers[id]; }
+  Work.live = null;
+  for (const t of Store.pending.values()) clearTimeout(t);
+  Store.pending.clear();
+  if (Store.col) { const col = Store.col; Store.col = null; await Promise.allSettled(Object.keys(Store.localDocs()).map(id => col.doc(id).delete())); }
+  if (NATIVE) try { Android.stopBlock(); Android.setEventAlarms("[]"); } catch {}
+  for (const k of LS.keys()) LS.del(k);
+  location.reload();
+}
+// ---- 初めて開いたときの案内:ミモザに任せる ----
+function guide() {
+  const page = NATIVE ? "このアプリ" : "このページ";
+  const steps = [
+    { say: "やあ！ぼくは ミモザ！きみの さぎょうを みまもるよ！", h: "開いているあいだが、作業時間", p: `${page}を<b>開いているあいだ</b>が、作業時間として自動で記録されます。ほかのアプリへ切り替えたり、画面が消えたりすると止まります。無操作で止まることはありません。` },
+    { say: "メモは ボードに ならべて、やじるしで つなげられるんだ！", h: "メモとボード", p: `メモは上の「＋ 新しいメモ」でいくつでも作れます。改行で次の行、→ で字下げです。「◧ ボード」を開くと、すべてのメモがカードで並び、自由に動かして<b>矢印でつなげられます</b>。指で囲むとファイルになります。` },
+    { say: "タイマーで はかると、グラフが どんどん つみあがるよ！", h: "タイマーと記録", p: `「タイマー」で作業の種類を選んで計ると、「記録」に種類ごとの時間が積み上がります。${NATIVE ? "ロック画面の通知やホーム画面のウィジェットからも、始めたり止めたりできます。" : ""}` },
+    NATIVE ? { say: "つうちを ゆるしてくれたら、ぼくが おしらせするよ！", h: "知らせと許可", p: `予定の時刻、ポモドーロの区切り、タイマーの止め忘れを通知で知らせます。この案内の最後に、通知の許可を尋ねます。<br>妨害アプリの使用時間を読んだり覆ったりするには、別の許可が要ります。そのときに理由とあわせて案内します(「設定 › 端末の許可」でも変えられます)。` }
+      : { say: "ブラウザばんは、できないことも あるんだ。", h: "ブラウザ版について", p: `Android アプリ版との違いは次のとおりです。<ul style="padding-left:1.2em;margin:6px 0 0"><li>予定の通知は、ページを開いている間だけ鳴ります</li><li>端末のアプリを読めないため、妨害アプリと作業に数えるアプリは選べません</li></ul>` },
+    { say: "さいごに だいじな おはなし。きみの データの ことだよ。", h: "データの置き場所", p: `メモや記録は${NATIVE ? "この端末の中にだけ保存し、外へは送りません" : "このブラウザの中に保存します(claude.ai で開いたときは、本人専用の領域へも同期します)"}。機種変更やアプリを消す前に、「設定 › データの引っ越し」で書き出してください。` },
+  ];
+  let i = 0;
+  const draw = () => {
+    const st = steps[i], last = i === steps.length - 1;
+    openSheet(`<div class="mimoza-box" style="margin-bottom:6px"><img class="mimoza-img" src="${MIMOZA_IMG}" alt="ミモザ"><div class="mimoza-bubble" style="margin-bottom:36px;padding-bottom:10px"><span class="who">ミモザ</span><span>${esc(st.say)}</span></div></div>
+      <h2>${esc(st.h)}</h2><div class="small" style="line-height:1.8">${st.p}</div>
+      <p class="muted small" style="text-align:center;margin:10px 0 0">${i + 1} / ${steps.length}</p>
+      <div class="btns">${i ? `<button class="btn" data-pv>戻る</button>` : ""}<button class="btn primary" data-nx>${last ? "書きはじめる" : "次へ"}</button></div>`, s => {
+      $("[data-pv]", s) && ($("[data-pv]", s).onclick = () => { i--; draw(); });
+      $("[data-nx]", s).onclick = () => {
+        if (!last) { i++; draw(); return; }
+        meta.guideSeen = true; saveMeta(); closeSheet(); show("memo"); focusStart();
+        if (NATIVE) try { Android.requestNotifyPerm(); } catch {}
+      };
+    });
+  };
+  draw();
 }
 
 /* ============================================================
    起動と時計
    ============================================================ */
+let todayKey = ymd(new Date());
+function rollDay() { // 開いたまま日付が変わったら、今日を見ていた画面を新しい今日へ送る
+  const k = ymd(new Date()); if (k === todayKey) return;
+  const old = todayKey, now = startOfDay(new Date()); todayKey = k;
+  if (ymd(logAnchor) === old) { logAnchor = now; if (view === "log") renderLog(); }
+  if (ymd(planAnchor) === old) { planAnchor = now; if (view === "plan") renderPlan(); }
+}
 function refreshLive() {
+  rollDay();
   const a = startOfDay(new Date()).getTime();
   $("#liveToday").textContent = fmtSec(workTotal(a, a + 864e5));
   if (view === "log" && logLive) { // 記録画面に今日が入っていれば、作業時間を秒で進める
@@ -4084,8 +4331,9 @@ const TIMER_NAME = { stopwatch: "ストップウォッチ", pomodoro: "タイマ
 function syncWidget() { // ウィジェットに、いまのタイマーの様子を渡す(計測中なら経過や終わる時刻を出す)
   if (!NATIVE) return;
   const s = Timer.st || {}, P = meta && meta.prefs || {};
-  const phaseEnd = s.running && s.mode === "pomodoro" ? s.phaseStart + ((s.phase === "break" ? P.brk : P.focus) || 25) * 60000 : 0;
-  try { Android.timerState(JSON.stringify({ running: !!s.running, mode: s.mode, start: s.segStart || 0, phase: s.phase || "focus", phaseEnd, type: s.type ? typeName(s.type) : "", label: s.label || "" })); } catch {}
+  const focusMs = (P.focus || 25) * 60000, brkMs = (P.brk || 5) * 60000;
+  const phaseEnd = s.running && s.mode === "pomodoro" ? s.phaseStart + (s.phase === "break" ? brkMs : focusMs) : 0;
+  try { Android.timerState(JSON.stringify({ running: !!s.running, mode: s.mode, start: s.segStart || 0, runStart: s.runStart || s.segStart || 0, phase: s.phase || "focus", phaseStart: s.phaseStart || 0, phaseEnd, focusMs, brkMs, warnMs: timerWarnMs(), warnAt: s.warnAt || 0, type: s.type ? typeName(s.type) : "", label: s.label || "" })); } catch {}
 }
 function takeNoticeEvents() { // ロック画面の通知で押された「始める・止める」を、押した時刻のまま記録に移す
   if (!NATIVE) return;
@@ -4109,6 +4357,7 @@ window.onWidget = action => {
     if (s.running) { const d = Date.now() - s.segStart; Timer.stop(); show("timer"); toast(`${TIMER_NAME[s.mode]}を止めました(${fmtDur(d)})`); }
     else show("timer");
   } else if (action === "show") show("timer");
+  else if (action === "plan") show("plan");
 };
 window.androidBack = () => {
   if ($("#veil").classList.contains("on")) { closeSheet(); return true; }
@@ -4117,8 +4366,9 @@ window.androidBack = () => {
   return false;
 };
 window.onAndroidResume = () => { // 設定画面から戻ったときなど:許可と使用時間を読み直す
-  takeNoticeEvents();
+  takeNoticeEvents(); syncAlarms(); syncWidget(); // 通知やウィジェットの表示を、画面の側の正しい様子にそろえる
   accessMemo.t = 0; for (const k of Object.keys(usageCache)) delete usageCache[k];
+  if ($("#permS") && permSheet.last) permSheet(...permSheet.last);
   if (view === "prefs") renderPrefs(); else if (view === "log") renderLog(); else if (view === "timer") renderTimer();
   refreshLive();
 };
@@ -4127,6 +4377,7 @@ function boot() {
   if (!Object.keys(Store.localDocs()).length) LS.set("fresh", true); // 何も入っていない端末
   loadAll(); Timer.load(); Work.recover(); takeNoticeEvents(); syncWidget();
   syncBlockApps();
+  syncAlarms(); purgeTrash(); if (!LS.get("firstSeen")) LS.set("firstSeen", Date.now());
   if (NATIVE) try { Android.setTimerNotice(meta.prefs.lockNote !== false); } catch {}
   const wh = /^#(start|stop)(?:=(stopwatch|pomodoro))?$/.exec(location.hash); // ホーム画面のショートカット用:#start=stopwatch など
   if (wh) { try { history.replaceState(null, "", "#timer"); } catch {} setTimeout(() => window.onWidget(wh[1] === "stop" ? "stop" : wh[2] || "stopwatch"), 0); }
@@ -4137,14 +4388,16 @@ function boot() {
   if (!meta.guideSeen) guide(); else if (view === "memo") focusStart();
   setInterval(() => Work.beat(), 10000);
   setInterval(refreshLive, 1000);
-  setInterval(() => { takeNoticeEvents(); Timer.tick(); updateClock(); }, 1000);
+  setInterval(() => { takeNoticeEvents(); Timer.tick(); updateClock(); checkTimerForgot(); }, 1000);
+  setInterval(checkExportNag, 60000);
+  setTimeout(checkExportNag, 4000);
   setInterval(checkEventNotices, 15000);
   setTimeout(checkEventNotices, 1500);
   Store.connect(reloadDocs);
 }
 function reloadDocs() { // 他端末の内容が新しかったときや読み込みのあとに読み直す(編集中の本文は保つ)
   const f = focusId, z = zoomId, cf = curFile;
-  loadAll(); syncBlockApps();
+  loadAll(); syncBlockApps(); syncAlarms();
   if (files[cf] && cf !== curFile) setOutline(cf);
   if (f && index[f]) focusId = f; zoomId = z && index[z] ? z : null;
   if (!document.activeElement?.closest?.(".ol-t")) renderMemo(); if (view !== "memo") show(view, false); refreshLive();

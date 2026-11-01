@@ -38,6 +38,7 @@ prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は ind
 
 - `MainActivity.kt`:WebView で `file:///android_asset/index.html` を開く。端末の機能は JS から `Android.*` で呼ぶ(使用時間・集中ブロック・ウィジェットへの状態 `timerState`)。
 - `TimerNotice.kt`:ロック画面の通知。ボタンはアプリを開かず、押した時刻を貯める(`Android.takeTimerEvents`)。画面側の `takeNoticeEvents` がそれを記録へ移す。
+- `Alarms.kt`:閉じていても届く知らせ(予定・ポモドーロの区切り・止め忘れ)。予定は画面から `Android.setEventAlarms` で受け取り、タイマーの分は `timerState` の様子から求める。
 - `BlockService.kt`:タイマー中、選んだ妨害アプリを覆う(試験運用、最大 5 分)。
 - `TimerWidget.kt`:ホーム画面のウィジェット「作業タイマー」。押すとアプリを開き、`window.onWidget('stopwatch'|'pomodoro'|'stop'|'show')` を呼ぶ。
 - ビルドのたびに `../worklog-memo/index.html` を assets に写す(`app/build.gradle.kts` の copyWeb)。なので **リポジトリ全体** が要る。
@@ -49,9 +50,12 @@ prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は ind
 - 画面の変更は、`index.html` をブラウザで開いて確かめられる。スマホの大きさ(幅 390px 前後)で見る。
 - `#start=stopwatch`・`#start=pomodoro`・`#stop` を付けて開くと、ウィジェットと同じ動きになる。
 - 自動テストはリポジトリに入っていない(これまではクラウドの作業環境で Playwright を使っていた)。
+- 実機は、debug ビルドなら `adb forward tcp:9333 localabstract:webview_devtools_remote_<pid>` で WebView に Chrome DevTools Protocol でつながり、画面を叩かずに JavaScript を動かして確かめられる。Android の窓口を模すなら `<head>` の先頭で `window.Android` を差し替えた HTML を iframe の srcdoc で開く。
+- パソコンの Gradle は JDK 21(`~/.jdks/jbr-21.0.11`)で動かす。Android Studio 同梱の Java は新しすぎて動かない。
 
 ## 守ること
 
+- **利用者のスマホを座標で叩かない**。通知の並びは変わるので、別のアプリを開いてしまったことがある。押すなら直前に `uiautomator dump` で文字から位置を求め、それでも画面の操作は頼まれたときだけにする。ウイルス対策アプリなどの警告には触れず、利用者に任せる。
 - **鍵を絶対にコミットしない**。Play のアップロード鍵(`upload.jks`・`UPLOAD_KEYSTORE_BASE64.txt`・`UPLOAD_KEYSTORE_PASSWORD.txt`)は利用者が別に持っている。GitHub の Secrets に入れる手順は `prototype/worklog-memo-android/PLAY_RELEASE.md`。
 - コミットや画面の文言は日本語。「〜する」で終わる短い要約を一行目に書く。
 - 頼まれていないプルリクエストは作らない。push は `ccr-a6f51c3a-jl9xh6` へ。
@@ -63,5 +67,6 @@ prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は ind
 - **読み込むファイルの中身**:ID などをそのまま画面に入れているので、自分で書き出したファイルだけを読み込む前提。
 
 - **データの書き出し/読み込み**:設定の「データの引っ越し」として実装した。Android の保存・ファイル選択(`MainActivity.kt`)と claude.ai 上の `downloads` は実機で未確認。
-- **ウィジェット・ロック画面の通知**:ビルドは通ったが、実機での確認はまだ。
+- **実機で未確認**:書き出しと読み込みの保存先・ファイルの選択、再起動のあとの通知、新しい画面を指で触った使い心地。ロック画面の通知と、閉じているときの知らせは利用者の実機で確認済み。
+- **Norton 360**:直接入れた試作版を入れるたびに「疑わしいアプリ」と出る。Play の版でどうなるかは未確認。
 - **Google Play の内部テスト**:Secrets にアップロード鍵がまだ入っていないので、AAB は作られていない。Actions で「Releases に置く」が 403(権限)で失敗するが、APK は実行結果の Artifacts から落とせる(失敗扱いにはしないよう直してある)。

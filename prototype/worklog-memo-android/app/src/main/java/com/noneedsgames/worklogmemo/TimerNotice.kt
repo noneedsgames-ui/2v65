@@ -63,7 +63,7 @@ object TimerNotice {
             p.edit().putString("events", ev.toString()).commit()
         }
         st.put("running", !running)
-        if (action == ACTION_START) st.put("mode", "stopwatch").put("start", now).put("warn", startBlock(c))
+        if (action == ACTION_START) st.put("mode", "stopwatch").put("start", now).put("runStart", now).put("warnAt", 0L).put("warn", startBlock(c))
         else BlockService.stop(c)
         TimerWidget.saveState(c, st.toString())
     }
@@ -95,8 +95,9 @@ object TimerNotice {
             v.setChronometer(R.id.n_chrono, SystemClock.elapsedRealtime(), null, false)
             v.setViewVisibility(R.id.n_chrono, View.GONE)
             title = if (running && st != null) {
-                val end = st.optLong("phaseEnd")
-                val phase = if (st.optString("phase") == "break") "休憩" else "集中"
+                val ph = Alarms.phaseAt(st, System.currentTimeMillis()) // 画面が閉じていても、いまの区切りを求める
+                val end = ph?.end ?: st.optLong("phaseEnd")
+                val phase = if ((ph?.phase ?: st.optString("phase")) == "break") "休憩" else "集中"
                 "$phase 〜" + (if (end > 0) SimpleDateFormat("H:mm", Locale.JAPAN).format(Date(end)) else "")
             } else "作業タイマー"
             v.setTextViewText(R.id.n_big, title)
@@ -119,7 +120,7 @@ object TimerNotice {
             .build()
     }
 
-    private fun buttonIntent(c: Context, act: String): PendingIntent {
+    fun buttonIntent(c: Context, act: String): PendingIntent {
         val i = Intent(c, TimerNoticeReceiver::class.java).setAction(act)
         return PendingIntent.getBroadcast(c, act.hashCode(), i, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
@@ -139,7 +140,7 @@ class TimerNoticeReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
             TimerNotice.ACTION_START, TimerNotice.ACTION_STOP -> TimerNotice.press(context, intent.action!!)
-            else -> TimerNotice.refresh(context)
+            else -> { TimerNotice.refresh(context); Alarms.schedule(context) } // 再起動すると、通知も目覚ましも消える
         }
     }
 }

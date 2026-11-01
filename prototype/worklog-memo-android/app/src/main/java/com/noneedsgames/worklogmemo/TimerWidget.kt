@@ -30,16 +30,17 @@ class TimerWidget : AppWidgetProvider() {
     companion object {
         const val ACTION = "com.noneedsgames.worklogmemo.WIDGET"
         const val EXTRA = "widget_action"
-        val ACTIONS = setOf("stopwatch", "pomodoro", "stop", "show")
+        val ACTIONS = setOf("stopwatch", "pomodoro", "stop", "show", "plan")
         const val PREFS = "timer_widget"
 
         fun saveState(context: Context, json: String) {
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("state", json).commit()
             refresh(context)
             TimerNotice.refresh(context)
+            Alarms.schedule(context)
         }
 
-        private fun refresh(context: Context) {
+        fun refresh(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, TimerWidget::class.java))
             if (ids.isNotEmpty()) manager.updateAppWidget(ids, views(context))
@@ -68,8 +69,9 @@ class TimerWidget : AppWidgetProvider() {
             if (running && st != null) {
                 val type = st.optString("type").takeIf { it.isNotBlank() }?.let { " · $it" } ?: ""
                 if (st.optString("mode") == "pomodoro") {
-                    val end = st.optLong("phaseEnd")
-                    val phase = if (st.optString("phase") == "break") "休憩" else "集中"
+                    val ph = Alarms.phaseAt(st, System.currentTimeMillis())
+                    val end = ph?.end ?: st.optLong("phaseEnd")
+                    val phase = if ((ph?.phase ?: st.optString("phase")) == "break") "休憩" else "集中"
                     val at = if (end > 0) SimpleDateFormat("H:mm", Locale.JAPAN).format(Date(end)) else ""
                     v.setTextViewText(R.id.w_title, "タイマー$type")
                     v.setViewVisibility(R.id.w_chrono, View.GONE)
