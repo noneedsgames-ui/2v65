@@ -4967,7 +4967,7 @@ function policySheet() {
 }
 function wipeSheet() {
   openSheet(`<h2>すべてのデータを消す</h2>
-    <p class="small" style="line-height:1.7;margin-top:-4px;color:var(--danger)">メモ、ボード、予定、収支、長期計画、タイマーの記録、作業時間、設定、ゴミ箱を、すべて消します。<b>元に戻せません。</b></p>
+    <p class="small" style="line-height:1.7;margin-top:-4px;color:var(--danger)">メモ、ボード、予定、収支、長期計画、タイマーの記録、作業時間、設定、ゴミ箱を、すべて消します。<b>元に戻せません。</b>${NATIVE ? "自動バックアップの設定も外れます(保存先のファイルは消えません)。" : ""}</p>
     <p class="muted small">残しておきたいものがあれば、先に「書き出す」でファイルに保存してください。</p>
     <button class="btn block" data-exp>先に書き出す</button>
     <label class="field"><span>消すときは「消す」と入力してください</span><input class="inp" id="wpIn" maxlength="4"></label>
