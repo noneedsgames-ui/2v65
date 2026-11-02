@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- 「ドライブで同期」をオンにしたときだけ、利用者の Google ドライブ(アプリ専用の隠しフォルダ)と通信する -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- ほかのアプリの使用時間を読む(端末の設定画面で「使用状況へのアクセス」を許可する) -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
     <!-- 集中中に、指定したアプリの上を覆う(「他のアプリの上に重ねて表示」を許可する) -->

@@ -60,6 +60,11 @@ android {
     sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/webassets").get().asFile)
 }
 
+dependencies {
+    // ドライブで同期:Google アカウントで、ドライブのアプリ専用の隠しフォルダを使う許可をもらう
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
+}
+
 kotlin {
     compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
 }

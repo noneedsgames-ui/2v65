@@ -125,6 +125,7 @@ nav.bottom button svg{width:22px;height:22px;stroke:currentColor;fill:none;strok
 nav.bottom button.on{color:var(--text-primary);font-weight:600}
 .livebar{font-size:11px;color:var(--text-muted);text-align:center;padding:3px 0;background:var(--surface-2);border-bottom:1px solid var(--line)}
 .livebar b{color:var(--text-primary);font-variant-numeric:tabular-nums}
+.syncchip{margin-left:8px;font:inherit;font-size:11px;font-weight:700;color:var(--accent);background:none;border:1px solid var(--accent);border-radius:10px;padding:0 8px;cursor:pointer}
 
 /* memo */
 .tabs{background:var(--surface-1);border-bottom:1px solid var(--line)}
@@ -534,7 +535,7 @@ textarea.inp{line-height:1.6;resize:vertical}
 </style>
 </head>
 <body>
-<div class="livebar" id="livebar">作業時間 自動記録中 <b id="liveToday">0分</b>(今日)</div>
+<div class="livebar" id="livebar">作業時間 自動記録中 <b id="liveToday">0分</b>(今日)<button class="syncchip" id="syncChip" hidden>☁ ログインして同期</button></div>
 <main>
   <!-- メモ -->
   <section class="view" id="v-memo">
@@ -683,6 +684,8 @@ const LS = {
   del(k) { try { localStorage.removeItem("wm:" + k); } catch {} },
   keys() { try { return Object.keys(localStorage).filter(k => k.startsWith("wm:")).map(k => k.slice(3)); } catch { return []; } }
 };
+const DOC_RE = /^(meta|plans|projects|board|board-.+|file-.+|log-\d{4}-\d{2}|money-\d{4}-\d{2})$/; // 書き出しやドライブの同期に入れる文書
+let onLocalChange = null; // ドライブの同期が、書き換え・削除を知るための受け口
 const Store = {
   col: null, status: "端末内のみ", pending: new Map(), inflight: new Set(),
   // 書き込み:端末内へ即時、リモートへは間をおいて一件ずつ
@@ -699,10 +702,12 @@ const Store = {
   },
   remove(id) {
     LS.del("doc:" + id);
+    if (onLocalChange && DOC_RE.test(id)) onLocalChange(id, true);
     this.pending.delete(id);
     if (this.col) this.col.doc(id).delete().catch(() => {});
   },
   schedule(id) {
+    if (onLocalChange && DOC_RE.test(id)) onLocalChange(id, false);
     if (!this.col) return;
     clearTimeout(this.pending.get(id));
     this.pending.set(id, setTimeout(() => this.flush(id), 1200));
@@ -4087,6 +4092,7 @@ function renderPrefs() {
       <p class="muted small" style="line-height:1.6">${ON_CLAUDE ? "入力はまずこの端末に保存し、claude.ai にサインインして開いている場合は、あなた専用の領域へ追って同期します。ほかの人からは見えません。" : NATIVE ? "入力はこの端末の中に保存します。書き出しや自動バックアップで選んだ保存先のほかへは送りません。" : "入力はこのブラウザの中にだけ保存します。外へは送らず、ほかの人からは見えません。"}</p>
       <button class="mini" id="reGuide">はじめにの案内をもう一度見る</button>
     </div>
+    ${syncCardHtml()}
     <div class="card"><h3>データの引っ越し</h3>
       <p class="muted small" style="line-height:1.6;margin:0">メモ・ボード・予定・収支・長期計画・設定・作業の記録を一つのファイルにして、ブラウザ版とアプリ版のあいだや、別の端末へ移せます。読み込みは今のデータに合わせるので、今のデータは消えません。</p>
       <div class="btns"><button class="btn" id="bkExport">書き出す</button><button class="btn primary" id="bkImport">読み込む</button></div>
@@ -4139,6 +4145,9 @@ $("#prefsScroll").addEventListener("click", e => {
     confirmSheet("テンプレートを削除しますか", `「${k}」を削除します。メモに入れ済みの行はそのまま残ります。`, "削除する", () => { delete meta.prefs.templates[k]; saveMeta(); renderPrefs(); toast("削除しました"); });
   }
   else if (b.id === "reGuide") guide();
+  else if (b.id === "syncOn" || b.id === "syncLogin") Sync.start();
+  else if (b.id === "syncNow") Sync.run("manual");
+  else if (b.id === "syncOff") confirmSheet("同期をやめますか", "この端末は、これからドライブと同期しなくなります。この端末のデータも、ドライブのデータも消えません。", "やめる", () => Sync.stop());
   else if (b.id === "bkExport") exportSheet();
   else if (b.id === "bkImport") importSheet();
   else if (b.id === "bkAutoSet") autoBackupSheet();
@@ -4349,6 +4358,179 @@ function importSheet() {
   });
 }
 
+/* ============================================================
+   ドライブで同期:利用者の Google ドライブの、このアプリ専用の隠しフォルダ(appDataFolder)に worklog-sync.json を一つ置き、
+   ブラウザ版とアプリ版が読み書きする。文書ごとに新しい方(_ts)を採り、作業の記録は両方の分を合わせる。
+   消した文書は tomb(文書 → 消した時刻)で伝え、それより後に書き換えた文書は残す。
+   ブラウザ版とアプリ版は、同じ Google Cloud プロジェクトの OAuth クライアントを使うので、同じ隠しフォルダを見る
+   ============================================================ */
+const GOOGLE_WEB_CLIENT_ID = ""; // Google Cloud の「ウェブ アプリケーション」の OAuth クライアント ID(空のあいだ、ブラウザ版では同期を出さない)
+const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
+const SYNC_FILE = "worklog-sync.json";
+const canSync = () => NATIVE || (!ON_CLAUDE && !!GOOGLE_WEB_CLIENT_ID);
+const DRIVE_API = "https://www.googleapis.com/drive/v3", DRIVE_UP = "https://www.googleapis.com/upload/drive/v3/files";
+const WebDrive = { // ブラウザ版:Google のログインの部品で鍵(1時間)を受け取り、Drive の API を直接呼ぶ
+  tok: LS.get("gtok"),
+  valid() { return !!(this.tok && this.tok.exp > Date.now() + 60000); },
+  lib() { // 押したその場でログインの窓を開けるよう、部品は先に読んでおく
+    if (NATIVE || window.google?.accounts?.oauth2 || this.loading) return;
+    this.loading = true;
+    const s = document.createElement("script"); s.src = "https://accounts.google.com/gsi/client"; s.async = true;
+    s.onerror = () => { this.loading = false; }; document.head.append(s);
+  },
+  signIn() { // 押したときの処理の中から呼ぶ(ログインの窓が止められないように)
+    const o = window.google?.accounts?.oauth2;
+    if (!o) { this.lib(); return Promise.reject({ code: "loading" }); }
+    return new Promise((res, rej) => {
+      o.initTokenClient({ client_id: GOOGLE_WEB_CLIENT_ID, scope: DRIVE_SCOPE,
+        callback: r => {
+          if (r.error || !r.access_token) return rej({ code: r.error === "access_denied" ? "cancel" : r.error || "cancel" });
+          if (!o.hasGrantedAllScopes(r, DRIVE_SCOPE)) return rej({ code: "scope" });
+          this.tok = { t: r.access_token, exp: Date.now() + (r.expires_in || 3600) * 1000 }; LS.set("gtok", this.tok); res();
+        },
+        error_callback: e => rej({ code: e?.type === "popup_failed_to_open" ? "popup" : "cancel" }) }).requestAccessToken({ prompt: "" });
+    });
+  },
+  async req(method, url, body, type) {
+    if (!this.valid()) throw { code: "auth" };
+    let r;
+    try { r = await fetch(url, { method, headers: { Authorization: "Bearer " + this.tok.t, ...(type ? { "Content-Type": type } : {}) }, body }); }
+    catch { throw { code: "net" }; }
+    if (r.status === 401) { this.tok = null; LS.del("gtok"); throw { code: "auth" }; }
+    if (!r.ok) throw { code: "http" + r.status };
+    return r;
+  },
+  async get() { // 同期のファイル {id, text}。まだなければ null
+    const q = encodeURIComponent(`name='${SYNC_FILE}'`);
+    const f = ((await (await this.req("GET", `${DRIVE_API}/files?spaces=appDataFolder&q=${q}&fields=files(id)&pageSize=10`)).json()).files || [])[0];
+    if (!f) return null;
+    return { id: f.id, text: await (await this.req("GET", `${DRIVE_API}/files/${encodeURIComponent(f.id)}?alt=media`)).text() };
+  },
+  async put(id, text) { // 書く。id が空なら作る
+    if (id) { await this.req("PATCH", `${DRIVE_UP}/${encodeURIComponent(id)}?uploadType=media`, text, "application/json"); return id; }
+    const b = "wm" + Date.now(), head = JSON.stringify({ name: SYNC_FILE, parents: ["appDataFolder"], mimeType: "application/json" });
+    const body = `--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${head}\r\n--${b}\r\nContent-Type: application/json\r\n\r\n${text}\r\n--${b}--`;
+    return (await (await this.req("POST", `${DRIVE_UP}?uploadType=multipart&fields=id`, body, `multipart/related; boundary=${b}`)).json()).id;
+  },
+  async email() { try { return (await (await this.req("GET", `${DRIVE_API}/about?fields=user(emailAddress)`)).json()).user?.emailAddress || ""; } catch { return ""; } },
+  signOut() { const t = this.tok?.t; this.tok = null; LS.del("gtok"); if (t) try { google.accounts.oauth2.revoke(t, () => {}); } catch {} return Promise.resolve(); }
+};
+const NativeDrive = { // アプリ版:鍵の受け取りと通信はアプリの側(Kotlin)が行い、結果は onDrive で返ってくる
+  n: 0, wait: {},
+  call(op, a = "", b = "") {
+    return new Promise((res, rej) => { const n = ++this.n; this.wait[n] = { res, rej }; try { Android.driveCall(op, n, a, b); } catch { delete this.wait[n]; rej({ code: "error" }); } });
+  },
+  signIn() { return this.call("signin"); },
+  async get() { const s = await this.call("get"); return s ? JSON.parse(s) : null; },
+  put(id, text) { return this.call("put", id, text); },
+  email() { return this.call("email").catch(() => ""); },
+  signOut() { return this.call("signout").catch(() => {}); }
+};
+window.onDrive = (n, ok, data) => { const w = NativeDrive.wait[n]; if (!w) return; delete NativeDrive.wait[n]; ok ? w.res(data) : w.rej({ code: data || "error" }); };
+const Drive = () => NATIVE ? NativeDrive : WebDrive;
+function parseSync(text) { // 書き出しと同じ確かめ方で読み、消した文書の記録も添える
+  const b = parseBackup(text); if (!b) return null;
+  const o = JSON.parse(text), tomb = {};
+  if (o.tomb && typeof o.tomb === "object") for (const [k, t] of Object.entries(o.tomb)) if (DOC_RE.test(k) && Number.isFinite(t)) tomb[k] = t;
+  return { docs: b.docs, tomb };
+}
+function syncMerge(local, remote, tomb) { // 文書ごとに新しい方。作業の記録は合わせる。消した時刻より前の文書は消す
+  const out = {};
+  for (const id of new Set([...Object.keys(local), ...Object.keys(remote)])) {
+    const l = local[id], r = remote[id];
+    const m = !l ? r : !r ? l : id.startsWith("log-") ? mergeLog(l, r) : (r._ts || 0) > (l._ts || 0) ? r : l;
+    if (tomb[id] && (m._ts || 0) <= tomb[id]) continue;
+    out[id] = m;
+  }
+  return out;
+}
+const Sync = {
+  busy: false, again: false, t: null, need: false, err: LS.get("syncErr"),
+  on: () => canSync() && !!LS.get("drive"),
+  touch(id, removed) { // 書き換えたら、少しまとめてから送る
+    if (!Sync.on()) return;
+    if (removed) { const tb = LS.get("tomb") || {}; tb[id] = Date.now(); LS.set("tomb", tb); }
+    if (!Sync.t) Sync.t = setTimeout(() => { Sync.t = null; Sync.run("change"); }, 60000);
+  },
+  later(ms) { clearTimeout(this.t); this.t = setTimeout(() => { this.t = null; this.run("later"); }, ms); },
+  async run(why) {
+    if (!this.on()) return;
+    if (this.busy) { this.again = true; return; }
+    if (!NATIVE && !WebDrive.valid()) { this.need = true; this.paint(); return; }
+    // 書いている途中や、開いている画面の下では読み直さない(閉じるとき・押したときは別)
+    if (why !== "manual" && document.visibilityState === "visible" && (document.body.classList.contains("editing") || $("#veil").classList.contains("on"))) { this.later(15000); return; }
+    this.busy = true; clearTimeout(this.t); this.t = null; this.paint();
+    try {
+      const io = Drive(), got = await io.get();
+      const r = got ? parseSync(got.text) : { docs: {}, tomb: {} };
+      if (!r) throw { code: "bad" };
+      flushMemoEdit(); flushBoards();
+      const local = {}; for (const [k, v] of Object.entries(Store.localDocs())) if (DOC_RE.test(k)) local[k] = v;
+      const tomb = { ...r.tomb }; for (const [k, t] of Object.entries(LS.get("tomb") || {})) tomb[k] = Math.max(tomb[k] || 0, t);
+      let merged;
+      if (!LS.get("syncAt") && got) { // この端末で初めての同期:引っ越しと同じく、両方の分を残して合わせる
+        const { changes } = planImport(r.docs, local), now = Date.now();
+        merged = { ...local }; for (const [k, d] of Object.entries(changes)) merged[k] = { ...d, _ts: now };
+      } else merged = syncMerge(local, r.docs, tomb);
+      const same = (a, b) => JSON.stringify(a) === JSON.stringify(b), before = {};
+      let changed = false;
+      for (const [k, d] of Object.entries(merged)) if (!local[k] || !same(local[k], d)) {
+        before[k] = local[k]; changed = true;
+        if (!LS.set("doc:" + k, d)) { for (const [x, v] of Object.entries(before)) v ? LS.set("doc:" + x, v) : LS.del("doc:" + x); throw { code: "full" }; }
+      }
+      for (const k of Object.keys(local)) if (!merged[k]) { LS.del("doc:" + k); changed = true; }
+      const now = Date.now();
+      for (const k of Object.keys(tomb)) if (merged[k] || now - tomb[k] > 90 * 864e5) delete tomb[k]; // 書き直された文書と、古い記録は捨てる
+      LS.set("tomb", tomb);
+      const differs = !got || Object.keys(merged).length !== Object.keys(r.docs).length || Object.entries(merged).some(([k, d]) => !r.docs[k] || !same(r.docs[k], d)) || !same(Object.keys(tomb).sort(), Object.keys(r.tomb).sort());
+      if (differs) await io.put(got ? got.id : "", JSON.stringify({ app: BACKUP_APP, version: 1, kind: "sync", exportedAt: now, docs: merged, tomb }));
+      LS.set("syncAt", now); LS.del("syncErr"); this.err = null; this.need = false;
+      if (changed) reloadDocs();
+    } catch (e) {
+      this.err = (e && e.code) || "error"; LS.set("syncErr", this.err);
+      if (this.err === "auth") this.need = true;
+      else if (why === "manual") toast("同期できませんでした。" + this.errText());
+    } finally { this.busy = false; this.paint(); if (this.again) { this.again = false; this.later(2000); } }
+  },
+  errText() {
+    const m = { auth: "ログインが切れました。もう一度ログインしてください", net: "インターネットにつながりません", full: "端末の保存容量が足りません", bad: "ドライブの同期のファイルを読めません",
+      loading: "準備中です。もう一度押してください", popup: "ログインの窓を開けませんでした。ポップアップを許可してください", cancel: "ログインをやめました", scope: "ドライブへの保存を許可してください", http403: "ドライブを使う許可がありません" }[this.err];
+    return m || (String(this.err).startsWith("http") ? `ドライブにつながりません(${this.err})` : `うまくいきませんでした(${this.err})`);
+  },
+  paint() { // 上の帯のボタンと、設定の欄だけを描き直す
+    const c = $("#syncChip"); if (c) c.hidden = !(this.on() && this.need);
+    const k = $("#syncCard"); if (k) k.outerHTML = syncCardHtml();
+  },
+  async start() { // ログインして同期を始める(ログインし直すときも)
+    try { await Drive().signIn(); }
+    catch (e) { this.err = e?.code || "error"; if (this.err !== "cancel") toast(this.errText()); this.paint(); return; }
+    const was = LS.get("drive"), email = await Drive().email();
+    if (!was) { LS.del("syncAt"); LS.del("tomb"); }
+    LS.set("drive", { email: email || was?.email || "", since: was?.since || Date.now() });
+    this.need = false; this.err = null; this.paint();
+    await this.run("manual");
+    if (!this.err) toast("ドライブと同期しました");
+  },
+  async stop() {
+    await Drive().signOut();
+    for (const k of ["drive", "syncAt", "tomb", "syncErr"]) LS.del(k);
+    this.err = null; this.need = false; this.paint(); toast("同期をやめました");
+  }
+};
+onLocalChange = Sync.touch;
+function syncCardHtml() {
+  if (!canSync()) return "";
+  WebDrive.lib();
+  const d = LS.get("drive"), at = LS.get("syncAt");
+  if (!d) return `<div class="card" id="syncCard"><h3>ドライブで同期</h3>
+    <p class="muted small" style="line-height:1.6;margin:0">Google アカウントでログインすると、${NATIVE ? "ブラウザ版" : "Android アプリ版"}や別の端末と、メモ・ボード・予定・収支・長期計画・設定・作業の記録を同じに保ちます。データはあなたの Google ドライブの、このアプリ専用の隠しフォルダに置きます。開発者には届きません。</p>
+    <button class="btn primary block" id="syncOn" style="margin-top:10px">Google でログインして同期する</button></div>`;
+  return `<div class="card" id="syncCard"><h3>ドライブで同期</h3>
+    <div class="small" style="line-height:1.7">アカウント:<b>${esc(d.email || "Google アカウント")}</b><br>${Sync.busy ? "同期中…" : `最後に同期:${at ? `${fmtDate(at)} ${hm(at)}` : "まだありません"}`}${Sync.err ? `<br><span style="color:var(--danger)">${esc(Sync.errText())}</span>` : ""}</div>
+    <p class="muted small" style="line-height:1.6;margin:6px 0 0">開いたとき、書き換えて1分ほどたったとき、閉じるときに同期します。同じメモを両方で書き換えたときは、あとで書いた方が残ります。</p>
+    <div class="btns"><button class="btn" id="syncOff">同期をやめる</button>${Sync.need ? `<button class="btn primary" id="syncLogin">ログインし直す</button>` : `<button class="btn primary" id="syncNow">今すぐ同期</button>`}</div></div>`;
+}
+
 // ---- 端末の許可:何のために要るのかを説明してから、設定の画面へ案内する ----
 const hasNotify = () => { try { return !NATIVE || Android.hasNotifyPerm(); } catch { return false; } };
 const canExactAlarm = () => { try { return !NATIVE || Android.canExactAlarm(); } catch { return false; } };
@@ -4412,7 +4594,7 @@ const fmtDate = t => { const d = new Date(t); return `${d.getFullYear()}/${d.get
 const markExported = () => { LS.set("lastExport", Date.now()); renderPrefsIfOpen(); };
 function checkExportNag() {
   const now = Date.now(), last = LS.get("lastExport");
-  if (meta.prefs.exportRemind === false || Store.col || document.visibilityState !== "visible" || $("#veil").classList.contains("on") || document.body.classList.contains("editing")) return;
+  if (meta.prefs.exportRemind === false || Store.col || Sync.on() || document.visibilityState !== "visible" || $("#veil").classList.contains("on") || document.body.classList.contains("editing")) return;
   if (!Object.values(files).some(f => !f.auto && !isEmptyMemo(f))) return;
   if (now - (last || LS.get("firstSeen") || now) < 30 * 864e5 || now - (LS.get("exportNagAt") || 0) < 7 * 864e5) return;
   LS.set("exportNagAt", now);
@@ -4954,14 +5136,14 @@ function policySheet() {
   openSheet(`<h2>プライバシーポリシー</h2><div class="small" style="line-height:1.8">
     <p>作業記録メモ帳(以下「本アプリ」)は、利用者の作業時間の記録とメモのためのアプリです。</p>
     <p><b>1. 扱う情報</b><br>利用者が書いたメモ、ボードの配置、予定、収支、長期計画、タイマーの記録 / 本アプリを開いていた時間 / 利用者が選んだアプリの使用時間(「使用状況へのアクセス」を許可した場合のみ) / 端末に入っているアプリの名前の一覧(利用者がアプリを選ぶときのみ)</p>
-    <p><b>2. 情報の保存と送信</b><br>${NATIVE ? "上の情報は、利用者の端末の中に保存します。本アプリは、これらの情報を開発者やほかの第三者に送信しません。本アプリはネットワークに接続せず、端末のクラウドバックアップの対象にもしません。利用者が書き出しや自動バックアップで選んだ保存先(Google ドライブなど)へは、その内容を書き込みます。その保存先での扱いは、保存先のサービスと利用者に委ねられます。" : `上の情報はこのブラウザの中に保存します。${ON_CLAUDE ? "claude.ai で開いたときは、利用者本人専用の領域へも同期します。" : ""}開発者やほかの第三者には送信しません。`}</p>
+    <p><b>2. 情報の保存と送信</b><br>${NATIVE ? "上の情報は、利用者の端末の中に保存します。本アプリは、これらの情報を開発者やほかの第三者に送信しません。本アプリは、「ドライブで同期」をオンにしたときだけ、利用者の Google ドライブ(このアプリ専用の隠しフォルダ)と通信して、上の情報を読み書きします。それ以外にはネットワークに接続せず、端末のクラウドバックアップの対象にもしません。利用者が書き出しや自動バックアップで選んだ保存先(Google ドライブなど)へは、その内容を書き込みます。その保存先での扱いは、保存先のサービスと利用者に委ねられます。" : `上の情報はこのブラウザの中に保存します。${ON_CLAUDE ? "claude.ai で開いたときは、利用者本人専用の領域へも同期します。" : ""}${canSync() ? "「ドライブで同期」をオンにしたときは、利用者の Google ドライブ(このアプリ専用の隠しフォルダ)へも保存します。" : ""}開発者やほかの第三者には送信しません。`}</p>
     ${NATIVE ? `<p><b>3. 権限</b><br>通知:タイマーのボタンと経過時間を出し、予定やタイマーを知らせるために使います。<br>アラームとリマインダー:その知らせを遅れずに届けるために使います。<br>再起動の知らせの受信:再起動のあと、通知と知らせを預け直すために使います。<br>使用状況へのアクセス:選んだアプリの使用時間を表示し、集中タイマー中に選んだアプリが前面に出たかを判断するために使います。<br>他のアプリの上に重ねて表示:集中タイマー中(最大5分)に選んだアプリの上を覆う画面を出し、設定でオンにした場合は、選んだアプリの使用中に今日の使用時間を画面の隅に出すために使います。<br>どの権限も、利用者が端末の設定でいつでも外せます。</p>` : ""}
     <p><b>${NATIVE ? 4 : 3}. 情報の削除</b><br>「設定 › このアプリについて › すべてのデータを消す」で消せます。${NATIVE ? "本アプリをアンインストールしても、端末に保存された情報はすべて削除されます。" : ""}</p></div>
     <div class="btns"><button class="btn primary" data-x>閉じる</button></div>`, s => { $("[data-x]", s).onclick = closeSheet; });
 }
 function wipeSheet() {
   openSheet(`<h2>すべてのデータを消す</h2>
-    <p class="small" style="line-height:1.7;margin-top:-4px;color:var(--danger)">メモ、ボード、予定、収支、長期計画、タイマーの記録、作業時間、設定、ゴミ箱を、すべて消します。<b>元に戻せません。</b>${NATIVE ? "自動バックアップの設定も外れます(保存先のファイルは消えません)。" : ""}</p>
+    <p class="small" style="line-height:1.7;margin-top:-4px;color:var(--danger)">メモ、ボード、予定、収支、長期計画、タイマーの記録、作業時間、設定、ゴミ箱を、すべて消します。<b>元に戻せません。</b>${NATIVE ? "自動バックアップの設定も外れます(保存先のファイルは消えません)。" : ""}${Sync.on() ? "ドライブの同期も、この端末では外れます(ドライブの中のデータは消えません。同期し直すと戻ります)。" : ""}</p>
     <p class="muted small">残しておきたいものがあれば、先に「書き出す」でファイルに保存してください。</p>
     <button class="btn block" data-exp>先に書き出す</button>
     <label class="field"><span>消すときは「消す」と入力してください</span><input class="inp" id="wpIn" maxlength="4"></label>
@@ -5037,8 +5219,8 @@ function refreshLive() {
   }
 }
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") { Work.start(); Timer.tick(); checkEventNotices(); refreshLive(); if (view === "log") renderLog(); }
-  else { flushMemoEdit(); Work.stop(); Store.flushAll(); flushBoards(); }
+  if (document.visibilityState === "visible") { Work.start(); Timer.tick(); checkEventNotices(); refreshLive(); if (view === "log") renderLog(); Sync.run("open"); }
+  else { flushMemoEdit(); Work.stop(); Store.flushAll(); flushBoards(); Sync.run("hide"); }
 });
 addEventListener("pagehide", () => { flushMemoEdit(); Work.stop(); Store.flushAll(); flushBoards(); });
 
@@ -5132,6 +5314,9 @@ function boot() {
   setInterval(checkEventNotices, 15000);
   setTimeout(checkEventNotices, 1500);
   Store.connect(reloadDocs);
+  $("#syncChip").onclick = () => Sync.start();
+  if (Sync.on()) { WebDrive.lib(); setTimeout(() => Sync.run("open"), 2500); }
+  setInterval(() => { if (document.visibilityState === "visible") Sync.run("pull"); }, 180000); // ほかの端末で書いた分を取りに行く
 }
 function reloadDocs() { // 他端末の内容が新しかったときや読み込みのあとに読み直す(編集中の本文は保つ)
   const f = focusId, z = zoomId, cf = curFile;

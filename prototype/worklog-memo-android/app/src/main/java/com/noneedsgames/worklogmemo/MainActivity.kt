@@ -26,6 +26,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.google.android.gms.auth.api.identity.Identity
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -40,11 +41,13 @@ class MainActivity : Activity() {
     private var pendingWidget: String? = null // ウィジェットから頼まれた操作(画面の読み込みが済んだら渡す)
     private var pendingSave: String? = null // 書き出す文章(保存先を選び終えたら書く)
     private var pendingPick: ValueCallback<Array<Uri>>? = null // 読み込むファイルの選択を待っている画面側の受け口
+    private var pendingDrive = 0 // ドライブの許可の画面から戻るのを待っている、画面側の呼び出しの番号
 
     companion object {
         private const val REQ_PICK = 1001
         private const val REQ_SAVE = 1002
         private const val REQ_AUTO = 1003
+        private const val REQ_DRIVE = 1004
         @Volatile var inFront = false // 前面で使っている間は、知らせを画面の側に任せる
     }
 
@@ -190,6 +193,13 @@ class MainActivity : Activity() {
         super.onActivityResult(requestCode, resultCode, data)
         val uri = data?.data?.takeIf { resultCode == RESULT_OK }
         when (requestCode) {
+            REQ_DRIVE -> {
+                val n = pendingDrive; pendingDrive = 0
+                val ok = resultCode == RESULT_OK && try {
+                    Identity.getAuthorizationClient(this).getAuthorizationResultFromIntent(data).accessToken != null
+                } catch (_: Exception) { false }
+                driveReply(n, ok, if (ok) "" else "cancel")
+            }
             REQ_PICK -> { pendingPick?.onReceiveValue(uri?.let { arrayOf(it) }); pendingPick = null }
             REQ_SAVE -> {
                 val text = pendingSave; pendingSave = null
@@ -209,6 +219,24 @@ class MainActivity : Activity() {
     }
 
     private fun backupPrefs() = getSharedPreferences(TimerWidget.PREFS, MODE_PRIVATE)
+
+    /** ドライブの呼び出しの結果を画面へ返す */
+    private fun driveReply(n: Int, ok: Boolean, out: String) = runOnUiThread {
+        web.evaluateJavascript("window.onDrive && window.onDrive($n, $ok, ${JSONObject.quote(out)})", null)
+    }
+
+    /** ドライブの許可を求める。初めてのときは Google の確認の画面が出る */
+    private fun driveSignIn(n: Int) {
+        Identity.getAuthorizationClient(this).authorize(DriveSync.request())
+            .addOnSuccessListener { r ->
+                if (!r.hasResolution()) driveReply(n, true, "")
+                else try {
+                    pendingDrive = n
+                    startIntentSenderForResult(r.pendingIntent!!.intentSender, REQ_DRIVE, null, 0, 0, 0)
+                } catch (_: Exception) { driveReply(n, false, "error") }
+            }
+            .addOnFailureListener { e -> driveReply(n, false, "error:" + (e.message ?: "")) }
+    }
 
     /** 保存先へ丸ごと書く。"wt"(切り詰め)を受け付けない保存先には "w" で書く */
     private fun writeUri(uri: Uri, text: String) {
@@ -362,6 +390,26 @@ class MainActivity : Activity() {
                 try { contentResolver.releasePersistableUriPermission(Uri.parse(s), Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) } catch (_: Exception) {}
             }
             p.edit().remove("backupUri").apply()
+        }
+
+        /** ドライブで同期。op は signin・get・put・email・signout。結果は window.onDrive(n, 成否, 文字) で返す */
+        @JavascriptInterface fun driveCall(op: String, n: Int, a: String, b: String) {
+            if (op == "signin") { runOnUiThread { driveSignIn(n) }; return }
+            Thread {
+                val (ok, out) = try {
+                    val token = DriveSync.silentToken(this@MainActivity) ?: throw DriveSync.HttpError(401)
+                    true to when (op) {
+                        "get" -> DriveSync.get(token)?.toString() ?: ""
+                        "put" -> DriveSync.put(token, a, b)
+                        "email" -> DriveSync.email(token)
+                        "signout" -> { DriveSync.revoke(token); "" }
+                        else -> throw IllegalArgumentException(op)
+                    }
+                } catch (e: DriveSync.HttpError) { false to (if (e.code == 401) "auth" else "http${e.code}") }
+                catch (_: java.io.IOException) { false to "net" }
+                catch (e: Exception) { false to "error:" + (e.cause?.message ?: e.message ?: "") }
+                driveReply(n, ok, out)
+            }.start()
         }
 
         /** データの書き出し:保存先を選んでもらい、そこへ文章を書く */
