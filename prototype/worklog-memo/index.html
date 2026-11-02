@@ -4364,7 +4364,7 @@ function importSheet() {
    消した文書は tomb(文書 → 消した時刻)で伝え、それより後に書き換えた文書は残す。
    ブラウザ版とアプリ版は、同じ Google Cloud プロジェクトの OAuth クライアントを使うので、同じ隠しフォルダを見る
    ============================================================ */
-const GOOGLE_WEB_CLIENT_ID = ""; // Google Cloud の「ウェブ アプリケーション」の OAuth クライアント ID(空のあいだ、ブラウザ版では同期を出さない)
+const GOOGLE_WEB_CLIENT_ID = "144747978382-us83qon3al456uuivktvorulhql7p34p.apps.googleusercontent.com"; // Google Cloud の「ウェブ アプリケーション」の OAuth クライアント ID(空のあいだ、ブラウザ版では同期を出さない)
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
 const SYNC_FILE = "worklog-sync.json";
 const canSync = () => NATIVE || (!ON_CLAUDE && !!GOOGLE_WEB_CLIENT_ID);

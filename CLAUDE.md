@@ -67,7 +67,7 @@ prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は ind
 
 ## 残っていること・提案中のこと
 
-- **ブラウザ版とアプリ版のドライブ同期(作った。本物の Google では未確認)**:index.html の「ドライブで同期」(Sync・WebDrive・NativeDrive)と `DriveSync.kt`。偽のドライブを挟んだ二台の模擬では、合わせる・消す・作業の記録・書き直し・落ち着く(余計に書かない)を確かめた。利用者が `DRIVE_SYNC.md` の手順で Google Cloud を準備し、ウェブのクライアント ID を `GOOGLE_WEB_CLIENT_ID` に入れるのを待っている。play-services-auth を足したので `android.useAndroidX=true`。パソコンの Gradle は、新しい部品を落とすとき `-Djavax.net.ssl.trustStoreType=Windows-ROOT` が要る(DRIVE_SYNC.md の末尾)。Play のデータ セーフティの申告(ネットワーク・ドライブ)も直す必要がある。以下はもとの設計:Google ドライブの appDataFolder(scope `drive.appdata`)に `worklog-sync.json` を一つ置く。同じ Google Cloud プロジェクトに Web 用(承認済みの生成元 `https://noneedsgames-ui.github.io`)と Android 用(パッケージ名と SHA-1、debug は `.dev`)の OAuth クライアントを作れば、隠しフォルダを共有できる。
+- **ブラウザ版とアプリ版のドライブ同期(作った。本物の Google では未確認)**:index.html の「ドライブで同期」(Sync・WebDrive・NativeDrive)と `DriveSync.kt`。偽のドライブを挟んだ二台の模擬では、合わせる・消す・作業の記録・書き直し・落ち着く(余計に書かない)を確かめた。Google Cloud のプロジェクトは利用者が作り、ウェブのクライアント ID は `GOOGLE_WEB_CLIENT_ID` に入れた(承認済みの生成元は GitHub Pages だけなので、localhost ではログインできない)。play-services-auth を足したので `android.useAndroidX=true`。パソコンの Gradle は、新しい部品を落とすとき `-Djavax.net.ssl.trustStoreType=Windows-ROOT` が要る(DRIVE_SYNC.md の末尾)。Play のデータ セーフティの申告(ネットワーク・ドライブ)も直す必要がある。以下はもとの設計:Google ドライブの appDataFolder(scope `drive.appdata`)に `worklog-sync.json` を一つ置く。同じ Google Cloud プロジェクトに Web 用(承認済みの生成元 `https://noneedsgames-ui.github.io`)と Android 用(パッケージ名と SHA-1、debug は `.dev`)の OAuth クライアントを作れば、隠しフォルダを共有できる。
   - 中身:書き出しと同じ形の docs と、消した文書の記録 tomb。
   - 突き合わせ:この端末で初めての同期は planImport で両方を残し、以後は文書ごとに `_ts` の新しい方を採る。`log-` は mergeLog で合わせる。消した記録の時刻が文書の `_ts` 以上なら消す。
   - 同期の時機:Store.schedule・remove で印を付け、60 秒おき・開いたとき・裏へ回ったときに同期する。
