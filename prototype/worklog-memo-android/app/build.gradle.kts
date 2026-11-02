@@ -65,7 +65,7 @@ kotlin {
 }
 
 val copyWeb = tasks.register<Copy>("copyWeb") {
-    from(rootDir.resolve("../worklog-memo/index.html"))
+    from(rootDir.resolve("../worklog-memo/index.html"), rootDir.resolve("../worklog-memo/mimoza.png"))
     into(layout.buildDirectory.dir("generated/webassets"))
 }
 tasks.named("preBuild") { dependsOn(copyWeb) }

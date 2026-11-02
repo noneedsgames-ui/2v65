@@ -19,10 +19,12 @@
 ```
 prototype/worklog-memo/index.html      アプリの本体(HTML・CSS・JS を一つのファイルに)
 prototype/worklog-memo/README.md       機能の一覧(機能を足したら、ここも更新する)
-prototype/worklog-memo/mimoza.png      マスコット「ミモザ」(index.html には base64 で埋め込み済み)
+prototype/worklog-memo/mimoza.png      マスコット「ミモザ」(アプリ版だけ。copyWeb で assets に写し、index.html からは "mimoza.png" で読む。ブラウザ版には出さない)
 prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は index.html をそのまま WebView で出す
 .github/workflows/worklog-memo-apk.yml APK・AAB を作る GitHub Actions(手で「Run workflow」したときだけ動く)
 ```
+
+ブラウザ版は、別の公開リポジトリ `noneedsgames-ui/worklog-memo`(パソコンでは `C:\dev\worklog-memo-web`)に `index.html` を写して、GitHub Pages(https://noneedsgames-ui.github.io/worklog-memo/)で配る。こちらのリポジトリは鍵やゲームの素材を含むので公開しない。index.html を直したら、写してコミットし、利用者が GitHub Desktop で push する。claude.ai の試作ページ(https://claude.ai/artifact/92TaFhMc1gCyY58VBR1CsZ)も同じ index.html。
 
 ### index.html の中の区切り
 

@@ -727,6 +727,7 @@ const Store = {
     return out;
   }
 };
+const ON_CLAUDE = !!(window.claude && typeof window.claude.use === "function"); // claude.ai の試作ページで開いているか(GitHub Pages などでは同期しない)
 // 起動後に、リモートの内容と突き合わせる(新しい方を採る)
 Store.connect = async function (onMerged) {
   const api = window.claude && typeof window.claude.use === "function" ? window.claude : null;
@@ -3406,10 +3407,10 @@ $("#logScroll").addEventListener("click", e => {
 });
 let showTable = false;
 // ---- マスコット「ミモザ」:吹き出しでしゃべる。タップで次のセリフ。ゆくゆくはチュートリアルもまかせる ----
-const MIMOZA_IMG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAAXNSR0IArs4c6QAAA49JREFUaIHtmF9oU1ccxz8ZfRPFhzzUgRtpFr2xVzKHBlYYWxMasPrStLRgnwp9WIkzCEqRlO1hLaN0sHUo9UEQRPsgVn2QPVRoKoIPCmWOtLkQYuwsSxk+jIogruXuIT2nN01Scv80g3E/EG5OOOfc7/f8zvmdcwIuLi4uLi4uLi4uLi4u/w2eRryktX1IF98X01MNeadjtLYP6VP6P/JjNOMEHzjZ2XZa24f0s3O/yPLlyDnaBuMoiuKYiSanOtqJhel5Vhbf8dHnnTy5dtfRvnc1AlAS77RoI7u+oFrbh/S2wbg0sVFMo2maY+9tSEYwznknxf8vsD0aiqKUnsc/AeD+zQeEu1QdYC27LuvtCzZx+KDqeTb7G5qm2X2txHIWEsKFmFC3Xy8sLRPuUon1RggcCAKQK2Zlm9nbczqGQRN7gp3NzXYa7Uud0gE6O05DR/3txB6xMD3PRjGtW10blgwoioKmafSlTumdHadr1lsducXeze8HW1qYrVJnZfGdFQkS0wYUReFE7FNC3f4y8RfiKXxffkgimQBK4ndiMT3lmQymdbCXmSxF4P3eN3pA9cvyhXgKQIr/4etJAAa8XqA0+j+/WeDpvYxHrB1wJqWa7kBRFPYFm/REMsGVySsUHv0JwI93x6RwIwNeL9dfv5ZinVi4RkxFQIiP9UaAzRFPltf5NhyuaDcA3NgU3jYY5/H331iUW4mls5BIkdsZ8Hp59eKFLB/y+Tjk8xGNRtmz/zFtg3E+O/OVJaG1MBUB4+hXo3m0n9WRW9KEeDaP9sPvVIgX08nO+cj0Iq41+oLm0f6qv/uOfMz1+DFCPT8B5XeFyeBRszIku36chtJuHFD9jI9N8PzOeQCE+IXpeVt91x22cJeqG48I9WI8SkRDJwEYTl0E4O3fXwANnEJmxddqE+uNEA2dZDh1UZqwSkOmkOCPv14CW6bGxybYKKZt9dlQA9Xo+S5mq70pA8b5bBURBWM0Ll1NWv6nwnQEzJrYXt9YFiYALl1NyouQGSxNoWomahnLZfI7lo0kkgnTJurOQk/vZTyA3IlzxSy5TB5xKs1l8hUZJ1fMUlhaJqdumSssLZddfH59+ICA6pdtY70R1rLrdV9wbN3IAqqfXCZfEgUVN7LZ23Nlz2oUlpZL/RgiGOr2wwx13RVMGTBe0gXPZ/JomuaptgjXsusVAqrVM0YSSgMjBocZdozGv3GobzXU64SHAAAAAElFTkSuQmCC";
+const MIMOZA_IMG = "mimoza.png"; // Android アプリ版だけ(ビルドで assets に写す)。ブラウザ版にはミモザを出さない
 const Mimoza = {
   lines: [], i: 0, timer: null, el: null, done: null,
-  html() { return `<div class="mimoza-box" id="mimoza"><img class="mimoza-img" src="${MIMOZA_IMG}" alt="ミモザ" data-mz><div class="mimoza-bubble" data-mz aria-live="polite"><span class="who">ミモザ</span><span class="mz-t"></span><span class="next">▼</span></div></div>`; },
+  html() { if (!NATIVE) return ""; return `<div class="mimoza-box" id="mimoza"><img class="mimoza-img" src="${MIMOZA_IMG}" alt="ミモザ" data-mz><div class="mimoza-bubble" data-mz aria-live="polite"><span class="who">ミモザ</span><span class="mz-t"></span><span class="next">▼</span></div></div>`; },
   // el の中のミモザに、lines を順にしゃべらせる。最後まで聞いたら onDone
   say(lines, onDone) {
     this.el = $("#mimoza"); if (!this.el) return;
@@ -4083,7 +4084,7 @@ function renderPrefs() {
     <div class="card"><h3>保存</h3>
       <div class="small">状態:<b>${esc(Store.status)}</b></div>
       <div class="small" style="margin-top:4px">使っている容量:<b>${(storageUsed() / 1e6).toFixed(1)}MB</b> / 約5MB${storageUsed() > 4e6 ? `<span style="color:var(--danger)"> もうすぐいっぱいです。書き出して、使わないメモを消してください</span>` : ""}</div>
-      <p class="muted small" style="line-height:1.6">入力はまずこの端末に保存し、claude.ai にサインインして開いている場合は、あなた専用の領域へ追って同期します。ほかの人からは見えません。</p>
+      <p class="muted small" style="line-height:1.6">${ON_CLAUDE ? "入力はまずこの端末に保存し、claude.ai にサインインして開いている場合は、あなた専用の領域へ追って同期します。ほかの人からは見えません。" : NATIVE ? "入力はこの端末の中に保存します。書き出しや自動バックアップで選んだ保存先のほかへは送りません。" : "入力はこのブラウザの中にだけ保存します。外へは送らず、ほかの人からは見えません。"}</p>
       <button class="mini" id="reGuide">はじめにの案内をもう一度見る</button>
     </div>
     <div class="card"><h3>データの引っ越し</h3>
@@ -4953,7 +4954,7 @@ function policySheet() {
   openSheet(`<h2>プライバシーポリシー</h2><div class="small" style="line-height:1.8">
     <p>作業記録メモ帳(以下「本アプリ」)は、利用者の作業時間の記録とメモのためのアプリです。</p>
     <p><b>1. 扱う情報</b><br>利用者が書いたメモ、ボードの配置、予定、収支、長期計画、タイマーの記録 / 本アプリを開いていた時間 / 利用者が選んだアプリの使用時間(「使用状況へのアクセス」を許可した場合のみ) / 端末に入っているアプリの名前の一覧(利用者がアプリを選ぶときのみ)</p>
-    <p><b>2. 情報の保存と送信</b><br>${NATIVE ? "上の情報は、利用者の端末の中に保存します。本アプリは、これらの情報を開発者やほかの第三者に送信しません。本アプリはネットワークに接続せず、端末のクラウドバックアップの対象にもしません。利用者が書き出しや自動バックアップで選んだ保存先(Google ドライブなど)へは、その内容を書き込みます。その保存先での扱いは、保存先のサービスと利用者に委ねられます。" : "上の情報はこのブラウザの中に保存します。claude.ai で開いたときは、利用者本人専用の領域へも同期します。開発者やほかの第三者には送信しません。"}</p>
+    <p><b>2. 情報の保存と送信</b><br>${NATIVE ? "上の情報は、利用者の端末の中に保存します。本アプリは、これらの情報を開発者やほかの第三者に送信しません。本アプリはネットワークに接続せず、端末のクラウドバックアップの対象にもしません。利用者が書き出しや自動バックアップで選んだ保存先(Google ドライブなど)へは、その内容を書き込みます。その保存先での扱いは、保存先のサービスと利用者に委ねられます。" : `上の情報はこのブラウザの中に保存します。${ON_CLAUDE ? "claude.ai で開いたときは、利用者本人専用の領域へも同期します。" : ""}開発者やほかの第三者には送信しません。`}</p>
     ${NATIVE ? `<p><b>3. 権限</b><br>通知:タイマーのボタンと経過時間を出し、予定やタイマーを知らせるために使います。<br>アラームとリマインダー:その知らせを遅れずに届けるために使います。<br>再起動の知らせの受信:再起動のあと、通知と知らせを預け直すために使います。<br>使用状況へのアクセス:選んだアプリの使用時間を表示し、集中タイマー中に選んだアプリが前面に出たかを判断するために使います。<br>他のアプリの上に重ねて表示:集中タイマー中(最大5分)に選んだアプリの上を覆う画面を出し、設定でオンにした場合は、選んだアプリの使用中に今日の使用時間を画面の隅に出すために使います。<br>どの権限も、利用者が端末の設定でいつでも外せます。</p>` : ""}
     <p><b>${NATIVE ? 4 : 3}. 情報の削除</b><br>「設定 › このアプリについて › すべてのデータを消す」で消せます。${NATIVE ? "本アプリをアンインストールしても、端末に保存された情報はすべて削除されます。" : ""}</p></div>
     <div class="btns"><button class="btn primary" data-x>閉じる</button></div>`, s => { $("[data-x]", s).onclick = closeSheet; });
@@ -4991,12 +4992,12 @@ function guide() {
     { say: "タイマーで はかると、グラフが どんどん つみあがるよ！", h: "タイマーと記録", p: `「タイマー」で作業の種類を選んで計ると、「記録」に種類ごとの時間が積み上がります。${NATIVE ? "ロック画面の通知やホーム画面のウィジェットからも、始めたり止めたりできます。" : ""}` },
     NATIVE ? { say: "つうちを ゆるしてくれたら、ぼくが おしらせするよ！", h: "知らせと許可", p: `予定の時刻、ポモドーロの区切り、タイマーの止め忘れを通知で知らせます。この案内の最後に、通知の許可を尋ねます。<br>妨害アプリの使用時間を読んだり覆ったりするには、別の許可が要ります。そのときに理由とあわせて案内します(「設定 › 端末の許可」でも変えられます)。` }
       : { say: "ブラウザばんは、できないことも あるんだ。", h: "ブラウザ版について", p: `Android アプリ版との違いは次のとおりです。<ul style="padding-left:1.2em;margin:6px 0 0"><li>予定の通知は、ページを開いている間だけ鳴ります</li><li>端末のアプリを読めないため、妨害アプリと作業に数えるアプリは選べません</li></ul>` },
-    { say: "さいごに だいじな おはなし。きみの データの ことだよ。", h: "データの置き場所", p: `メモや記録は${NATIVE ? "この端末の中にだけ保存し、外へは送りません" : "このブラウザの中に保存します(claude.ai で開いたときは、本人専用の領域へも同期します)"}。機種変更やアプリを消す前に、「設定 › データの引っ越し」で書き出してください。` },
+    { say: "さいごに だいじな おはなし。きみの データの ことだよ。", h: "データの置き場所", p: `メモや記録は${NATIVE ? "この端末の中にだけ保存し、外へは送りません" : ON_CLAUDE ? "このブラウザの中に保存します(claude.ai で開いたときは、本人専用の領域へも同期します)" : "このブラウザの中にだけ保存し、外へは送りません"}。機種変更やアプリを消す前に、「設定 › データの引っ越し」で書き出してください。` },
   ];
   let i = 0;
   const draw = () => {
     const st = steps[i], last = i === steps.length - 1;
-    openSheet(`<div class="mimoza-box" style="margin-bottom:6px"><img class="mimoza-img" src="${MIMOZA_IMG}" alt="ミモザ"><div class="mimoza-bubble" style="margin-bottom:36px;padding-bottom:10px"><span class="who">ミモザ</span><span>${esc(st.say)}</span></div></div>
+    openSheet(`${NATIVE ? `<div class="mimoza-box" style="margin-bottom:6px"><img class="mimoza-img" src="${MIMOZA_IMG}" alt="ミモザ"><div class="mimoza-bubble" style="margin-bottom:36px;padding-bottom:10px"><span class="who">ミモザ</span><span>${esc(st.say)}</span></div></div>` : ""}
       <h2>${esc(st.h)}</h2><div class="small" style="line-height:1.8">${st.p}</div>
       <p class="muted small" style="text-align:center;margin:10px 0 0">${i + 1} / ${steps.length}</p>
       <div class="btns">${i ? `<button class="btn" data-pv>戻る</button>` : ""}<button class="btn primary" data-nx>${last ? "書きはじめる" : "次へ"}</button></div>`, s => {
