@@ -1170,6 +1170,10 @@ function commit() { saveOutline(); renderOutline(); }
 // ---- 操作 ----
 function doEnter(id, s, e) {
   const { n, parent, list } = index[id];
+  if (n.t && s === e && e === n.t.length) { // テンプレートの「項目:」が次の行にあれば、新しい行を作らず、その:の後へ進む
+    const vis = flatVisible(), nx = index[vis[vis.indexOf(id) + 1]]?.n;
+    if (nx && nx.tf && /[:：]\s*$/.test(nx.t)) { focusAt(nx.id, nx.t.length); return renderOutline(); }
+  }
   if (!n.t && n.k) { delete n.k; delete n.done; delete n.at; focusAt(id, 0); return commit(); } // 空のチェックなどで改行 → ふつうの行に戻す
   if (!n.t && parent && parent.id !== zoomId) return doOutdent(id);        // 空行で改行 → 一段戻す
   if (s === 0 && e === 0 && n.t) { list.splice(list.indexOf(n), 0, N()); focusAt(id, 0); return commit(); } // 行頭で改行 → 上に空行
@@ -1832,7 +1836,7 @@ function openTemplates(id, asChild) {
     s.addEventListener("click", e => {
       const b = e.target.closest("[data-tpl]"); if (!b) return;
       const nodes = parseIndented(T[b.dataset.tpl]); if (!nodes.length) return;
-      const markPh = l => l.forEach(n => { if (PH_RE.test(n.t)) n.ph = true; PH_RE.lastIndex = 0; markPh(n.c); }); markPh(nodes); // 【…】のある行に印を付ける
+      const markPh = l => l.forEach(n => { if (PH_RE.test(n.t)) n.ph = true; PH_RE.lastIndex = 0; if (/[:：]\s*$/.test(n.t)) n.tf = true; markPh(n.c); }); markPh(nodes); // 【…】のある行に印を付ける
       const child = id && $("#asChild")?.checked;
       if (child) { const p = index[id].n; p.c.push(...nodes); delete p.x; }
       else if (id) {
