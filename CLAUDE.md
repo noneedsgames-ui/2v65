@@ -67,6 +67,8 @@ prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は ind
 
 ## 残っていること・提案中のこと
 
+- **文言の手直し**:利用者が Claude Docs の「計画メモ 文言の手直し一覧」(https://claude.ai/artifact/7Nu3vhopESc53GzgNEezja)の「直した文」の欄に書いて返す。返ってきたら、空でない行だけ index.html・app_name・公開ページ(README・privacy.html)へ入れる。アプリの名前が「作業記録メモ帳」と「計画メモ」で割れているのを、そろえるかも尋ねている。
+
 - **ブラウザ版とアプリ版のドライブ同期(作った。2026-11-02 に利用者の GitHub Pages のブラウザと実機の試作版で、本物の Google にログインして同期できた)**:index.html の「ドライブで同期」(Sync・WebDrive・NativeDrive)と `DriveSync.kt`。偽のドライブを挟んだ二台の模擬では、合わせる・消す・作業の記録・書き直し・落ち着く(余計に書かない)を確かめた。Google Cloud のプロジェクトは利用者が作り、ウェブのクライアント ID は `GOOGLE_WEB_CLIENT_ID` に入れた(承認済みの生成元は GitHub Pages だけなので、localhost ではログインできない)。play-services-auth を足したので `android.useAndroidX=true`。パソコンの Gradle は、新しい部品を落とすとき `-Djavax.net.ssl.trustStoreType=Windows-ROOT` が要る(DRIVE_SYNC.md の末尾)。Play のデータ セーフティの申告(ネットワーク・ドライブ)も直す必要がある。以下はもとの設計:Google ドライブの appDataFolder(scope `drive.appdata`)に `worklog-sync.json` を一つ置く。同じ Google Cloud プロジェクトに Web 用(承認済みの生成元 `https://noneedsgames-ui.github.io`)と Android 用(パッケージ名と SHA-1、debug は `.dev`)の OAuth クライアントを作れば、隠しフォルダを共有できる。
   - 中身:書き出しと同じ形の docs と、消した文書の記録 tomb。
   - 突き合わせ:この端末で初めての同期は planImport で両方を残し、以後は文書ごとに `_ts` の新しい方を採る。`log-` は mergeLog で合わせる。消した記録の時刻が文書の `_ts` 以上なら消す。
