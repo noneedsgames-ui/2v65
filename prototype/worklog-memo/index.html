@@ -112,6 +112,12 @@ body.layoutedit nav.bottom{outline:2px dashed var(--accent);outline-offset:-2px}
 body.custompage .fb-title{padding-left:14px}
 body.custompage #sideBtn,body.custompage #fileBar,body.custompage #newMemo,body.custompage #linkbar,body.custompage .side,body.custompage .side-scrim{display:none!important}
 
+.droptrash{position:fixed;left:50%;transform:translateX(-50%);width:min(78vw,340px);height:56px;display:none;align-items:center;justify-content:center;gap:6px;border-radius:14px;border:2px dashed var(--danger);background:color-mix(in srgb,var(--danger) 12%,var(--surface-1));color:var(--danger);font-size:14px;font-weight:700;z-index:18;pointer-events:none}
+.droptrash.on{display:flex}
+.droptrash.hot{background:var(--danger);color:#fff;border-style:solid}
+.droptrash.warn{border-color:#c98500;background:color-mix(in srgb,#eda100 22%,var(--surface-1));color:var(--text-primary)}
+.droptrash.warn.hot{background:#eda100;color:#1f1f1d}
+
 /* nav */
 nav.bottom{display:flex;border-top:1px solid var(--line);background:var(--surface-1);padding-bottom:var(--safe-b)}
 nav.bottom button{flex:1;padding:8px 0 7px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--text-muted)}
@@ -591,7 +597,7 @@ textarea.inp{line-height:1.6;resize:vertical}
     <div class="venn" id="venn"></div>
     <div class="board" id="board">
       <div class="world" id="world"><svg class="edges" id="edges"></svg><div id="cards"></div><div id="glabels"></div></div>
-      <div class="bhint" id="bhint">カードはドラッグで移動、タップで開く、長押しで色や削除。カードの右下の●を別のカードへ引くと矢印、空いた所で離すと新しいメモ。「◯ 囲む」で指で描いて囲むと、その形がファイルになります(丸ごと囲めば入れ子)。空いた所はドラッグで移動、二本指で拡大縮小。矢印は二回タップで消せます。</div>
+      <div class="bhint" id="bhint">カードはドラッグで移動、タップで開く、長押しで色や削除。カードの右下の●を別のカードへ引くと矢印、空いた所で離すと新しいメモ。「◯ 囲む」で指で描いて囲むと、その形がファイルになります(丸ごと囲めば入れ子)。空いた所はドラッグで移動、二本指で拡大縮小。矢印は二回タップで消せます。カードや丸は下のゴミ箱へドラッグすると消せます。</div>
       <div class="bctl"><button data-z="lasso" id="lassoBtn" class="lasso-btn">◯ 囲む</button><button data-z="arrange">整列</button><button data-z="out" aria-label="縮小">−</button><button data-z="in" aria-label="拡大">＋</button><button data-z="fit">全体</button></div>
     </div>
   </section>
@@ -1647,7 +1653,7 @@ function startDrag() {
   try { drag.el.setPointerCapture(drag.pid); } catch {}
   box.querySelectorAll(".ol-row").forEach(r => drag.skip.has(r.dataset.id) && r.classList.add("dragging"));
   const k = countAll(index[drag.id].n);
-  ghost.textContent = label(drag.id) + (k ? `(+${k})` : ""); ghost.style.display = "block";
+  ghost.textContent = label(drag.id) + (k ? `(+${k})` : ""); ghost.style.display = "block"; showTrash("🗑 ドラッグで行を削除");
   document.body.classList.add("dragging");
   // 持ち上げたら全行を読み取り専用に:長押しで入力欄にフォーカスが入ってもキーボードは出ない
   box.querySelectorAll(".ol-t").forEach(t => { t.readOnly = true; });
@@ -1657,7 +1663,7 @@ function startDrag() {
   const loop = () => { // 端に寄せると自動で送る
     if (!drag || !drag.on) return;
     const r = box.getBoundingClientRect();
-    const dy = drag.y < r.top + 48 ? -10 : drag.y > r.bottom - 48 ? 10 : 0;
+    const dy = drag.trash ? 0 : drag.y < r.top + 48 ? -10 : drag.y > r.bottom - 48 ? 10 : 0;
     if (dy) { box.scrollTop += dy; dragOver(); }
     requestAnimationFrame(loop);
   };
@@ -1671,6 +1677,7 @@ function dragOver() {
   box.querySelectorAll(".ol-row.dropin").forEach(r => r.classList.remove("dropin"));
   const rows = [...box.querySelectorAll(".ol-row")].filter(r => !drag.skip.has(r.dataset.id));
   drag.target = null; dropline.style.display = "none";
+  drag.trash = overTrash(drag.x, drag.y); if (drag.trash) return;
   if (!rows.length) return;
   const i = rows.findIndex(r => { const b = r.getBoundingClientRect(); return drag.y >= b.top && drag.y < b.bottom; });
   let A, B, fromBelowOf = false;
@@ -1711,7 +1718,8 @@ function endDrag(drop) {
   dropline.style.display = "none"; ghost.style.display = "none";
   document.body.classList.remove("dragging");
   box.querySelectorAll(".dragging,.dropin").forEach(r => r.classList.remove("dragging", "dropin"));
-  noFocusUntil = Date.now() + 700;
+  noFocusUntil = Date.now() + 700; hideTrash();
+  if (drop && d.trash && index[d.id]) { doDelete(d.id); return; }
   if (!drop || !d.target || (d.target.id && d.skip.has(d.target.id))) { renderOutline(); return; } // 入力欄を作り直して読み取り専用を解く
   const src = index[d.id], tgt = d.target.id ? index[d.target.id] : null;
   src.list.splice(src.list.indexOf(src.n), 1);
@@ -2305,7 +2313,7 @@ boardEl.addEventListener("pointerdown", e => {
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (ptrs.size === 2) { // 二本目の指 → 拡大縮小に切り替え
     if (gest && gest.timer) clearTimeout(gest.timer);
-    if (gest && (gest.type === "card" || gest.type === "group") && gest.moved) { recomputeTree(); renderBoard(); }
+    hideTrash(); if (gest && (gest.type === "card" || gest.type === "group") && gest.moved) { recomputeTree(); renderBoard(); }
     tmpLine = null; lassoPts = null; hotGroup = null; cardsEl.querySelectorAll(".moving,.linktarget").forEach(x => x.classList.remove("moving", "linktarget"));
     const [p, q] = [...ptrs.values()];
     gest = { type: "pinch", d0: Math.hypot(p.x - q.x, p.y - q.y), k0: BV.k, mx: (p.x + q.x) / 2, my: (p.y + q.y) / 2, tx0: BV.tx, ty0: BV.ty };
@@ -2347,19 +2355,19 @@ boardEl.addEventListener("pointermove", e => {
   }
   if (e.pointerId !== gest.pid) return;
   const dx = e.clientX - gest.x0, dy = e.clientY - gest.y0;
-  if (!gest.moved && Math.hypot(dx, dy) > 6) { gest.moved = true; clearTimeout(gest.timer); if (gest.type === "edge") gest.type = "pan"; if (gest.type === "card") gest.el.classList.add("moving"); }
+  if (!gest.moved && Math.hypot(dx, dy) > 6) { gest.moved = true; clearTimeout(gest.timer); if (gest.type === "edge") gest.type = "pan"; if (gest.type === "card") { gest.el.classList.add("moving"); showTrash(trashLabel("m")); } if (gest.type === "group") showTrash(trashLabel("g")); }
   if (!gest.moved) return;
   if (gest.type === "pan") { BV.tx = gest.tx + dx; BV.ty = gest.ty + dy; applyView(); }
   else if (gest.type === "lasso") { lassoPts.push(toWorld(e.clientX, e.clientY)); drawEdges(); }
   else if (gest.type === "card" && !gest.long) {
     const c = board.cards[gest.id]; c.x = Math.round(gest.cx + dx / BV.k); c.y = Math.round(gest.cy + dy / BV.k);
     gest.el.style.left = c.x + "px"; gest.el.style.top = c.y + "px";
-    const p = cardCenter(gest.id); hotGroup = groupAt(p)?.id || null; drawEdges();
+    gest.trash = overTrash(e.clientX, e.clientY); const p = cardCenter(gest.id); hotGroup = gest.trash ? null : groupAt(p)?.id || null; drawEdges();
   } else if (gest.type === "group") {
     const ox = dx / BV.k, oy = dy / BV.k;
     for (const [g, pts] of gest.pts) g.pts = pts.map(p => [Math.round(p[0] + ox), Math.round(p[1] + oy)]);
     for (const [m, x, y] of gest.cards) { const c = board.cards[m]; c.x = Math.round(x + ox); c.y = Math.round(y + oy); const el = cardsEl.querySelector(`[data-card="${m}"]`); if (el) { el.style.left = c.x + "px"; el.style.top = c.y + "px"; } }
-    hotGroup = groupAt(toWorld(e.clientX, e.clientY), gest.skip)?.id || null; // 指の下の丸が入れ先(大きさは問わず、入れたら丸がふくらむ)
+    gest.trash = overTrash(e.clientX, e.clientY); hotGroup = gest.trash ? null : groupAt(toWorld(e.clientX, e.clientY), gest.skip)?.id || null; // 指の下の丸が入れ先(大きさは問わず、入れたら丸がふくらむ)
     drawEdges();
   } else if (gest.type === "link") {
     const w = toWorld(e.clientX, e.clientY); tmpLine.x2 = w.x; tmpLine.y2 = w.y;
@@ -2390,11 +2398,12 @@ function endGesture(e, cancel) {
   if (e.pointerId !== g.pid) return;
   gest = null; clearTimeout(g.timer);
   cardsEl.querySelectorAll(".moving,.linktarget").forEach(x => x.classList.remove("moving", "linktarget"));
-  const hotAtEnd = hotGroup; hotGroup = null;
+  const hotAtEnd = hotGroup; hotGroup = null; hideTrash();
   if (cancel) { tmpLine = null; lassoPts = null; drawEdges(); return; }
   if (g.type === "lasso") { finishLasso(); return; }
   if (g.type === "card") {
-    if (g.moved && !g.long) { // 線の内側に落とせば、その丸(いちばん内側)に入る/外へ出せば抜ける
+    if (g.moved && !g.long && g.trash) { const c = board.cards[g.id]; c.x = g.cx; c.y = g.cy; dropDelete({ t: "m", id: g.id }); }
+    else if (g.moved && !g.long) { // 線の内側に落とせば、その丸(いちばん内側)に入る/外へ出せば抜ける
       const before = groupOfCard(g.id)?.id || null;
       recomputeTree();
       if (cardIntoShape(g.id)) recomputeTree(); // 入った丸を、カードが収まる形にふくらませる
@@ -2404,7 +2413,8 @@ function endGesture(e, cancel) {
     } else if (!g.moved && !g.long) openFile(g.id);
     else drawEdges();
   } else if (g.type === "group") {
-    if (g.moved) {
+    if (g.moved && g.trash) { for (const [x, pts] of g.pts) x.pts = pts; for (const [m, x, y] of g.cards) { const c = board.cards[m]; c.x = x; c.y = y; } dropDelete({ t: "g", id: g.id }); }
+    else if (g.moved) {
       if (hotAtEnd && groupById(hotAtEnd)) ensureContains(groupById(hotAtEnd), pushOut(groupById(g.id).pts, 16)); // 指を離した所の丸を、この丸が収まる形に
       recomputeTree(); let me = groupById(g.id);
       if (me.parent && ensureContains(groupById(me.parent), pushOut(me.pts, 16))) { recomputeTree(); me = groupById(g.id); } // 外側の丸を、この丸が収まる形に
@@ -2661,8 +2671,8 @@ function groupMenu(gid) {
       <p class="muted small" style="margin-top:-2px">中の丸のメモにも付きます(メモには 📁 の印で出ます)。丸から出すと外れます。タグがファイルと同じ名前のままなら、ファイルの名前を変えるとタグも変わります。</p></div>
     <div class="btns" style="margin-top:4px"><button class="btn" data-arrange>中を整列</button><button class="btn" data-redraw>形を描き直す</button></div>
     <button class="btn block" data-subgroup style="margin-top:8px">この中に新しいファイルを作る</button>
-    <button class="btn danger block" data-del style="margin-top:8px">丸を消す(ファイルを消す)</button>
-    <p class="muted small">丸を消しても、中のメモや丸は消えません(ひとつ外側に移ります)。</p>
+    <button class="btn danger block" data-delall style="margin-top:8px">${curBoard === "main" ? "ファイルと中身を削除" : "ファイルをこのボードから外す"}</button>
+    <button class="btn block" data-del style="margin-top:8px">丸だけ消す(中身は残す)</button>
     <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
     $("#gmTag").onchange = e => { $("#gmTagF").hidden = !e.target.checked; if (e.target.checked && !$("#gmTagN").value.trim()) $("#gmTagN").value = $("#gmN").value.trim() || g.name; };
     const applyG = () => { // 名前と、中のメモに付けるタグ
@@ -2679,6 +2689,7 @@ function groupMenu(gid) {
       else if ("redraw" in b.dataset) { applyG(); closeSheet(); if (boardMode !== "map") setBoardMode("map"); setLasso(true, gid); }
       else if ("subgroup" in b.dataset) { applyG(); const k = createEmptyGroup(g); sideFold.delete(g.id); renderBoard(); groupNameSheet(k.id, true); }
       else if ("arrange" in b.dataset) { applyG(); closeSheet(); arrangeGroup(g, true); recomputeTree(); renderBoard(); renderFileBar(); toast(`「${g.name}」の中を整列しました`); }
+      else if ("delall" in b.dataset) { closeSheet(); dropDelete({ t: "g", id: gid }); }
       else if ("del" in b.dataset) confirmSheet("丸を消しますか", `ファイル「${g.name}」を消します${n ? `(つながっている矢印 ${n} 本も)` : ""}。中のメモや丸は消えず、ひとつ外側に移ります。`, "消す", () => {
         board.groups = board.groups.filter(x => x !== g); board.edges = board.edges.filter(e => e.a !== gid && e.b !== gid);
         recomputeTree(); renderBoard(); renderBoardView(); renderFileBar(); toast("丸を消しました");
@@ -2823,7 +2834,7 @@ function sStart() {
   d.skip = skip;
   d.list.querySelectorAll(".srow").forEach(r => skip.has(r.dataset.sid) && r.classList.add("dragging"));
   try { d.row.setPointerCapture(d.pid); } catch {}
-  ghost.textContent = (d.it.t === "g" ? "📁 " : "") + itemName(d.it); ghost.style.display = "block";
+  ghost.textContent = (d.it.t === "g" ? "📁 " : "") + itemName(d.it); ghost.style.display = "block"; showTrash(trashLabel(d.it.t));
   document.body.classList.add("dragging");
   try { navigator.vibrate && navigator.vibrate(12); } catch {}
   sOver();
@@ -2833,6 +2844,7 @@ function sOver() {
   ghost.style.left = Math.min(innerWidth - 80, d.x + 14) + "px"; ghost.style.top = (d.y - 34) + "px";
   list.querySelectorAll(".drop").forEach(x => x.classList.remove("drop"));
   dropline.style.display = "none"; d.target = null;
+  d.trash = overTrash(d.x, d.y); if (d.trash) return;
   const r = list.getBoundingClientRect(); // 端に寄せたら送る
   if (d.y < r.top + 30) list.scrollTop -= 8; else if (d.y > r.bottom - 30) list.scrollTop += 8;
   const rows = [...list.querySelectorAll(".srow")].filter(x => !d.skip.has(x.dataset.sid));
@@ -2851,8 +2863,9 @@ function sOver() {
 function sEnd(drop) {
   const d = sdrag; sdrag = null; if (!d) return;
   sJust = true; setTimeout(() => sJust = false, 80);
-  ghost.style.display = "none"; dropline.style.display = "none"; document.body.classList.remove("dragging");
+  ghost.style.display = "none"; dropline.style.display = "none"; document.body.classList.remove("dragging"); hideTrash();
   d.list.querySelectorAll(".drop,.dragging").forEach(x => x.classList.remove("drop", "dragging"));
+  if (drop && d.trash) return dropDelete(d.it);
   if (!drop || !d.target) return renderSide();
   sideMove(d.it, d.target.it, d.target.zone);
 }
@@ -4881,6 +4894,41 @@ function newItemSheet() {
       }
     });
   });
+}
+// ---- ドラッグで消す:動かしている間だけ下にゴミ箱を出す。落としたら消し、直後なら元に戻せる ----
+const trashEl = document.createElement("div"); trashEl.className = "droptrash"; document.body.appendChild(trashEl);
+const trashLabel = t => curBoard !== "main" ? `🗑 ドラッグで${t === "g" ? "ファイルを" : ""}このボードから外す` : t === "g" ? "🗑 ドラッグでファイルと中身を削除" : "🗑 ドラッグでメモを削除";
+function showTrash(text) { trashEl.textContent = text; trashEl.style.bottom = ($("#nav").offsetHeight + 10) + "px"; trashEl.classList.add("on"); trashEl.classList.remove("hot"); trashEl.classList.toggle("warn", text.includes("ボードから外す")); }
+function hideTrash() { trashEl.classList.remove("on", "hot", "warn"); }
+function overTrash(x, y) {
+  if (!trashEl.classList.contains("on")) return false;
+  const r = trashEl.getBoundingClientRect(), on = x >= r.left - 12 && x <= r.right + 12 && y >= r.top - 12 && y <= r.bottom + 12;
+  if (on && !trashEl.classList.contains("hot")) try { navigator.vibrate && navigator.vibrate(12); } catch {}
+  trashEl.classList.toggle("hot", on);
+  return on;
+}
+function dropDelete(it) {
+  const snap = JSON.stringify(boards), main = curBoard === "main", copies = []; let msg;
+  const dropMemo = id => { // メインでは削除(ゴミ箱に残る)。ほかのボードでは、そのボードから外すだけ
+    if (!main) removeFromBoard(id); else if (files[id]) { copies.push(JSON.parse(JSON.stringify(files[id]))); removeMemo(id, true); }
+  };
+  flushOutline();
+  if (it.t === "g") { // ファイルは中の丸とメモごと
+    const g = groupById(it.id), all = [g, ...descendantsOf(g)], ids = new Set(all.map(x => x.id)), mems = [...new Set(all.flatMap(x => x.members || []))];
+    board.groups = board.groups.filter(x => !ids.has(x.id)); board.edges = board.edges.filter(e => !ids.has(e.a) && !ids.has(e.b));
+    mems.forEach(dropMemo); recomputeTree();
+    msg = main ? `ファイル「${g.name}」と中のメモ ${mems.length} 件を削除しました` : `ファイル「${g.name}」をこのボードから外しました`;
+  } else {
+    const name = memoTitle(files[it.id]); dropMemo(it.id); recomputeTree();
+    msg = main ? `「${name}」を削除しました` : `「${name}」をこのボードから外しました`;
+  }
+  const refresh = () => { ftCache = null; board = boards[curBoard]; if (customOpen && !files[customPage(customOpen)?.file]) show(navHome()); renderNav(); if (view === "board") renderBoardView(); renderMemo(); };
+  refresh(); snack(msg);
+  snack.undo = () => {
+    const o = JSON.parse(snap); for (const id of Object.keys(o)) { if (!boards[id]) continue; boards[id] = normBoard(o[id]); saveBoardOf(id); }
+    for (const c of copies) { files[c.id] = c; Store.put("file-" + c.id, c); Store.remove("trash-" + c.id); }
+    refresh();
+  };
 }
 // ---- ゴミ箱:消したメモは30日間残す ----
 const TRASH_MS = 30 * 864e5;
