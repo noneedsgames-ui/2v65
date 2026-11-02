@@ -17,6 +17,7 @@ import android.provider.OpenableColumns
 import android.provider.Settings
 import android.view.View
 import android.view.WindowInsets
+import android.view.WindowInsetsController
 import android.widget.LinearLayout
 import android.window.OnBackInvokedDispatcher
 import android.webkit.JavascriptInterface
@@ -33,6 +34,9 @@ class MainActivity : Activity() {
 
     private lateinit var web: WebView
     private var pageReady = false
+    private var topBar: View? = null
+    private var bottomBar: View? = null
+    private var rootBar: View? = null
     private var pendingWidget: String? = null // ウィジェットから頼まれた操作(画面の読み込みが済んだら渡す)
     private var pendingSave: String? = null // 書き出す文章(保存先を選び終えたら書く)
     private var pendingPick: ValueCallback<Array<Uri>>? = null // 読み込むファイルの選択を待っている画面側の受け口
@@ -91,12 +95,10 @@ class MainActivity : Activity() {
     private fun withInsets(content: View): View {
         if (Build.VERSION.SDK_INT < 30) return content // 古い Android は、これまでどおりバーの内側に描かれる
         window.setDecorFitsSystemWindows(false)
-        val night = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-        val top = View(this).apply { setBackgroundColor(Color.parseColor(if (night) "#252523" else "#ECEBE6")) }
-        val bottom = View(this).apply { setBackgroundColor(Color.parseColor(if (night) "#1A1A19" else "#FCFCFB")) }
+        val top = View(this)
+        val bottom = View(this)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor(if (night) "#121211" else "#F4F3EF"))
             addView(top, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0))
             addView(content, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
             addView(bottom, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0))
@@ -110,7 +112,29 @@ class MainActivity : Activity() {
             top.requestLayout(); bottom.requestLayout()
             WindowInsets.CONSUMED
         }
+        topBar = top; bottomBar = bottom; rootBar = root
+        paintBars(isNight())
         return root
+    }
+
+    private fun isNight() = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+
+    /** バーの帯と、そこに出る時計やアイコンの色を、画面の色に合わせる */
+    private fun paintBars(dark: Boolean) {
+        topBar?.setBackgroundColor(Color.parseColor(if (dark) "#252523" else "#ECEBE6"))
+        bottomBar?.setBackgroundColor(Color.parseColor(if (dark) "#1A1A19" else "#FCFCFB"))
+        rootBar?.setBackgroundColor(Color.parseColor(if (dark) "#121211" else "#F4F3EF"))
+        web.setBackgroundColor(Color.parseColor(if (dark) "#121211" else "#F4F3EF"))
+        if (Build.VERSION.SDK_INT >= 30) {
+            val mask = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+            window.insetsController?.setSystemBarsAppearance(if (dark) 0 else mask, mask)
+        }
+    }
+
+    // 端末の色が変わったら、「端末に合わせる」の画面にも伝える(uiMode は作り直さずに受ける)
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        web.evaluateJavascript("window.applyTheme && window.applyTheme()", null)
     }
 
     /** 戻る:画面の中で閉じるものがあれば閉じる。なければアプリを裏へ下げる */
@@ -262,6 +286,10 @@ class MainActivity : Activity() {
 
         /** ロック画面の通知を出す・消す */
         @JavascriptInterface fun setTimerNotice(on: Boolean) = TimerNotice.setEnabled(this@MainActivity, on)
+
+        @JavascriptInterface fun isNightMode(): Boolean = isNight()
+
+        @JavascriptInterface fun setBarsDark(dark: Boolean) = runOnUiThread { paintBars(dark) }
 
         /** 妨害アプリの使用中に、隅へ使用時間を出すか。pkgsJson は対象のアプリ */
         @JavascriptInterface fun setUsageOverlay(on: Boolean, pkgsJson: String) = UsageOverlayService.configure(this@MainActivity, on, pkgsJson)

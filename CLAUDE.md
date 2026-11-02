@@ -31,7 +31,7 @@ prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は ind
 ### データ
 
 - 端末内の localStorage(キーは `wm:` で始まる)を正とし、claude.ai の試作ページで開いたときだけ、claude.ai の個人用ストアにも同期する。
-- 文書:`meta`(設定・予定・作業の種類・ボードの一覧 `meta.boards`)、`file-<id>`(メモ 1 件)、`board`(メインのボード)、`board-<id>`(ほかのボード)、`log-YYYY-MM`(作業区間・タイマーの記録)。
+- 文書:`meta`(設定・予定・作業の種類・ボードの一覧 `meta.boards`)、`file-<id>`(メモ 1 件)、`board`(メインのボード)、`board-<id>`(ほかのボード)、`log-YYYY-MM`(作業区間・タイマーの記録)、`money-YYYY-MM`(収支)、`plans`(長期計画)、`trash-<id>`(ゴミ箱)。収支と長期計画の画面は、下のタブを増やさず「予定」のページの中に置く。
 - **ブラウザ版とアプリ版のデータは別々**。アプリは同じ鍵で上書きして入れる限り、更新してもデータは残る。
 
 ### Android 版
