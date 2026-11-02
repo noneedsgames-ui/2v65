@@ -466,6 +466,8 @@ details.appd[open]>summary{margin-bottom:8px}
 .ol-mirror{position:absolute;inset:0;pointer-events:none;background:none!important;outline:none!important;white-space:pre-wrap;overflow-wrap:break-word;margin:0}
 .ol-mirror .fb{font-weight:inherit;-webkit-text-stroke:.6px currentColor}
 #oltools button{white-space:nowrap}
+#oltools [data-op="bold"].on{background:color-mix(in srgb,var(--accent) 16%,transparent);border-radius:8px;color:var(--text-primary)}
+#oltools [data-op="color"]{border-radius:8px}
 .tx-red{color:#e0484a}.tx-orange{color:#e2702f}.tx-yellow{color:#c58a00}.tx-green{color:#17a06f}.tx-blue{color:#3a86e0}.tx-purple{color:#8f6ee8}.tx-gray{color:var(--text-muted)}
 .lchip.wiki,.lchip.wikiin{background:var(--surface-1);border-style:solid}
 .linksug{display:none;gap:6px;overflow-x:auto;padding:6px 8px;border-top:1px solid var(--line);background:var(--surface-2);scrollbar-width:none}
@@ -1486,6 +1488,7 @@ function findMemo(title) { const t = title.trim().toLowerCase(); return Object.v
 /* ---- 太字と文字の色:行の文字には記号を入れず、範囲で持つ。n.f = [{ s, e, b:1 } | { s, e, c:"赤"|"#rrggbb" }](s〜e の文字)
    書き足したり消したりしたら範囲もずらす。範囲の終わりに続けて書いた文字は、同じ形になる ---- */
 const TCOL = { 赤: "red", 橙: "orange", 黄: "yellow", 緑: "green", 青: "blue", 紫: "purple", 灰: "gray" };
+const TCOL_HEX = { 赤: "#e0484a", 橙: "#e2702f", 黄: "#c58a00", 緑: "#17a06f", 青: "#3a86e0", 紫: "#8f6ee8", 灰: "var(--text-muted)" };
 const COLOR_RE = /\{(赤|橙|黄|緑|青|紫|灰|#[0-9a-fA-F]{6}):([^{}\n]+?)\}/g; // 以前の形({赤:文字})
 const FMT_RE = /\*\*([^*\n]+?)\*\*|\{(赤|橙|黄|緑|青|紫|灰|#[0-9a-fA-F]{6}):([^{}\n]+?)\}/g;
 const plainT = t => (t || "").replace(FMT_RE, (m, b, c, x) => b ?? x); // 以前の形の記号を除いた文字(まだ開いていないメモの名前などに使う)
@@ -1578,6 +1581,23 @@ function paintMirror(ta, n) { // 書いている行に太字や色があれば�
   ta.classList.add("fmt"); m.innerHTML = fmtSeg(n, 0, n.t.length) + "​";
 }
 let pendFmt = null; // 選ばずに「B」や「色」を押したとき、次に書く文字に付ける形 { id, pos, r }
+function paintFmtTools() { // 操作バーの「色」をいま書く文字の色で、「B」を太字のときは押した見た目にする
+  const ta = document.activeElement, bB = $('#oltools [data-op="bold"]'), bC = $('#oltools [data-op="color"]');
+  if (!bB || !bC) return;
+  const n = ta && ta.matches?.("textarea.ol-t") ? index[ta.dataset.t]?.n : null;
+  let bold = false, col = "";
+  if (n) {
+    const s = ta.selectionStart, e = ta.selectionEnd, f = n.f || [];
+    const here = r => s === e ? r.s < s && r.e >= s : r.s <= s && r.e >= e; // カーソルの直前の文字(選んでいればその全体)の形
+    bold = f.some(r => r.b && here(r)); col = f.filter(r => r.c && here(r)).pop()?.c || "";
+    if (pendFmt && pendFmt.id === n.id && pendFmt.pos === s && s === e) { if ("b" in pendFmt.r) bold = !!pendFmt.r.b; if ("c" in pendFmt.r) col = pendFmt.r.c; }
+  }
+  bB.classList.toggle("on", bold);
+  const hex = col ? TCOL_HEX[col] || col : ""; // 文字の色(.tx-*)と同じ色
+  bC.style.color = hex; bC.style.boxShadow = hex ? `inset 0 -3px 0 ${hex}` : "";
+  bC.setAttribute("aria-label", col ? `文字の色(いまは${TCOL[col] ? col : "選んだ色"})` : "選んだ文字の色を変える");
+}
+document.addEventListener("selectionchange", () => { if (document.activeElement?.matches?.("textarea.ol-t")) paintFmtTools(); });
 function mdBold(n) { // Markdown へ持ち出すとき、太字の範囲を ** で囲む(色は持ち出せない)
   let t = n.t || "";
   const bs = (n.f || []).filter(r => r.b).sort((x, y) => y.s - x.s);
@@ -1646,7 +1666,7 @@ box.addEventListener("input", e => {
   if (ta.value.includes("\n") && !e.isComposing) { splitPasted(id, ta); return; }
   const n = index[id].n, d = setT(n, ta.value, ta.selectionEnd);
   if (pendFmt && d) { if (pendFmt.id === id && d.L > 0 && d.p === pendFmt.pos) addFmt(n, d.p, d.p + d.L, pendFmt.r); pendFmt = null; } // 「B」や「色」を押してから書いた文字
-  paintMirror(ta, n);
+  paintMirror(ta, n); paintFmtTools();
   if (!e.isComposing && tryMdTyping(ta)) return;
   updateLinkSug(ta);
   saveOutline();
@@ -1685,6 +1705,7 @@ box.addEventListener("focusin", e => {
   if ((drag && drag.on) || Date.now() < noFocusUntil) { ta.blur(); return; }
   focusId = ta.dataset.t; saveView();
   if (pendFmt && pendFmt.id !== focusId) pendFmt = null;
+  setTimeout(paintFmtTools, 0);
   box.querySelectorAll(".ol-row.cur").forEach(r => r.classList.remove("cur"));
   ta.closest(".ol-row").classList.add("cur");
   document.body.classList.add("editing");
@@ -1901,10 +1922,10 @@ function toggleBold(id) { // 選んだ文字を太字にする(すべて太字�
     const inBold = s > 0 && fmtAll(n, s - 1, s, r => r.b);
     pendFmt = { id, pos: s, r: { b: inBold ? 0 : 1 } };
     toast(inBold ? "ここから先は、太字にせずに書きます" : "ここから書く文字を太字にします");
-    return;
+    paintFmtTools(); return;
   }
   if (fmtAll(n, s, e, r => r.b)) cutFmt(n, s, e, r => r.b); else addFmt(n, s, e, { b: 1 });
-  saveOutline(); paintMirror(ta, n); ta.focus(); ta.setSelectionRange(s, e);
+  saveOutline(); paintMirror(ta, n); ta.focus(); ta.setSelectionRange(s, e); paintFmtTools();
 }
 function colorSheet(id) { // 選んだ文字の色。選んでいなければ、色の中ならその色を変え、そうでなければこれから書く文字の色にする
   const ta = box.querySelector(`textarea.ol-t[data-t="${id}"]`), n = index[id]?.n; if (!ta || !n) return;
