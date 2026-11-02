@@ -56,6 +56,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .plantabs button{flex:1}
 .money-tiles .v{font-size:16px}
 .mrow{display:flex;align-items:center;gap:8px;width:100%;padding:9px 0;border-bottom:1px solid var(--line);text-align:left;font-size:14px}
+.mrow .grow{flex:1;min-width:0}
 .mrow .amt{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
 .mrow .amt.in{color:var(--accent)}
 .goal{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:pointer}
@@ -96,6 +97,20 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .bcard.bs-diamond.bd-none::before{background:transparent}
 .bc-cm{position:absolute;left:6px;right:6px;bottom:calc(100% + 6px);background:color-mix(in srgb,#eda100 18%,var(--surface-1));border:1px solid color-mix(in srgb,#eda100 45%,var(--line));border-radius:8px;padding:4px 8px;font-size:11px;line-height:1.4;color:var(--text-primary);text-align:left;white-space:pre-wrap;word-break:break-word;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
 .board.compact .bc-cm{font-size:18px}
+
+/* 編集モード */
+nav.bottom{overflow-x:auto;scrollbar-width:none}
+nav.bottom button{min-width:58px;position:relative}
+nav.bottom .nav-ic{font-size:19px;line-height:22px;height:22px}
+.editbar{display:none;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 10px;background:color-mix(in srgb,var(--accent) 14%,var(--surface-1));border-top:1px solid var(--accent);font-size:12px}
+body.layoutedit .editbar{display:flex}
+body.layoutedit nav.bottom button,body.layoutedit #planTabs button{touch-action:none;cursor:grab}
+body.layoutedit nav.bottom{outline:2px dashed var(--accent);outline-offset:-2px}
+.nav-x{position:absolute;top:1px;right:3px;width:19px;height:19px;border-radius:50%;background:var(--danger);color:#fff;font-size:12px;line-height:19px;text-align:center;font-weight:700}
+#planTabs button{position:relative}
+.tab-dragging{opacity:.55}
+body.custompage .fb-title{padding-left:14px}
+body.custompage #sideBtn,body.custompage #fileBar,body.custompage #newMemo,body.custompage #linkbar,body.custompage .side,body.custompage .side-scrim{display:none!important}
 
 /* nav */
 nav.bottom{display:flex;border-top:1px solid var(--line);background:var(--surface-1);padding-bottom:var(--safe-b)}
@@ -602,6 +617,7 @@ textarea.inp{line-height:1.6;resize:vertical}
     <div class="scroll" id="prefsScroll"></div>
   </section>
 </main>
+<div class="editbar" id="editbar"><b class="grow" style="min-width:9em">編集モード:タブはドラッグで入れ替え、✕ で消せます</b><button class="mini" data-ed="new">＋ 新しい項目</button><button class="mini" data-ed="list">項目の一覧</button><button class="mini" data-ed="done" style="background:var(--accent);color:var(--accent-ink)">完了</button></div>
 <nav class="bottom" id="nav">
   <button data-v="memo"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5z"/><path d="M9 11h6M9 15h6M9 7h3"/></svg>メモ</button>
   <button data-v="timer"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>タイマー</button>
@@ -773,7 +789,7 @@ const DEFAULT_TPL = {
   "設定": "【項目名】\n  概要:\n  詳細:\n  関連する要素:\n  未決事項:"
 };
 const MONEY_DEF = { out: [["food", "食費"], ["daily", "日用品"], ["trans", "交通"], ["home", "住まい"], ["bills", "光熱・通信"], ["fun", "趣味・娯楽"], ["medical", "医療"], ["other", "その他"]], in: [["salary", "給料"], ["side", "副収入"], ["otherin", "その他"]] };
-let memos = {}, meta = null, logs = {}, moneyDocs = {}, plans = { goals: [] };
+let memos = {}, meta = null, logs = {}, moneyDocs = {}, plans = { goals: [] }, projects = { list: [] };
 // 作業の種類:時間を分ける箱。初めは「計画メモ」だけ。作業に数えるアプリを足すと、その名前の種類ができる。どれもタイマーから選べる
 function ensureWorkTypes() {
   const T = meta.workTypes; let ch = false;
@@ -804,9 +820,10 @@ function loadAll() {
     p.tplV = 2;
   }
   meta.groups ||= [];
-  ensureWorkTypes();
   plans = docs.plans || { goals: [] }; plans.goals ||= [];
+  projects = docs.projects || { list: [] }; projects.list ||= [];
   meta.moneyCats ||= { out: MONEY_DEF.out.map(([id, name]) => ({ id, name })), in: MONEY_DEF.in.map(([id, name]) => ({ id, name })) }; meta.moneyRepeat ||= [];
+  ensureWorkTypes();
   loadFiles(docs);
   loadBoard(docs);
 }
@@ -895,10 +912,18 @@ function distMs(dateStr, appId) {
 const VIEWS = ["memo", "board", "log", "timer", "plan", "prefs"];
 let view = "memo";
 function show(v, push = true) {
+  let cus = null;
+  if (typeof v === "string" && v.startsWith("c:")) { // 自分で作った項目:中身はメモ
+    const pg = customPage(v);
+    if (pg && files[pg.file]) { cus = v; if (!customOpen) prevFile = curFile; if (curFile !== pg.file) { flushOutline(); saveView(); setOutline(pg.file); saveView(); } }
+    v = "memo";
+  }
+  customOpen = cus; document.body.classList.toggle("custompage", !!cus);
+  if (cus) renderMemo();
   if (!VIEWS.includes(v)) v = "memo";
   view = v;
   for (const x of VIEWS) $("#v-" + x).classList.toggle("on", x === v);
-  for (const b of $("#nav").children) b.classList.toggle("on", b.dataset.v === (v === "board" ? "memo" : v));
+  for (const b of $("#nav").children) b.classList.toggle("on", b.dataset.v === (customOpen || (v === "board" ? "memo" : v)));
   if (push && location.hash !== "#" + v) { try { history.replaceState(null, "", "#" + v); } catch { location.hash = v; } }
   if (v === "board") renderBoardBar();
   if (v === "board" && boardMode === "list") renderBoardList();
@@ -918,8 +943,15 @@ function show(v, push = true) {
   if (v === "plan") renderPlan();
   if (v === "prefs") renderPrefs();
 }
-$("#nav").addEventListener("click", e => { const b = e.target.closest("button"); if (b) show(b.dataset.v); });
-addEventListener("hashchange", () => show(location.hash.slice(1), false));
+$("#nav").addEventListener("click", e => {
+  if (layoutDragged || navLong) { navLong = false; return; }
+  const x = e.target.closest("[data-hide]"); if (x) { hidePage(x.dataset.hide); return; }
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.v === "memo" && customOpen && files[prevFile]) { flushOutline(); saveView(); setOutline(prevFile); customOpen = null; renderMemo(); }
+  show(b.dataset.v);
+});
+
+addEventListener("hashchange", () => { const h = location.hash.slice(1); if (h !== view) show(h, false); }); // 自分で動かした分は受け直さない
 
 /* ============================================================
    シート(ダイアログ)
@@ -3879,12 +3911,13 @@ const toMin = t => { const [h, m] = (t || "0:0").split(":").map(Number); return 
 let planMode = "day", planAnchor = startOfDay(new Date());
 let planTab = ["event", "money", "long"].includes(LS.get("planTab")) ? LS.get("planTab") : "event";
 function renderPlan() {
+  if (!layout().tabs.includes(planTab)) planTab = layout().tabs[0];
   const el = $("#planScroll"), st = el.scrollTop;
-  el.innerHTML = `<div class="seg plantabs" id="planTabs">${[["event", "予定"], ["money", "収支"], ["long", "長期計画"]].map(([k, l]) => `<button data-pt="${k}" class="${planTab === k ? "on" : ""}">${l}</button>`).join("")}</div>` +
+  el.innerHTML = `<div class="seg plantabs" id="planTabs">${layout().tabs.map(k => `<button data-pt="${k}" class="${planTab === k ? "on" : ""}">${esc(pageLabel(k))}${document.body.classList.contains("layoutedit") ? `<span class="nav-x" data-hidetab="${k}">✕</span>` : ""}</button>`).join("")}</div>` +
     (planTab === "money" ? moneyHtml() : planTab === "long" ? longHtml() : scheduleHtml());
   el.scrollTop = st;
   const gc = el.querySelector(".gchart"), nowEl = gc?.querySelector(".gc-now"); if (nowEl) gc.scrollLeft = nowEl.offsetLeft - gc.clientWidth / 3; // 年表は今日のあたりから見せる
-  $("#addEvent").setAttribute("aria-label", planTab === "money" ? "収支を追加" : planTab === "long" ? "長期計画を追加" : "予定を追加");
+  $("#addEvent").setAttribute("aria-label", planTab === "money" ? (moneyMode === "proj" && !projOpen ? "プロジェクトを追加" : "収支を追加") : planTab === "long" ? "長期計画を追加" : "予定を追加");
 }
 function scheduleHtml() {
   const a = planAnchor;
@@ -3911,6 +3944,8 @@ function scheduleHtml() {
 }
 $("#planScroll").addEventListener("click", e => {
   const b = e.target.closest("button,[data-goal]"); if (!b) return;
+  if (layoutDragged) return;
+  const xt = e.target.closest("[data-hidetab]"); if (xt) { hideTab(xt.dataset.hidetab); return; }
   if (b.dataset.pt) { planTab = b.dataset.pt; LS.set("planTab", planTab); $("#planScroll").scrollTop = 0; renderPlan(); return; }
   if (moneyClick(b) || longClick(b)) return;
   if (b.dataset.pm) { planMode = b.dataset.pm; renderPlan(); }
@@ -3918,7 +3953,7 @@ $("#planScroll").addEventListener("click", e => {
   else if (b.dataset.ptoday != null) { planAnchor = startOfDay(new Date()); renderPlan(); }
   else if (b.dataset.ev) editEvent(meta.events.find(x => x.id === b.dataset.ev));
 });
-$("#addEvent").onclick = () => planTab === "money" ? moneySheet(null) : planTab === "long" ? goalSheet(null) : editEvent(null);
+$("#addEvent").onclick = () => planTab === "money" ? moneyAdd() : planTab === "long" ? goalSheet(null) : editEvent(null);
 function editEvent(ev) {
   const now = new Date(); const nextH = `${pad((now.getHours() + 1) % 24)}:00`;
   const late = now.getHours() >= 22; // 夜遅くは、次の時間が日をまたいで終わりが始まりより前にならないよう、終わりを空ける
@@ -3977,6 +4012,7 @@ function renderPrefsIfOpen() { if (view === "prefs") renderPrefs(); }
 function renderPrefs() {
   const P = meta.prefs;
   $("#prefsScroll").innerHTML = `
+    <div class="card"><h3>画面の編集</h3><label class="row"><input type="checkbox" id="pLayoutEdit" ${document.body.classList.contains("layoutedit") ? "checked" : ""}><span class="grow">編集モード<div class="muted small">下のタブと「予定」の中の項目を、入れ替えたり消したりできます。メモの要素で新しい項目も作れます。下のタブを長押ししても入れます</div></span></label></div>
     <div class="card"><h3>画面の色</h3><div class="seg" style="display:flex">${[["auto", "端末に合わせる"], ["light", "ライト"], ["dark", "ダーク"]].map(([k, l]) => `<button style="flex:1" data-theme-set="${k}" class="${themePref() === k ? "on" : ""}">${l}</button>`).join("")}</div></div>
     <div class="card"><h3>妨害アプリ</h3>
       ${meta.apps.map(a => `<div class="row"><span class="grow">${esc(a.name)}${a.pkg ? "" : `<div class="muted small">端末のアプリと結びついていません。外して選び直してください</div>`}</span><button class="mini" data-delapp="${a.id}">外す</button></div>`).join("") || `<div class="muted small">まだ指定されていません</div>`}
@@ -4117,6 +4153,7 @@ $("#prefsScroll").addEventListener("change", e => {
   }
   if (t.id === "pAppType") { P.appType = t.value; saveMeta(); toast("保存しました"); return; }
   if (t.dataset.wat) { const a = meta.workApps.find(x => x.id === t.dataset.wat); if (a) { a.type = t.value; saveMeta(); toast("保存しました"); } return; }
+  if (t.id === "pLayoutEdit") { setLayoutEdit(t.checked); return; }
   if (t.id === "pWarn") { P.timerWarnH = +t.value; delete Timer.st.warnAt; LS.set("timer", Timer.st); saveMeta(); toast("保存しました"); return; }
   if (t.id === "pExport") { P.exportRemind = t.checked; saveMeta(); toast("保存しました"); return; }
   if (t.dataset.bc) { P.boardColors = { ...boardColors(), [t.dataset.bc]: t.checked }; saveMeta(); toast("保存しました"); return; }
@@ -4143,7 +4180,7 @@ const BACKUP_APP = "worklog-memo";
 function backupText() {
   flushMemoEdit(); flushBoards();
   const docs = {};
-  for (const [id, v] of Object.entries(Store.localDocs())) if (/^(meta|plans|board|board-.+|file-.+|log-\d{4}-\d{2}|money-\d{4}-\d{2})$/.test(id)) docs[id] = v;
+  for (const [id, v] of Object.entries(Store.localDocs())) if (/^(meta|plans|projects|board|board-.+|file-.+|log-\d{4}-\d{2}|money-\d{4}-\d{2})$/.test(id)) docs[id] = v;
   return JSON.stringify({ app: BACKUP_APP, version: 1, exportedAt: Date.now(), docs });
 }
 const BK_TEXT = new Set(["t", "comment", "name", "title", "note", "label", "tagName", "at", "start", "end", "tags", "mainBoardName", "templates"]); // 画面に出すときに必ず無害にしている欄
@@ -4160,7 +4197,7 @@ function parseBackup(text) { // 形が合わなければ null。おかしな文�
   const docs = {}, isObj = v => v && typeof v === "object" && !Array.isArray(v);
   for (const [id, v] of Object.entries(o.docs)) {
     if (!isObj(v)) continue;
-    if (id.startsWith("file-") ? v.id === id.slice(5) && Array.isArray(v.nodes) : /^(meta|plans|board|board-.+|log-\d{4}-\d{2}|money-\d{4}-\d{2})$/.test(id)) docs[id] = v;
+    if (id.startsWith("file-") ? v.id === id.slice(5) && Array.isArray(v.nodes) : /^(meta|plans|projects|board|board-.+|log-\d{4}-\d{2}|money-\d{4}-\d{2})$/.test(id)) docs[id] = v;
   }
   return { docs, exportedAt: o.exportedAt };
 }
@@ -4225,9 +4262,9 @@ function planImport(inc, local) { // 書き込む文書と、知らせる件数�
   }
   // 収支と長期計画:片方にしかないものは残し、同じものは新しい方を採る
   for (const [id, r] of Object.entries(inc)) {
-    if (id !== "plans" && !id.startsWith("money-")) continue;
+    if (id !== "plans" && id !== "projects" && !id.startsWith("money-")) continue;
     const l = local[id], rNewer = (r._ts || 0) > (l?._ts || 0);
-    const m = !l ? r : id === "plans" ? { ...l, goals: byIdUnion(l.goals, r.goals, rNewer) } : { ...l, items: byIdUnion(l.items, r.items, rNewer), skip: [...new Set([...(l.skip || []), ...(r.skip || [])])] };
+    const m = !l ? r : id === "plans" ? { ...l, goals: byIdUnion(l.goals, r.goals, rNewer) } : id === "projects" ? { ...l, list: byIdUnion(l.list, r.list, rNewer) } : { ...l, items: byIdUnion(l.items, r.items, rNewer), skip: [...new Set([...(l.skip || []), ...(r.skip || [])])] };
     if (!l || !sameDoc(m, l)) { changes[id] = m; st.others++; }
   }
   if (inc.meta) {
@@ -4446,7 +4483,82 @@ function ensureRepeats(k) { // 固定費を、その月の決まった日が来�
   }
 }
 const monthTotals = k => { const t = { in: 0, out: 0, cats: {} }; for (const x of moneyDocs[k]?.items || []) { t[x.kind] += x.amt; if (x.kind === "out") t.cats[x.cat] = (t.cats[x.cat] || 0) + x.amt; } return t; };
+// ---- プロジェクトの予算:費目ごとに予算を立て、実際の支出と比べる。文書 projects。実績は money-YYYY-MM の記録に proj と line を付けて持つ ----
+let moneyMode = LS.get("moneyMode") === "month" ? "month" : "proj", projOpen = null;
+const saveProjects = () => Store.put("projects", projects);
+const projBudget = p => p.lines?.length ? p.lines.reduce((t, l) => t + (l.amt || 0), 0) : p.budget || 0;
+const projItems = id => Object.values(moneyDocs).flatMap(D => D.items).filter(x => x.proj === id);
+const projSum = id => { const t = { out: 0, in: 0, lines: {} }; for (const x of projItems(id)) { t[x.kind] += x.amt; if (x.kind === "out") t.lines[x.line || ""] = (t.lines[x.line || ""] || 0) + x.amt; } return t; };
+const budgetBar = (used, budget) => `<div class="gbar" style="--tc:${budget && used > budget ? "var(--danger)" : "var(--accent)"}"><i style="width:${budget ? Math.min(100, used / budget * 100) : 0}%"></i></div>`;
 function moneyHtml() {
+  const seg = `<div class="seg" style="margin-bottom:10px">${[["proj", "プロジェクト"], ["month", "月別"]].map(([k, l]) => `<button data-mmode="${k}" class="${moneyMode === k ? "on" : ""}">${l}</button>`).join("")}</div>`;
+  if (moneyMode === "month") return seg + monthHtml();
+  const open = projects.list.find(x => x.id === projOpen);
+  if (open) return projectHtml(open);
+  projOpen = null;
+  return seg + (projects.list.map(p => { const t = projSum(p.id), b = projBudget(p), left = b - t.out;
+    return `<button class="goal" style="display:block;width:100%;text-align:left" data-pj="${p.id}"><h4>${esc(p.name)}</h4>
+      <div class="muted small" style="margin-top:2px">${p.due ? `${fmtYmd(p.start)} 〜 ${fmtYmd(p.due)} · ${leftText(p.due)}` : fmtYmd(p.start)}</div>
+      ${budgetBar(t.out, b)}<div class="small" style="display:flex;justify-content:space-between"><span class="muted">使った ${yen(t.out)} / 予算 ${yen(b)}</span><b style="${left < 0 ? "color:var(--danger)" : ""}">${left < 0 ? `${yen(-left)} 超過` : `残り ${yen(left)}`}</b></div></button>`; }).join("") ||
+    `<div class="empty">作るものごとに予算を立てて、実際の支出と比べます。右下の ＋ で始められます</div>`) + `<div style="height:64px"></div>`;
+}
+function projectHtml(p) {
+  const t = projSum(p.id), b = projBudget(p), left = b - t.out, items = projItems(p.id).sort((x, y) => y.date.localeCompare(x.date) || y.id.localeCompare(x.id));
+  const lineName = id => p.lines?.find(l => l.id === id)?.name || "費目なし";
+  const rows = (p.lines || []).map(l => [l.name, t.lines[l.id] || 0, l.amt || 0]);
+  const extra = Object.keys(t.lines).filter(id => !p.lines?.some(l => l.id === id)).reduce((s, id) => s + t.lines[id], 0);
+  if (extra && (p.lines || []).length) rows.push(["費目なし", extra, 0]);
+  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><button class="mini" data-pjback>‹ 一覧</button><b class="grow" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</b><button class="mini" data-pjedit>予算を直す</button></div>
+    <div class="tiles money-tiles"><div class="tile"><div class="k">残り</div><div class="v" style="${left < 0 ? "color:var(--danger)" : ""}">${yen(left)}</div><div class="s">${p.due ? esc(leftText(p.due)) : "&nbsp;"}</div></div><div class="tile"><div class="k">予算</div><div class="v">${yen(b)}</div><div class="s">&nbsp;</div></div><div class="tile"><div class="k">使った</div><div class="v">${yen(t.out)}</div><div class="s">${b ? `予算の ${Math.round(t.out / b * 100)}%` : "&nbsp;"}</div></div></div>
+    ${t.in ? `<div class="small" style="margin:-4px 0 10px">収入 <b>${yen(t.in)}</b> · 差し引き <b>${yen(t.in - t.out)}</b></div>` : ""}
+    ${rows.length ? `<div class="card"><h3>費目ごとの予算と実績</h3>${rows.map(([n, used, amt]) => `<div style="padding:7px 0;border-bottom:1px solid var(--line)"><div class="small" style="display:flex;justify-content:space-between;gap:8px"><span>${esc(n)}</span><span class="num" style="white-space:nowrap;${amt && used > amt ? "color:var(--danger)" : ""}">${yen(used)}${amt ? ` / ${yen(amt)}` : ""}</span></div>${budgetBar(used, amt)}</div>`).join("")}</div>` : ""}
+    ${p.note ? `<div class="note" style="margin-bottom:12px;white-space:pre-wrap">${esc(p.note)}</div>` : ""}
+    <div class="small" style="font-weight:700;color:var(--text-secondary);margin:10px 0 2px">支出と収入の記録</div>
+    ${items.map(x => `<button class="mrow" data-mitem="${x.id}"><span class="grow">${esc(x.kind === "in" ? "収入" : lineName(x.line))}${x.note ? `<div class="muted small">${esc(x.note)}</div>` : ""}<div class="muted small">${fmtYmd(x.date)}</div></span><span class="amt ${x.kind}">${x.kind === "in" ? "+" : "−"}${yen(x.amt)}</span></button>`).join("") || `<div class="empty">まだありません。右下の ＋ で足せます</div>`}
+    <div style="height:64px"></div>`;
+}
+function moneyAdd() {
+  if (moneyMode === "month") return moneySheet(null);
+  if (projOpen) return moneySheet(null, { proj: projOpen });
+  projectSheet(null);
+}
+function projectSheet(p) {
+  const e = p ? JSON.parse(JSON.stringify(p)) : { id: uid(), name: "", start: ymd(new Date()), due: "", note: "", budget: 0, lines: [{ id: uid(), name: "", amt: 0 }] }; e.lines ||= [];
+  openSheet(`<h2>${p ? "予算を直す" : "プロジェクトの予算を立てる"}</h2>
+    <label class="field"><span>プロジェクトの名前</span><input class="inp" id="pjN" maxlength="40" value="${esc(e.name)}" placeholder="例:ゲームの制作"></label>
+    <div style="display:flex;gap:8px"><label class="field" style="flex:1;min-width:0"><span>始まり</span><input class="inp" id="pjS" type="date" value="${esc(e.start || "")}"></label><label class="field" style="flex:1;min-width:0"><span>終わり(なくてもよい)</span><input class="inp" id="pjD" type="date" value="${esc(e.due || "")}"></label></div>
+    <div class="field"><span>費目と予算(例:素材、音楽、機材、外注)</span><div id="pjL"></div><button class="mini" data-lnadd style="margin-top:8px">＋ 費目を足す</button></div>
+    <div class="small" style="display:flex;justify-content:space-between;padding:8px 0"><b>予算の合計</b><b class="num" id="pjT"></b></div>
+    <label class="field" id="pjBW"><span>費目に分けないときの予算(円)</span><input class="inp num" id="pjB" type="number" inputmode="numeric" value="${e.budget || ""}"></label>
+    <label class="field"><span>メモ</span><textarea class="inp" id="pjM" rows="2">${esc(e.note || "")}</textarea></label>
+    <div class="btns">${p ? `<button class="btn danger" data-del>削除</button>` : `<button class="btn" data-x>やめる</button>`}<button class="btn primary" data-ok>保存</button></div>`, s => {
+    const read = () => { document.querySelectorAll("[data-lid]").forEach(row => { const l = e.lines.find(x => x.id === row.dataset.lid); if (l) { l.name = row.querySelector("[data-ln-n]").value; l.amt = Math.max(0, Math.round(+row.querySelector("[data-ln-a]").value)) || 0; } }); };
+    const total = () => { read(); const named = e.lines.filter(l => l.name.trim() || l.amt); $("#pjBW").style.display = named.length ? "none" : ""; $("#pjT").textContent = yen(named.length ? named.reduce((t, l) => t + l.amt, 0) : Math.max(0, +$("#pjB").value || 0)); };
+    const draw = () => { $("#pjL").innerHTML = e.lines.map(l => `<div class="row" data-lid="${l.id}" style="padding:5px 0;border:0"><input class="inp" data-ln-n style="flex:1;min-width:0;padding:7px 10px" maxlength="24" placeholder="費目" value="${esc(l.name)}"><input class="inp num" data-ln-a style="flex:none;width:6.5em;padding:7px 8px" type="number" inputmode="numeric" placeholder="円" value="${l.amt || ""}"><button class="mini" style="flex:none" data-lnx="${l.id}" aria-label="この費目を消す">✕</button></div>`).join(""); total(); };
+    draw(); if (!p) $("#pjN").focus();
+    s.addEventListener("input", total);
+    s.addEventListener("click", ev => {
+      const b = ev.target.closest("button"); if (!b) return;
+      if ("lnadd" in b.dataset) { read(); e.lines.push({ id: uid(), name: "", amt: 0 }); draw(); s.querySelector(`[data-lid="${e.lines.at(-1).id}"] [data-ln-n]`).focus(); }
+      else if (b.dataset.lnx) { read(); e.lines = e.lines.filter(l => l.id !== b.dataset.lnx); draw(); }
+      else if ("x" in b.dataset) closeSheet();
+      else if ("del" in b.dataset) confirmSheet("プロジェクトを削除しますか", `「${p.name}」の予算を削除します。支出と収入の記録は「月別」に残ります。`, "削除する", () => {
+        for (const [k, D] of Object.entries(moneyDocs)) { let ch = false; for (const x of D.items) if (x.proj === p.id) { delete x.proj; delete x.line; ch = true; } if (ch) saveMoney(k); }
+        projects.list = projects.list.filter(x => x !== p); saveProjects(); projOpen = null; renderPlan();
+      });
+      else if ("ok" in b.dataset) {
+        read(); e.name = $("#pjN").value.trim(); e.start = $("#pjS").value; e.due = $("#pjD").value; e.note = $("#pjM").value;
+        if (!e.name) { toast("名前を入れてください"); return; }
+        if (e.start && e.due && e.due < e.start) { toast("終わりは始まりより後にしてください"); return; }
+        e.lines = e.lines.filter(l => (l.name = l.name.trim()) || l.amt).map(l => ({ ...l, name: l.name || "費目" }));
+        e.budget = Math.max(0, Math.round(+$("#pjB").value)) || 0;
+        if (p) Object.assign(p, e); else projects.list.push(e);
+        saveProjects(); closeSheet(); projOpen = e.id; renderPlan();
+      }
+    });
+  });
+}
+function monthHtml() {
   const k = moneyMonth, [y, m] = k.split("-").map(Number); ensureRepeats(k);
   const t = monthTotals(k), items = (moneyDocs[k]?.items || []).slice().sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id)), budget = meta.prefs.moneyBudget || 0;
   let h = `<div class="periodnav"><button data-mnav="-1" aria-label="前の月">‹</button><span class="lbl">${y}年${m}月</span><button data-mnav="1" aria-label="次の月">›</button></div>
@@ -4465,26 +4577,32 @@ function moneyHtml() {
   return h + `<div style="height:64px"></div>`;
 }
 function moneyForm(e, o) { // 収支と固定費の共通の入力欄
-  let kind = e.kind || "out", cat = e.cat || "";
+  let kind = e.kind || "out", cat = e.cat || "", proj = e.proj || "", line = e.line || "";
   openSheet(`<h2>${o.title}</h2>
     <div class="seg" id="mfK" style="display:flex"><button style="flex:1" data-k="out">支出</button><button style="flex:1" data-k="in">収入</button></div>
     <label class="field"><span>金額(円)</span><input class="inp num" id="mfA" type="number" inputmode="numeric" min="1" step="1" value="${e.amt || ""}"></label>
-    <div class="field"><span>分類</span><div class="typechips" id="mfC"></div><div id="mfNew" style="display:none;gap:6px;margin-top:6px"><input class="inp" id="mfNI" style="flex:1;min-width:0" maxlength="16" placeholder="新しい分類の名前"><button class="btn" data-cnadd style="flex:none">足す</button></div></div>
+    ${!o.repeat && projects.list.length ? `<label class="field"><span>プロジェクト</span><select class="inp" id="mfP"><option value="">なし</option>${projects.list.map(p => `<option value="${p.id}" ${p.id === e.proj ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select></label><div class="field" id="mfLW"><span>費目</span><div class="typechips" id="mfL"></div></div>` : ""}
+    <div class="field" id="mfCW"><span>分類</span><div class="typechips" id="mfC"></div><div id="mfNew" style="display:none;gap:6px;margin-top:6px"><input class="inp" id="mfNI" style="flex:1;min-width:0" maxlength="16" placeholder="新しい分類の名前"><button class="btn" data-cnadd style="flex:none">足す</button></div></div>
     ${o.repeat ? `<label class="field"><span>毎月の日(1〜31。月末を超えるときは月末)</span><input class="inp" id="mfD" type="number" inputmode="numeric" min="1" max="31" value="${e.day || 1}"></label>` : `<label class="field"><span>日付</span><input class="inp" id="mfD" type="date" value="${esc(e.date)}"></label>`}
     <label class="field"><span>メモ</span><input class="inp" id="mfN" maxlength="60" value="${esc(e.note || "")}"></label>
     <div class="btns">${o.onDelete ? `<button class="btn danger" data-del>削除</button>` : `<button class="btn" data-x>やめる</button>`}<button class="btn primary" data-ok>保存</button></div>`, s => {
     const draw = () => {
       s.querySelectorAll("#mfK button").forEach(b => b.classList.toggle("on", b.dataset.k === kind));
-      if (!moneyCat(kind, cat)) cat = meta.moneyCats[kind][0]?.id || "";
+      const pj = projects.list.find(x => x.id === proj); // プロジェクトの記録は分類でなく費目で分ける
+      if ($("#mfLW")) { $("#mfLW").style.display = pj && pj.lines?.length && kind === "out" ? "" : "none"; if (pj) $("#mfL").innerHTML = (pj.lines || []).map(l => `<button class="tchip${l.id === line ? " on" : ""}" data-ln="${l.id}" style="--tc:var(--accent)"><i></i>${esc(l.name)}</button>`).join(""); }
+      $("#mfCW").style.display = pj ? "none" : "";
+      if (pj) cat = ""; else if (!moneyCat(kind, cat)) cat = meta.moneyCats[kind][0]?.id || "";
       $("#mfC").innerHTML = meta.moneyCats[kind].map(c => `<button class="tchip${c.id === cat ? " on" : ""}" data-c="${c.id}" style="--tc:${moneyColor(kind, c.id)}"><i></i>${esc(c.name)}</button>`).join("") + `<button class="tchip add" data-cnew>＋ 分類</button><button class="tchip add" data-cedit>✎ 編集・消す</button>`;
     };
     draw(); if (!e.amt) $("#mfA").focus();
+    if ($("#mfP")) $("#mfP").onchange = ev => { proj = ev.target.value; line = ""; draw(); };
     s.addEventListener("click", ev => {
       const b = ev.target.closest("button"); if (!b) return;
       if (b.dataset.k) { kind = b.dataset.k; cat = ""; draw(); }
+      else if (b.dataset.ln) { line = line === b.dataset.ln ? "" : b.dataset.ln; draw(); }
       else if (b.dataset.c) { cat = b.dataset.c; draw(); }
       else if ("cedit" in b.dataset) {
-        Object.assign(e, { kind, cat, amt: $("#mfA").value, note: $("#mfN").value, [o.repeat ? "day" : "date"]: $("#mfD").value });
+        Object.assign(e, { kind, cat, proj, line, amt: $("#mfA").value, note: $("#mfN").value, [o.repeat ? "day" : "date"]: $("#mfD").value });
         moneyCatsSheet(() => moneyForm(e, o));
       }
       else if ("cnew" in b.dataset) { $("#mfNew").style.display = "flex"; $("#mfNI").focus(); }
@@ -4501,22 +4619,24 @@ function moneyForm(e, o) { // 収支と固定費の共通の入力欄
         if (!(amt > 0) || amt > 1e11) { toast("金額を入れてください"); return; }
         if (o.repeat ? !(+d >= 1 && +d <= 31) : !d) { toast(o.repeat ? "日は1〜31で入れてください" : "日付を入れてください"); return; }
         const v = { kind, cat, amt, note: $("#mfN").value.trim(), [o.repeat ? "day" : "date"]: o.repeat ? Math.round(+d) : d };
+        if (!o.repeat && proj) { v.proj = proj; if (line && kind === "out") v.line = line; }
         closeSheet(); o.onSave(v);
       }
     });
   });
 }
-function moneySheet(item) {
-  const key = moneyMonth, today = ymd(new Date());
-  moneyForm(item || { kind: "out", date: key === today.slice(0, 7) ? today : key + "-01" }, {
+function moneySheet(item, base) {
+  const key = item ? item.date.slice(0, 7) : moneyMonth, today = ymd(new Date());
+  moneyForm(item || { kind: "out", date: base || key === today.slice(0, 7) ? today : key + "-01", ...base }, {
     title: item ? "収支を直す" : "収支を足す",
     delText: "この記録を削除します。",
     onDelete: item ? () => { const D = moneyDoc(key); D.items = D.items.filter(x => x !== item); if (item.rep) D.skip.push(item.id); saveMoney(key); renderPlan(); } : null,
     onSave: v => {
+      if (item) { delete item.proj; delete item.line; }
       const nk = v.date.slice(0, 7), rec = item ? Object.assign(item, v) : { id: uid(), ...v };
       if (!item) moneyDoc(nk).items.push(rec);
       else if (nk !== key) { const D = moneyDoc(key); D.items = D.items.filter(x => x !== item); moneyDoc(nk).items.push(rec); saveMoney(key); }
-      saveMoney(nk); moneyMonth = nk; renderPlan();
+      saveMoney(nk); if (moneyMode === "month") moneyMonth = nk; renderPlan();
     },
   });
 }
@@ -4563,7 +4683,12 @@ function moneyRepeatsSheet() {
 }
 function moneyClick(b) {
   if (b.dataset.mnav) { moneyMonth = shiftMonth(moneyMonth, +b.dataset.mnav); renderPlan(); return true; }
-  if (b.dataset.mitem) { const it = moneyDocs[moneyMonth]?.items.find(x => x.id === b.dataset.mitem); if (it) moneySheet(it); return true; }
+  if (b.dataset.mitem) { const it = Object.values(moneyDocs).flatMap(D => D.items).find(x => x.id === b.dataset.mitem); if (it) moneySheet(it); return true; }
+  if (b.dataset.mmode) { moneyMode = b.dataset.mmode; LS.set("moneyMode", moneyMode); $("#planScroll").scrollTop = 0; renderPlan(); return true; }
+  if (b.dataset.pj) { projOpen = b.dataset.pj; $("#planScroll").scrollTop = 0; renderPlan(); return true; }
+  if ("pjback" in b.dataset) { projOpen = null; renderPlan(); return true; }
+  if ("pjedit" in b.dataset) { projectSheet(projects.list.find(x => x.id === projOpen)); return true; }
+
   if ("mcats" in b.dataset) { moneyCatsSheet(); return true; }
   if ("mreps" in b.dataset) { moneyRepeatsSheet(); return true; }
   return false;
@@ -4646,6 +4771,112 @@ function longClick(b) {
   if (b.dataset.gms) { const [gid, mid] = b.dataset.gms.split("|"), g = plans.goals.find(x => x.id === gid), m = g?.ms.find(x => x.id === mid); if (m) { m.done = true; savePlans(); renderPlan(); toast(`「${m.title}」を済みにしました`); } return true; }
   if (b.dataset.goal) { const g = plans.goals.find(x => x.id === b.dataset.goal); if (g) goalSheet(g); return true; }
   return false;
+}
+// ---- 画面の編集:下のタブと「予定」の中の項目を入れ替え・消す。メモを中身にした項目を作る。配置は meta.prefs.layout ----
+const NAV_DEF = Object.fromEntries([...$("#nav").children].map(b => [b.dataset.v, { icon: b.querySelector("svg").outerHTML, label: b.textContent.trim() }]));
+const TAB_DEF = { event: "予定", money: "収支", long: "長期計画" };
+let customOpen = null, prevFile = null, layoutDragged = false, navLong = false;
+function layout() {
+  const L = meta.prefs.layout ||= {};
+  L.custom ||= []; L.labels ||= [];
+  const known = v => NAV_DEF[v] || L.custom.some(c => c.id === v && files[c.file]);
+  L.nav = (L.nav || Object.keys(NAV_DEF)).filter(known);
+  if (!L.nav.length) L.nav = [Object.keys(NAV_DEF)[0]];
+  L.tabs = (L.tabs || Object.keys(TAB_DEF)).filter(k => TAB_DEF[k]);
+  if (!L.tabs.length) L.tabs = Object.keys(TAB_DEF);
+  return L;
+}
+const customPage = id => layout().custom.find(c => c.id === id);
+const pageLabel = id => layout().labels.find(x => x.id === id)?.name || customPage(id)?.name || NAV_DEF[id]?.label || TAB_DEF[id] || "";
+const navHome = () => layout().nav[0];
+function renderNav() {
+  const ed = document.body.classList.contains("layoutedit");
+  $("#nav").innerHTML = layout().nav.map(v => `<button data-v="${esc(v)}" class="${(customOpen || (view === "board" ? "memo" : view)) === v ? "on" : ""}">${NAV_DEF[v] ? NAV_DEF[v].icon : `<span class="nav-ic">${esc(customPage(v).icon || "📄")}</span>`}${esc(pageLabel(v))}${ed ? `<span class="nav-x" data-hide="${esc(v)}">✕</span>` : ""}</button>`).join("");
+}
+function setLayoutEdit(on) {
+  document.body.classList.toggle("layoutedit", on);
+  renderNav(); if (view === "plan") renderPlan(); if (view === "prefs") renderPrefs();
+}
+function hidePage(id) {
+  const L = layout();
+  if (L.nav.length <= 1) { toast("最後の一つは消せません"); return; }
+  const go = () => { L.nav = L.nav.filter(x => x !== id); saveMeta(); if ((customOpen || view) === id) show(navHome()); renderNav(); toast(`「${pageLabel(id)}」を消しました。「項目の一覧」から戻せます`); };
+  if (id === "prefs") confirmSheet("設定のタブを消しますか", "消したあとは、下のタブを長押しすると編集モードに入れます。「項目の一覧」から戻せます。", "消す", go); else go();
+}
+function hideTab(k) {
+  const L = layout();
+  if (L.tabs.length <= 1) { toast("最後の一つは消せません。「予定」のタブごと消してください"); return; }
+  L.tabs = L.tabs.filter(x => x !== k); saveMeta(); renderPlan(); toast(`「${pageLabel(k)}」を消しました。「項目の一覧」から戻せます`);
+}
+function attachReorder(root, itemSel, commit) { // 編集モードの間、指で左右に動かして入れ替える
+  let d = null;
+  root.addEventListener("pointerdown", e => { if (!document.body.classList.contains("layoutedit") || e.target.closest(".nav-x")) return; const it = e.target.closest(itemSel); if (it) d = { it, x0: e.clientX, on: false, pid: e.pointerId }; });
+  root.addEventListener("pointermove", e => {
+    if (!d || e.pointerId !== d.pid) return;
+    if (!d.on) { if (Math.abs(e.clientX - d.x0) < 8) return; d.on = true; d.it.classList.add("tab-dragging"); try { d.it.setPointerCapture(d.pid); } catch {} }
+    e.preventDefault();
+    const box = d.it.parentElement, over = [...box.querySelectorAll(itemSel)].find(x => { if (x === d.it) return false; const r = x.getBoundingClientRect(); return e.clientX >= r.left && e.clientX <= r.right; });
+    if (over) { const r = over.getBoundingClientRect(); box.insertBefore(d.it, e.clientX < r.left + r.width / 2 ? over : over.nextSibling); }
+  });
+  const end = e => { if (!d || e.pointerId !== d.pid) return; const x = d; d = null; if (!x.on) return; x.it.classList.remove("tab-dragging"); layoutDragged = true; setTimeout(() => layoutDragged = false, 80); commit([...x.it.parentElement.querySelectorAll(itemSel)]); };
+  root.addEventListener("pointerup", end); root.addEventListener("pointercancel", end);
+}
+attachReorder($("#nav"), "button", list => { layout().nav = list.map(b => b.dataset.v); saveMeta(); });
+attachReorder($("#planScroll"), "#planTabs button", list => { layout().tabs = list.map(b => b.dataset.pt); saveMeta(); });
+{ // 設定のタブを消しても戻れるように、下のタブの長押しで編集モードに入る
+  let t = null; const nav = $("#nav"), stop = () => clearTimeout(t);
+  nav.addEventListener("pointerdown", () => { stop(); if (!document.body.classList.contains("layoutedit")) t = setTimeout(() => { navLong = true; setLayoutEdit(true); toast("編集モードにしました"); setTimeout(() => navLong = false, 800); }, 800); });
+  nav.addEventListener("pointerup", stop); nav.addEventListener("pointercancel", stop); nav.addEventListener("pointerleave", stop);
+  nav.addEventListener("contextmenu", e => e.preventDefault());
+}
+$("#editbar").addEventListener("click", e => { const b = e.target.closest("[data-ed]"); if (!b) return; ({ new: newItemSheet, list: itemsSheet, done: () => setLayoutEdit(false) })[b.dataset.ed](); });
+function itemsSheet() {
+  const L = layout(), row = (id, on, kind) => `<div class="row"><input type="checkbox" data-vis="${esc(id)}" data-kind="${kind}" ${on ? "checked" : ""} aria-label="表示する"><input class="inp" style="flex:1;min-width:0;padding:7px 10px" maxlength="12" data-lbl="${esc(id)}" value="${esc(pageLabel(id))}" aria-label="項目の名前">${customPage(id) ? `<button class="mini" style="flex:none;color:var(--danger)" data-delpage="${esc(id)}">消す</button>` : ""}</div>`;
+  const all = [...L.nav, ...Object.keys(NAV_DEF).filter(v => !L.nav.includes(v)), ...L.custom.map(c => c.id).filter(v => !L.nav.includes(v) && files[customPage(v).file])];
+  openSheet(`<h2>項目の一覧</h2><p class="muted small" style="margin-top:-4px">チェックを外すと消え、付けると戻ります。名前も変えられます。</p>
+    <div class="small" style="font-weight:700;margin-top:6px">下のタブ</div>${all.map(v => row(v, L.nav.includes(v), "nav")).join("")}
+    <div class="small" style="font-weight:700;margin-top:12px">「${esc(pageLabel("plan"))}」の中</div>${[...L.tabs, ...Object.keys(TAB_DEF).filter(k => !L.tabs.includes(k))].map(k => row(k, L.tabs.includes(k), "tab")).join("")}
+    <button class="btn block" data-reset style="margin-top:12px">初期の配置に戻す</button>
+    <div class="btns"><button class="btn primary" data-ok>閉じる</button></div>`, s => {
+    const apply = () => {
+      s.querySelectorAll("[data-lbl]").forEach(i => { const id = i.dataset.lbl, v = i.value.trim(), c = customPage(id), def = NAV_DEF[id]?.label || TAB_DEF[id]; L.labels = L.labels.filter(x => x.id !== id); if (c) { if (v) c.name = v; } else if (v && v !== def) L.labels.push({ id, name: v }); });
+      const nav = [], tabs = []; s.querySelectorAll("[data-vis]").forEach(c => { if (c.checked) (c.dataset.kind === "nav" ? nav : tabs).push(c.dataset.vis); });
+      if (!nav.length || !tabs.length) { toast("一つは残してください"); return false; }
+      L.nav = nav; L.tabs = tabs; saveMeta(); renderNav();
+      if (!nav.includes(customOpen || (view === "board" ? "memo" : view))) show(navHome()); else if (view === "plan") renderPlan();
+      return true;
+    };
+    s.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if ("ok" in b.dataset) { if (apply()) closeSheet(); }
+      else if ("reset" in b.dataset) confirmSheet("初期の配置に戻しますか", "タブの並びと名前を初めの形に戻します。自分で作った項目は一覧に残り、中のメモは消えません。", "戻す", () => { delete L.nav; delete L.tabs; L.labels = []; saveMeta(); renderNav(); show(navHome()); itemsSheet(); });
+      else if (b.dataset.delpage) { const c = customPage(b.dataset.delpage); confirmSheet("項目を消しますか", `項目「${c.name}」を消します。中のメモは消えず、メモの一覧に残ります。`, "消す", () => { L.custom = L.custom.filter(x => x !== c); L.nav = L.nav.filter(x => x !== c.id); saveMeta(); if (customOpen === c.id) show(navHome()); renderNav(); itemsSheet(); }); }
+    });
+  });
+}
+function newItemSheet() {
+  const K = (k, t, extra) => ({ ...N(t), k, ...extra });
+  const STARTS = { blank: ["白紙", () => [N()]], check: ["チェックリスト", () => [K("check", ""), K("check", "")]], num: ["番号つきの手順", () => [K("num", ""), K("num", "")]], time: ["タイムライン", () => [K("time", "", { at: nowLabel() }), K("time", "")]], head: ["見出しと箇条書き", () => [K("head", "見出し"), N("")]], code: ["コード", () => [K("code", "")]] };
+  let start = "blank";
+  openSheet(`<h2>新しい項目</h2><p class="muted small" style="margin-top:-4px">下のタブに置く項目を、メモの要素で作ります。チェック、番号、タイムライン、見出し、タグ、リンクなどが使えます。</p>
+    <div style="display:flex;gap:8px"><label class="field" style="flex:none;width:4.5em"><span>印</span><input class="inp" id="niI" maxlength="2" value="📄" style="text-align:center"></label><label class="field" style="flex:1;min-width:0"><span>名前</span><input class="inp" id="niN" maxlength="12" placeholder="例:買い物"></label></div>
+    <div class="field"><span>初めの形</span><div class="typechips" id="niS">${Object.entries(STARTS).map(([k, [l]]) => `<button class="tchip${k === start ? " on" : ""}" data-st="${k}" style="--tc:var(--accent)"><i></i>${l}</button>`).join("")}</div></div>
+    <label class="field"><span>または、今あるメモを使う</span><select class="inp" id="niF"><option value="">使わない(新しく作る)</option>${allFilesSorted().map(f => `<option value="${f.id}">${esc(memoTitle(f))}</option>`).join("")}</select></label>
+    <div class="btns"><button class="btn" data-x>やめる</button><button class="btn primary" data-ok>作る</button></div>`, s => {
+    $("#niN").focus();
+    s.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.st) { start = b.dataset.st; s.querySelectorAll("[data-st]").forEach(x => x.classList.toggle("on", x === b)); }
+      else if ("x" in b.dataset) closeSheet();
+      else if ("ok" in b.dataset) {
+        const name = $("#niN").value.trim(), L = layout(); if (!name) { toast("名前を入れてください"); return; }
+        let file = $("#niF").value;
+        if (!file) { const c = board.cards[curFile] || { x: 40, y: 40 }, f = createMemo("", { x: c.x + 200, y: c.y }); f.name = name; f.nodes = STARTS[start][1](); saveFile(f); file = f.id; }
+        const id = "c:" + uid(); L.custom.push({ id, name, icon: $("#niI").value.trim() || "📄", file }); L.nav.push(id); saveMeta();
+        closeSheet(); renderNav(); show(id); if (!files[file].nodes[0].t) { focusAt(files[file].nodes[0].id, 0); renderOutline(); }
+      }
+    });
+  });
 }
 // ---- ゴミ箱:消したメモは30日間残す ----
 const TRASH_MS = 30 * 864e5;
@@ -4819,7 +5050,8 @@ window.onWidget = action => {
 window.androidBack = () => {
   if ($("#veil").classList.contains("on")) { closeSheet(); return true; }
   if (document.body.classList.contains("side-open") && !isWide()) { setSide(false); return true; }
-  if (view !== "memo") { show("memo"); return true; }
+  if (document.body.classList.contains("layoutedit")) { setLayoutEdit(false); return true; }
+  if ((customOpen || view) !== navHome()) { show(navHome()); return true; }
   return false;
 };
 window.onAndroidResume = () => { // 設定画面から戻ったときなど:許可と使用時間を読み直す
@@ -4842,7 +5074,8 @@ function boot() {
   if (wh) { try { history.replaceState(null, "", "#timer"); } catch {} setTimeout(() => window.onWidget(wh[1] === "stop" ? "stop" : wh[2] || "stopwatch"), 0); }
   Work.start();
   renderMemo();
-  show(location.hash.slice(1) || "memo", false);
+  renderNav();
+  show(location.hash.slice(1) || navHome(), false);
   refreshLive();
   if (!meta.guideSeen) guide(); else if (view === "memo") focusStart();
   setInterval(() => Work.beat(), 10000);
@@ -4856,7 +5089,7 @@ function boot() {
 }
 function reloadDocs() { // 他端末の内容が新しかったときや読み込みのあとに読み直す(編集中の本文は保つ)
   const f = focusId, z = zoomId, cf = curFile;
-  loadAll(); syncBlockApps(); syncAlarms();
+  loadAll(); syncBlockApps(); syncAlarms(); renderNav();
   if (files[cf] && cf !== curFile) setOutline(cf);
   if (f && index[f]) focusId = f; zoomId = z && index[z] ? z : null;
   if (!document.activeElement?.closest?.(".ol-t")) renderMemo(); if (view !== "memo") show(view, false); refreshLive();
