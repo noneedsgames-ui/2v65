@@ -2190,6 +2190,7 @@ document.addEventListener("click", e => { // 虹色の丸
   });
 }, true);
 const COMPACT_K = 0.6; // これより縮小したら、カードはタイトルだけ
+const ZOOM_MIN = 0.08; // 「全体」で、たくさんのファイルも一度に見渡せるように
 /* ボードはいくつでも作れる。"main"(メイン)には、すべてのメモが自動で並ぶ(doc "board")。
    ほかのボード(doc "board-<id>"、名前と順は meta.boards)には、選んだメモやファイルだけを置く。
    同じメモを複数のボードに置ける。丸(ファイル)・矢印・位置はボードごとに別々。いま開いているのが board */
@@ -2525,7 +2526,7 @@ function drawEdges() {
 function toWorld(sx, sy) { const r = boardEl.getBoundingClientRect(); return { x: (sx - r.left - BV.tx) / BV.k, y: (sy - r.top - BV.ty) / BV.k }; }
 function zoomAt(f, sx, sy) {
   const r = boardEl.getBoundingClientRect(); const px = sx - r.left, py = sy - r.top;
-  const nk = Math.max(0.2, Math.min(2.5, BV.k * f));
+  const nk = Math.max(ZOOM_MIN, Math.min(2.5, BV.k * f));
   const wx = (px - BV.tx) / BV.k, wy = (py - BV.ty) / BV.k;
   BV.k = nk; BV.tx = px - wx * nk; BV.ty = py - wy * nk; applyView();
 }
@@ -2536,7 +2537,7 @@ function fitView() {
   let x1 = Math.max(...bs.map(b => b.x + b.w)), y1 = Math.max(...bs.map(b => b.y + b.h));
   for (const g of board.groups) { const G = groupGeo(g); if (G) { x0 = Math.min(x0, G.x0); x1 = Math.max(x1, G.x1); y0 = Math.min(y0, G.y0 - 16); y1 = Math.max(y1, G.y1); } }
   const r = boardEl.getBoundingClientRect(), pad = 24, uw = r.width - (($(".bctl")?.offsetWidth || 0) + 12); // 右端のボタンの列にかからないように
-  const k = Math.max(0.2, Math.min(1.2, (uw - pad * 2) / (x1 - x0), (r.height - pad * 2) / (y1 - y0)));
+  const k = Math.max(ZOOM_MIN, Math.min(1.2, (uw - pad * 2) / (x1 - x0), (r.height - pad * 2) / (y1 - y0)));
   BV.k = k; BV.tx = (uw - (x1 - x0) * k) / 2 - x0 * k; BV.ty = Math.max(pad, (r.height - (y1 - y0) * k) / 2) - y0 * k;
   applyView();
 }
@@ -2603,7 +2604,7 @@ boardEl.addEventListener("pointermove", e => {
     const [p, q] = [...ptrs.values()];
     const d = Math.hypot(p.x - q.x, p.y - q.y), mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2;
     const r = boardEl.getBoundingClientRect();
-    const nk = Math.max(0.2, Math.min(2.5, gest.k0 * d / (gest.d0 || 1)));
+    const nk = Math.max(ZOOM_MIN, Math.min(2.5, gest.k0 * d / (gest.d0 || 1)));
     const wx = (gest.mx - r.left - gest.tx0) / gest.k0, wy = (gest.my - r.top - gest.ty0) / gest.k0;
     BV.k = nk; BV.tx = mx - r.left - wx * nk; BV.ty = my - r.top - wy * nk; applyView();
     return;
@@ -2659,9 +2660,9 @@ function endGesture(e, cancel) {
   if (g.type === "card") {
     if (g.moved && !g.long && g.trash) { const c = board.cards[g.id]; c.x = g.cx; c.y = g.cy; dropDelete({ t: "m", id: g.id }); }
     else if (g.moved && !g.long) { // 線の内側に落とせば、その丸(いちばん内側)に入る/外へ出せば抜ける
-      const before = groupOfCard(g.id)?.id || null;
-      recomputeTree();
-      if (cardIntoShape(g.id)) recomputeTree(); // 入った丸を、カードが収まる形にふくらませる
+      const before = groupOfCard(g.id)?.id || null, intended = treeSnapshot(); // 動かす前の所属(ふくらんだ丸が隣を巻き込んだら戻すため)
+      recomputeTree(); intended.set("m:" + g.id, groupOfCard(g.id)?.id || null);
+      if (cardIntoShape(g.id)) { recomputeTree(); reconcileTree(intended); } // 入った丸を、カードが収まる形にふくらませる
       const after = groupOfCard(g.id);
       if ((after?.id || null) !== before) toast(after ? `「${after.name}」に入れました` : `「${groupById(before)?.name || "ファイル"}」から出しました`);
       renderBoard(); renderFileBar(); hintDone();
@@ -2670,9 +2671,11 @@ function endGesture(e, cancel) {
   } else if (g.type === "group") {
     if (g.moved && g.trash) { for (const [x, pts] of g.pts) x.pts = pts; for (const [m, x, y] of g.cards) { const c = board.cards[m]; c.x = x; c.y = y; } dropDelete({ t: "g", id: g.id }); }
     else if (g.moved) {
+      const intended = treeSnapshot();
       if (hotAtEnd && groupById(hotAtEnd)) ensureContains(groupById(hotAtEnd), pushOut(groupById(g.id).pts, 16)); // 指を離した所の丸を、この丸が収まる形に
       recomputeTree(); let me = groupById(g.id);
       if (me.parent && ensureContains(groupById(me.parent), pushOut(me.pts, 16))) { recomputeTree(); me = groupById(g.id); } // 外側の丸を、この丸が収まる形に
+      intended.set("g:" + g.id, me.parent || null); reconcileTree(intended); me = groupById(g.id);
       if ((me.parent || null) !== g.from) toast(me.parent ? `「${groupById(me.parent).name}」の中に入れました` : "外側の丸から出しました");
       renderBoard(); renderFileBar(); hintDone();
     } else groupMenu(g.id);
@@ -2855,7 +2858,7 @@ function arrangeAll() { // ボード全体を整列:丸の中をそろえてか�
   recomputeTree();
   const items = sideKids(null).map(it => [it, layoutBox(it)]).filter(([, b]) => b);
   if (!items.length) return;
-  const { rel } = placeUnits(items, n => Math.min(5, Math.max(1, Math.ceil(Math.sqrt(n)))), 44);
+  const { rel } = placeUnits(items, n => { const r = boardEl.getBoundingClientRect(), asp = r.width && r.height ? r.width / r.height : 1; return Math.min(5, Math.max(1, Math.round(Math.sqrt(n * asp)))); }, 44);
   for (const [it, b, x0, y0] of rel) {
     const x = 60 + x0, y = 60 + y0;
     if (it.t === "m") { const c = board.cards[it.id]; c.x = x; c.y = y; }
@@ -2866,7 +2869,7 @@ function arrangeAll() { // ボード全体を整列:丸の中をそろえてか�
   snack.undo = () => { const o = JSON.parse(snap); bd.cards = o.cards; bd.groups = o.groups; saveBoardOf(boardIdOf(bd) || curBoard); renderBoard(); fitView(); };
 }
 function createEmptyGroup(parent) { // 空のファイルを作る。parent があればその中の空いた所(なければ縁の外)に置き、外側をふくらませる
-  const W = 230, H = 120;
+  const W = 230, H = 120, intended = treeSnapshot(); // 丸がふくらんで、隣のファイルやメモを巻き込んだら戻すために
   let x, y;
   if (parent) {
     const P = groupGeo(parent), others = Object.keys(files).map(cardBox).filter(Boolean);
@@ -2876,13 +2879,21 @@ function createEmptyGroup(parent) { // 空のファイルを作る。parent が�
       !board.groups.some(h => !allowed.has(h.id) && h.pts && rectPts({ x, y, w: W, h: H }, 0).some(q => insidePts(h.pts, q[0], q[1])));
     const cand = []; for (let yy = P.y0; yy <= P.y1 - H; yy += 20) for (let xx = P.x0; xx <= P.x1 - W; xx += 20) cand.push([xx, yy]);
     cand.sort((a, b) => Math.hypot(a[0] + W / 2 - P.cx, a[1] + H / 2 - P.cy) - Math.hypot(b[0] + W / 2 - P.cx, b[1] + H / 2 - P.cy));
-    const spot = cand.find(([a, b]) => ok(a, b));
+    let spot = cand.find(([a, b]) => ok(a, b));
+    if (!spot) { // 中に空きがなければ、外のすぐそばで、ほかの丸やカードにかからない所(下・右・左・上の順に近い所から)。そこまで丸をふくらませる
+      const clear = (x, y) => !others.some(o => x < o.x + o.w + 16 && x + W + 16 > o.x && y < o.y + o.h + 16 && y + H + 16 > o.y) &&
+        !board.groups.some(h => { if (allowed.has(h.id) || !h.pts) return false; const Q = groupGeo(h); return Q && x < Q.x1 + 24 && x + W + 24 > Q.x0 && y < Q.y1 + 24 && y + H + 24 > Q.y0; });
+      for (let d = 24; d <= 2000 && !spot; d += 24)
+        spot = [[P.cx - W / 2, P.y1 + d], [P.x1 + d, P.cy - H / 2], [P.x0 - d - W, P.cy - H / 2], [P.cx - W / 2, P.y0 - d - H]].find(([a, b]) => clear(a, b));
+    }
     [x, y] = spot || [P.x1 + 20, P.cy - H / 2];
   } else { const B = contentBounds(); x = B.x1 + 60; y = B.y0 + 20; }
   const g = { id: uid(), name: "新しいファイル", pts: roundShape(x, y, x + W, y + H) };
   board.groups.push(g);
   if (parent) ensureContains(parent, pushOut(g.pts, 16));
-  recomputeTree(); saveBoard();
+  recomputeTree();
+  intended.set("g:" + g.id, parent ? parent.id : null); reconcileTree(intended);
+  saveBoard();
   return g;
 }
 function evictStrangers(g) { // 整列した丸に、もともと中身でなかったカードがかぶったら、丸の外の空いた所へよける
@@ -3031,7 +3042,7 @@ function sideKids(pid) {
   const order = board.order || {};
   const gs = board.groups.filter(g => (g.parent || null) === pid).map(g => ({ t: "g", id: g.id }));
   const ms = Object.keys(files).filter(id => board.cards[id] && (groupOfCard(id)?.id || null) === pid).map(id => ({ t: "m", id }));
-  return [...gs, ...ms].sort((a, b) => (order[a.id] ?? Infinity) - (order[b.id] ?? Infinity) || (a.t === b.t ? 0 : a.t === "g" ? -1 : 1) || itemName(a).localeCompare(itemName(b), "ja"));
+  return [...gs, ...ms].sort((a, b) => (order[a.id] ?? Infinity) - (order[b.id] ?? Infinity) || (a.t === b.t ? 0 : a.t === "g" ? -1 : 1) || itemName(a).localeCompare(itemName(b), "ja", { numeric: true }));
 }
 // ツリーを描く。rich = ボードのリスト表示(1行目のひとことと、矢印のつながりも添える)
 function treeHtml(rich) {
@@ -3346,7 +3357,7 @@ function removeFromBoard(id) { // このボードから外す(メモは消さな
 const VENN_C = ["blue", "orange", "green"];
 let vennSel = LS.get("vennTags"); // null = 多いタグから自動で選ぶ
 function vennTagsNow(counts) {
-  const all = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b, "ja"));
+  const all = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b, "ja", { numeric: true }));
   return vennSel ? vennSel.filter(t => counts[t]).slice(0, 3) : all.slice(0, 3);
 }
 function renderVenn() {
@@ -3355,7 +3366,7 @@ function renderVenn() {
   const ids = Object.keys(board.cards).filter(id => files[id]);
   const tagsOf = new Map(ids.map(id => [id, memoTags(files[id])]));
   const counts = {}; for (const ts of tagsOf.values()) for (const t of ts) counts[t] = (counts[t] || 0) + 1;
-  const all = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b, "ja"));
+  const all = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b, "ja", { numeric: true }));
   const sel = vennTagsNow(counts), n = sel.length;
   const head = `<div class="vn-h"><div class="muted small">円にするタグ(3つまで)· ◧ ${esc(boardName(curBoard))} のメモ ${ids.length} 件</div>
     <div class="metas">${all.map(t => { const i = sel.indexOf(t); return `<button class="vn-t${i >= 0 ? " on c-" + VENN_C[i] : ""}" data-vt="${esc(t)}">#${esc(t)} <span class="k">${counts[t]}</span></button>`; }).join("") || ""}</div></div>`;
@@ -3369,7 +3380,7 @@ function renderVenn() {
   // メモを、どの円に入るか(ビットの組)で分ける
   const groups = {}, outside = [];
   for (const id of ids) { let m = 0; sel.forEach((t, i) => { if (tagsOf.get(id).includes(t)) m |= 1 << i; }); if (m) (groups[m] ||= []).push(id); else outside.push(id); }
-  const byTitle = (a, b) => memoTitle(files[a]).localeCompare(memoTitle(files[b]), "ja");
+  const byTitle = (a, b) => memoTitle(files[a]).localeCompare(memoTitle(files[b]), "ja", { numeric: true });
   // それぞれの組の、線からいちばん遠い所に中身を置く
   const anchor = {};
   for (let y = 0; y < H; y += 6) for (let x = 0; x < W; x += 6) {
@@ -3546,7 +3557,7 @@ function memoLinks(id) {
   return out.sort((a, b) => rank[a.kind] - rank[b.kind]);
 }
 // ---- メモのタグ(メモそのものに付ける。行の中の #タグ とは別)----
-const allMemoTags = () => [...new Set(Object.values(files).flatMap(memoTags))].sort((a, b) => a.localeCompare(b, "ja"));
+const allMemoTags = () => [...new Set(Object.values(files).flatMap(memoTags))].sort((a, b) => a.localeCompare(b, "ja", { numeric: true }));
 const tagChips = f => (f.tags || []).map(t => `<span class="mtag">#${esc(t)}</span>`).join("") + fileTags(f.id).map(t => `<span class="mtag ft">📁#${esc(t)}</span>`).join("");
 function tagSheet() {
   flushOutline();
@@ -3749,7 +3760,8 @@ function mimozaLogLines(days, W, T, D) { // 記録画面でミモザが話すこ
 
 // ---- 作業の種類(タイマーに紐付ける)----
 const typeById = id => meta.workTypes.find(t => t.id === id);
-const typeColor = id => { const i = meta.workTypes.findIndex(t => t.id === id); return isHex(meta.workTypes[i]?.color) ? meta.workTypes[i].color : i >= 0 && i < 8 ? `var(--tc${i})` : "var(--tcn)"; }; // 選んだ色がなければ並び順の色
+const autoColor = i => i < 8 ? `var(--tc${i})` : `hsl(${Math.round((i * 137.508 + 20) % 360)} 58% 52%)`; // 並び順の色。9つ目からは、ほかと離れた色を順に作る
+const typeColor = id => { const i = meta.workTypes.findIndex(t => t.id === id); return isHex(meta.workTypes[i]?.color) ? meta.workTypes[i].color : i >= 0 ? autoColor(i) : "var(--tcn)"; }; // 選んだ色がなければ並び順の色
 const TYPE_PRESET = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948", "#7a7a74"];
 function typeColorSheet(id) {
   const t = typeById(id); if (!t) return;
@@ -3766,7 +3778,7 @@ function typeColorSheet(id) {
   });
 }
 const typeName = id => typeById(id)?.name || (id ? "(消した種類)" : "種類なし");
-const seriesKey = id => { const i = meta.workTypes.findIndex(t => t.id === id); return i >= 0 && i < 8 ? id : i >= 8 ? "_other" : ""; }; // 9つ目からは「その他」
+const seriesKey = id => meta.workTypes.some(t => t.id === id) ? id : ""; // 種類ごとに分ける(消した種類は「種類なし」)
 const seriesName = k => k === "_other" ? "その他" : typeName(k);
 const seriesColor = k => k === "_other" ? "var(--tcn)" : k ? typeColor(k) : "var(--tcn)";
 // 区間の計算:このアプリを開いていた区間と、タイマーの区間の重なりは、タイマー(作業の種類)のほうに数える
@@ -3805,7 +3817,7 @@ function typeTotals(a, b) { // [a,b) の、作業の種類ごとのタイマー�
   const live = Timer.liveSegment(); if (live) { const o = overlap(live.s, Date.now(), a, b); if (o) { const key = seriesKey(Timer.st.type); m[key] = (m[key] || 0) + o; } }
   return m;
 }
-const seriesOrder = () => [...meta.workTypes.slice(0, 8).map(t => t.id), "_other", ""];
+const seriesOrder = () => [...meta.workTypes.map(t => t.id), "_other", ""];
 let stackRows = [];
 function stackChart(buckets, opt) { // 積み上げ棒グラフ:buckets = [{label, title, parts: {種類: ms}}]
   const n = buckets.length, Wd = 340, H = 170, top = 10, bottom = 22, left = 34;
@@ -4229,6 +4241,7 @@ function renderPlan() {
     (planTab === "money" ? moneyHtml() : planTab === "long" ? longHtml() : scheduleHtml());
   el.scrollTop = st;
   const gc = el.querySelector(".gchart"), nowEl = gc?.querySelector(".gc-now"); if (nowEl) gc.scrollLeft = nowEl.offsetLeft - gc.clientWidth / 3; // 年表は今日のあたりから見せる
+  if (gc) { const stick = () => gc.querySelectorAll(".gc-t").forEach(t => { const l = +t.dataset.l, r = +t.dataset.r; t.style.left = Math.max(l, Math.min(gc.scrollLeft + 6, r - t.offsetWidth)) + "px"; }); gc.addEventListener("scroll", stick, { passive: true }); stick(); } // 計画の名前は、棒が見えている所の左に寄せて出す
   $("#addEvent").setAttribute("aria-label", planTab === "money" ? (moneyMode === "proj" && !projOpen ? "プロジェクトを追加" : "収支を追加") : planTab === "long" ? "長期計画を追加" : "予定を追加");
 }
 function scheduleHtml() {
@@ -4337,7 +4350,7 @@ function renderPrefs() {
         <button class="mini" data-wtmv="${t.id}|-1" ${i ? "" : "disabled style=opacity:.35"}>↑</button><button class="mini" data-wtmv="${t.id}|1" ${i < meta.workTypes.length - 1 ? "" : "disabled style=opacity:.35"}>↓</button><button class="mini" data-wtdel="${t.id}">消す</button></div>`).join("") || `<div class="muted small">まだ登録されていません</div>`}
       <div class="btns"><button class="btn primary" id="wtAdd">＋ 種類を足す</button></div>
       <label class="field"><span>${NATIVE ? "このアプリ" : "このページ"}を開いていた時間の分類</span><select class="inp" id="pAppType">${typeOpts(appType())}</select></label>
-      <p class="note">記録の積み上げグラフは、この種類ごとに分かれます。タイマーからも選べます。${NATIVE ? "作業に数えるアプリを足すと、その名前の種類ができます。" : ""}色は並び順で決まります(9つ目からは「その他」の灰色)。</p>
+      <p class="note">記録の積み上げグラフは、この種類ごとに分かれます。タイマーからも選べます。${NATIVE ? "作業に数えるアプリを足すと、その名前の種類ができます。" : ""}色は並び順で決まり、名前の前の点を押すと変えられます。</p>
     </div>
     ${NATIVE ? `    <div class="card"><h3>作業に数えるアプリ</h3>
       ${meta.workApps.map(a => `<div class="row"><span class="grow" style="min-width:0">🛠 ${esc(a.name)}${a.pkg ? "" : `<div class="muted small">端末のアプリと結びついていません。外して選び直してください</div>`}</span><select class="inp" style="flex:none;width:7.5em;padding:6px 6px;font-size:13px" data-wat="${a.id}" aria-label="分類">${typeOpts(a.type || "")}</select><button class="mini" style="flex:none" data-delwork="${a.id}">外す</button></div>`).join("") || `<div class="muted small">まだ指定されていません</div>`}
@@ -4953,13 +4966,13 @@ function applyTheme() {
 try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme); } catch {}
 // ---- 収支:月ごとの文書 money-YYYY-MM に収支を持つ。分類と固定費は meta ----
 let moneyMonth = ym(new Date());
-const yen = n => "¥" + Math.round(n).toLocaleString("ja-JP");
+const yen = n => (n < 0 ? "−" : "") + "¥" + Math.abs(Math.round(n)).toLocaleString("ja-JP"); // 足りないときは −¥1,000 の形
 const YEN_MAX = 999999999, yenNum = v => Math.max(0, Math.min(YEN_MAX, Math.round(+v) || 0)); // 金額は 9億9999万9999円まで
 const moneyDoc = k => moneyDocs[k] ||= { items: [], skip: [] };
 const saveMoney = k => Store.put("money-" + k, moneyDoc(k));
 const moneyCat = (kind, id) => (meta.moneyCats[kind] || []).find(c => c.id === id);
 const moneyCatName = (kind, id) => moneyCat(kind, id)?.name || (id ? "(消した分類)" : "分類なし");
-const moneyColor = (kind, id) => { const i = (meta.moneyCats[kind] || []).findIndex(c => c.id === id); return i < 0 ? "var(--tcn)" : `var(--tc${i % 8})`; };
+const moneyColor = (kind, id) => { const i = (meta.moneyCats[kind] || []).findIndex(c => c.id === id); return i < 0 ? "var(--tcn)" : autoColor(i); };
 const shiftMonth = (k, d) => { const [y, m] = k.split("-").map(Number); return ym(new Date(y, m - 1 + d, 1)); };
 function ensureRepeats(k) { // 固定費を、その月の決まった日が来たら記録する。手で消した月には作り直さない
   const today = ymd(new Date()), [y, m] = k.split("-").map(Number), last = new Date(y, m, 0).getDate();
@@ -5207,7 +5220,7 @@ function longChart(goals) {
   return `<div class="gchart"><div class="gc-in" style="width:${W}px;height:${H}px">
     ${months.map(d => `<div class="gc-m" style="left:${x(d.getTime())}px">${MW < 20 ? (d.getMonth() ? "" : d.getFullYear()) : d.getMonth() ? d.getMonth() + 1 : `<b>${d.getFullYear()}</b>`}</div>`).join("")}
     <div class="gc-now" style="left:${x(now)}px"></div>
-    ${list.map((g, i) => { const l = x(parseYmd(g.start).getTime()), r = x(parseYmd(g.due).getTime() + 864e5); return `<div class="gc-r" data-goal="${g.id}" style="top:${20 + i * RH}px;height:${RH}px;--tc:${goalColor(g)}"><div class="gc-t" style="left:${Math.min(l, Math.max(0, W - 140))}px">${esc(g.title)}</div><div class="gc-b" style="left:${l}px;width:${Math.max(6, r - l)}px"><i style="width:${goalPct(g)}%"></i></div>${(g.ms || []).filter(m => m.date).map(m => `<span class="gc-d${m.done ? " on" : ""}" style="left:${x(parseYmd(m.date).getTime())}px"></span>`).join("")}</div>`; }).join("")}
+    ${list.map((g, i) => { const l = x(parseYmd(g.start).getTime()), r = x(parseYmd(g.due).getTime() + 864e5); return `<div class="gc-r" data-goal="${g.id}" style="top:${20 + i * RH}px;height:${RH}px;--tc:${goalColor(g)}"><div class="gc-t" data-l="${l}" data-r="${r}" style="left:${Math.min(l, Math.max(0, W - 140))}px">${esc(g.title)}</div><div class="gc-b" style="left:${l}px;width:${Math.max(6, r - l)}px"><i style="width:${goalPct(g)}%"></i></div>${(g.ms || []).filter(m => m.date).map(m => `<span class="gc-d${m.done ? " on" : ""}" style="left:${x(parseYmd(m.date).getTime())}px"></span>`).join("")}</div>`; }).join("")}
   </div></div>`;
 }
 function longHtml() {
