@@ -459,7 +459,12 @@ details.appd[open]>summary{margin-bottom:8px}
 .mlink{color:var(--accent);text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;cursor:pointer;-webkit-user-select:none;user-select:none}
 .mlink.missing{color:var(--text-muted);text-decoration-style:dashed}
 .mlb{display:none}
-.mk{display:none} /* 太字・色の記号は隠す(位置の計算のため、文字としては残す) */
+.fb{font-weight:700}
+/* 書いている行の太字・色:入力欄の文字を透明にし、同じ位置に色付きの文字を重ねる(太字は字の幅を変えないよう、縁取りで太く見せる) */
+.ol-fw{position:relative}
+.ol-t.fmt{color:transparent!important;caret-color:var(--text-primary)}
+.ol-mirror{position:absolute;inset:0;pointer-events:none;background:none!important;outline:none!important;white-space:pre-wrap;overflow-wrap:break-word;margin:0}
+.ol-mirror .fb{font-weight:inherit;-webkit-text-stroke:.6px currentColor}
 #oltools button{white-space:nowrap}
 .tx-red{color:#e0484a}.tx-orange{color:#e2702f}.tx-yellow{color:#c58a00}.tx-green{color:#17a06f}.tx-blue{color:#3a86e0}.tx-purple{color:#8f6ee8}.tx-gray{color:var(--text-muted)}
 .lchip.wiki,.lchip.wikiin{background:var(--surface-1);border-style:solid}
@@ -1040,7 +1045,7 @@ const FIELD_SIZING = typeof CSS !== "undefined" && CSS.supports && CSS.supports(
 
 function reindex() {
   index = {};
-  const walk = (list, parent) => list.forEach(n => { n.c ||= []; index[n.id] = { n, parent, list }; walk(n.c, n); });
+  const walk = (list, parent) => list.forEach(n => { n.c ||= []; if (n.f) fixFmt(n); index[n.id] = { n, parent, list }; walk(n.c, n); });
   walk(outline.nodes, null);
 }
 // ---- メモ(複数)。ボードの上に、すべてのメモがカードとして並ぶ ----
@@ -1075,6 +1080,7 @@ function loadFiles(docs) {
 }
 function setOutline(id) {
   curFile = id; outline = files[id]; editId = null; pendingCaret = null;
+  convertTree(outline.nodes); // 以前の形(記号で書いた太字・色)を、範囲に直す
   reindex();
   const st = (LS.get("view") || {}).files?.[id] || {};
   zoomId = st.zoom && index[st.zoom] ? st.zoom : null;
@@ -1179,7 +1185,8 @@ function renderOutline() {
       `<span class="selbox"></span>` + gf +
       `<button class="bul${has && !marked ? "" : " leaf"}" data-bul="${n.id}" tabindex="-1" aria-label="${n.k === "check" ? (n.done ? "済みを外す" : "済みにする") : has ? (folded ? "開く" : "畳む") : "この項目"}">${inner}</button>` +
       `<div class="ol-main">` + (n.k === "time" ? `<button class="tl-at${n.at ? "" : " empty"}" data-tl="${n.id}" tabindex="-1">${esc(n.at || "＋ 時")}</button>` : "") + (n.id === editId
-        ? `<textarea class="ol-t" rows="1" data-t="${n.id}" spellcheck="false"${firstEmpty ? ` placeholder="${PH_FIRST}"` : ""}>${esc(n.t)}</textarea>`
+        ? (n.f ? `<div class="ol-fw"><textarea class="ol-t fmt" rows="1" data-t="${n.id}" spellcheck="false">${esc(n.t)}</textarea><div class="ol-t ol-mirror" aria-hidden="true">${fmtSeg(n, 0, n.t.length)}​</div></div>`
+          : `<textarea class="ol-t" rows="1" data-t="${n.id}" spellcheck="false"${firstEmpty ? ` placeholder="${PH_FIRST}"` : ""}>${esc(n.t)}</textarea>`)
         : `<div class="ol-v" data-v="${n.id}"${firstEmpty ? ` data-ph="${PH_FIRST}"` : ""}>${richText(n)}</div>`) +
       (folded ? `<button class="foldcnt" data-bul="${n.id}" tabindex="-1">… ${countAll(n)}項目</button>` : "") +
       (rel.length ? `<div class="ol-rel">${rel.map(r => `<button class="mini link" data-jump="${r}" tabindex="-1">${esc(labelX(r))}</button>`).join("")}</div>` : "") +
@@ -1224,8 +1231,9 @@ function doEnter(id, s, e) {
   if (!n.t && n.k) { delete n.k; delete n.done; delete n.at; focusAt(id, 0); return commit(); } // 空のチェックなどで改行 → ふつうの行に戻す
   if (!n.t && parent && parent.id !== zoomId) return doOutdent(id);        // 空行で改行 → 一段戻す
   if (s === 0 && e === 0 && n.t) { list.splice(list.indexOf(n), 0, N()); focusAt(id, 0); return commit(); } // 行頭で改行 → 上に空行
-  const after = n.t.slice(e); n.t = n.t.slice(0, s);
-  const m = N(after);
+  const after = n.t.slice(e), fa = (n.f || []).filter(r => r.e > e).map(r => ({ ...r, s: Math.max(0, r.s - e), e: r.e - e })); // 後ろ半分の太字・色は次の行へ
+  n.t = n.t.slice(0, s); fixFmt(n);
+  const m = N(after); if (fa.length) m.f = fa;
   if (n.k && n.k !== "head") m.k = n.k; // 見出しの次はふつうの行、それ以外は同じ形式を続ける
   if (n.c.length && !n.x) n.c.unshift(m); else list.splice(list.indexOf(n) + 1, 0, m);
   focusAt(m.id, 0); commit();
@@ -1266,6 +1274,7 @@ function doBackspace(id) {
   if (i <= 0) { if (!n.t && list.length > 1) { list.splice(list.indexOf(n), 1); const nx = flatVisible()[0]; nx && focusAt(nx, 0); commit(); return true; } return false; }
   const p = index[vis[i - 1]].n;
   const caret = p.t.length; p.t += n.t;
+  if (n.f) { p.f = [...(p.f || []), ...n.f.map(r => ({ ...r, s: r.s + caret, e: r.e + caret }))]; mergeFmt(p); }
   for (const t of n.l || []) { (p.l ||= []).includes(t) || p.l.push(t); }
   list.splice(list.indexOf(n), 1);
   focusAt(p.id, caret); commit(); return true;
@@ -1296,7 +1305,7 @@ const MD_RULES = [
 const MD_SET = new WeakSet(); // 貼り付けで、記号から形式が決まった行
 function mdMatch(t) { for (const [re, f] of MD_RULES) { const m = t.match(re); if (m) return { len: m[0].length, ...f(m) }; } return null; }
 function applyMd(n, r) { // r = mdMatch の結果:記号を外して形式を付ける
-  n.t = n.t.slice(r.len);
+  editFmt(n, 0, r.len, 0); n.t = n.t.slice(r.len);
   if (r.k) n.k = r.k; else delete n.k;
   if (r.done) n.done = true; else delete n.done;
   if (r.at) n.at = r.at; else if (r.k !== "time") delete n.at;
@@ -1306,7 +1315,7 @@ function tryMdTyping(ta) { // 書いている行の頭で、記号+空白を打�
   const r = mdMatch(ta.value); if (!r) return false;
   if (!r.k && !n.k && r.len === ta.value.length) return false; // 「- 」だけはそのまま
   const caret = Math.max(0, ta.selectionStart - r.len);
-  n.t = ta.value; applyMd(n, r); delete n.ph;
+  setT(n, ta.value, ta.selectionEnd); applyMd(n, r); delete n.ph;
   focusAt(n.id, caret); commit(); return true;
 }
 
@@ -1375,7 +1384,7 @@ function nodesMarkdown(list, depth) { // Markdown(入れ子は空白2つ、続�
   for (const n of list) {
     if (n.k !== "code" && inCode) { out += ind + "```\n"; inCode = false; }
     cnt = n.k === "num" ? cnt + 1 : 0;
-    const t = n.t || "";
+    const t = n.k === "code" ? n.t || "" : mdBold(n);
     if (n.k === "code") { if (!inCode) { out += ind + "```\n"; inCode = true; } out += ind + t + "\n"; }
     else out += ind + (n.k === "check" ? `- [${n.done ? "x" : " "}] ` : n.k === "num" ? cnt + ". " : n.k === "time" ? `- ${n.at ? "**" + n.at + "** " : ""}` : n.k === "head" ? "#".repeat(Math.min(depth + 2, 6)) + " " : n.k === "quote" ? "> " : "- ") + t + "\n";
     if (n.c && n.c.length) { if (inCode) { out += ind + "```\n"; inCode = false; } out += nodesMarkdown(n.c, depth + 1); }
@@ -1474,30 +1483,106 @@ const box = $("#outline");
 const LINK_RE = /\[\[([^\[\]\n]+?)\]\]/g;
 function fullTitle(f) { if (f.name) return f.name; const first = l => { for (const n of l) { if (n.t && n.t.trim()) return plainT(n.t).trim(); const c = first(n.c || []); if (c) return c; } return ""; }; return first(f.nodes); }
 function findMemo(title) { const t = title.trim().toLowerCase(); return Object.values(files).find(f => fullTitle(f).toLowerCase() === t) || Object.values(files).find(f => memoTitle(f).toLowerCase() === t); }
-// ---- 太字と文字の色:行の中に **太字** と {赤:文字} の形で持つ。書いている間は記号のまま、表示では記号を隠して描く ----
+/* ---- 太字と文字の色:行の文字には記号を入れず、範囲で持つ。n.f = [{ s, e, b:1 } | { s, e, c:"赤"|"#rrggbb" }](s〜e の文字)
+   書き足したり消したりしたら範囲もずらす。範囲の終わりに続けて書いた文字は、同じ形になる ---- */
 const TCOL = { 赤: "red", 橙: "orange", 黄: "yellow", 緑: "green", 青: "blue", 紫: "purple", 灰: "gray" };
-const COLOR_RE = /\{(赤|橙|黄|緑|青|紫|灰|#[0-9a-fA-F]{6}):([^{}\n]+?)\}/g; // 色の表から選んだ色は {#rrggbb:文字}
+const COLOR_RE = /\{(赤|橙|黄|緑|青|紫|灰|#[0-9a-fA-F]{6}):([^{}\n]+?)\}/g; // 以前の形({赤:文字})
 const FMT_RE = /\*\*([^*\n]+?)\*\*|\{(赤|橙|黄|緑|青|紫|灰|#[0-9a-fA-F]{6}):([^{}\n]+?)\}/g;
-const plainT = t => (t || "").replace(FMT_RE, (m, b, c, x) => b ?? x); // 記号を除いた文字(名前・カード・コピーに使う)
-function fmtHtml(t) { // 記号は隠すだけで消さない(タップした位置から、書く位置を求めるため)
-  let out = "", last = 0;
-  for (const m of t.matchAll(FMT_RE)) {
-    out += esc(t.slice(last, m.index)) + (m[1] != null
-      ? `<span class="mk">**</span><b>${esc(m[1])}</b><span class="mk">**</span>`
-      : `<span class="mk">{${m[2]}:</span><span ${TCOL[m[2]] ? `class="tx-${TCOL[m[2]]}"` : `style="color:${m[2]}"`}>${esc(m[3])}</span><span class="mk">}</span>`);
-    last = m.index + m[0].length;
+const plainT = t => (t || "").replace(FMT_RE, (m, b, c, x) => b ?? x); // 以前の形の記号を除いた文字(まだ開いていないメモの名前などに使う)
+const fmtColOk = c => !!TCOL[c] || /^#[0-9a-f]{6}$/i.test(c || "");
+function fromMarkers(n) { // 以前の形(**太字** と {赤:文字})を、範囲に直す
+  if (!n.t || !/\*\*|\{/.test(n.t)) return false;
+  let out = "", last = 0; const f = [...(n.f || [])];
+  for (const m of n.t.matchAll(FMT_RE)) { out += n.t.slice(last, m.index); const s = out.length; out += m[1] ?? m[3]; f.push(m[1] != null ? { s, e: out.length, b: 1 } : { s, e: out.length, c: m[2] }); last = m.index + m[0].length; }
+  if (!last) return false;
+  n.t = out + n.t.slice(last); n.f = f; return true;
+}
+const convertTree = list => list.reduce((ch, n) => fromMarkers(n) | convertTree(n.c || []) || ch, false);
+function fixFmt(n) { // 文字の外にはみ出した範囲や、おかしな範囲を捨てる
+  if (!n.f) return;
+  const L = (n.t || "").length;
+  n.f = (Array.isArray(n.f) ? n.f : []).filter(r => r && Number.isFinite(r.s) && Number.isFinite(r.e) && (r.b || fmtColOk(r.c))).map(r => ({ ...r, s: Math.max(0, Math.min(r.s, L)), e: Math.max(0, Math.min(r.e, L)) })).filter(r => r.e > r.s);
+  mergeFmt(n);
+}
+function mergeFmt(n) { // 同じ形で、重なるか接する範囲を一つにまとめる
+  const by = {};
+  for (const x of n.f || []) (by[x.b ? "b" : "c" + x.c] ||= []).push(x);
+  n.f = Object.values(by).flatMap(l => { l.sort((x, y) => x.s - y.s); const out = []; for (const x of l) { const p = out[out.length - 1]; if (p && x.s <= p.e) p.e = Math.max(p.e, x.e); else out.push({ ...x }); } return out; });
+  if (!n.f.length) delete n.f;
+}
+function editFmt(n, p, D, L) { // [p, p+D) が L 文字に置き換わったとき、範囲をずらす。書く位置が範囲の中か終わりなら、書いた文字も同じ形にする
+  if (!n.f) return;
+  n.f = n.f.map(r => {
+    const inside = D > 0 ? r.s <= p && r.e > p : r.s < p && r.e >= p;
+    const s = r.s < p || (inside && r.s === p) ? r.s : r.s >= p + D ? r.s - D + L : p + L;
+    let e = r.e <= p ? r.e : r.e >= p + D ? r.e - D + L : p;
+    if (inside) e = Math.max(e, p + L);
+    return { ...r, s, e };
+  }).filter(r => r.e > r.s);
+  if (!n.f.length) delete n.f;
+}
+function setT(n, v, caret) { // 行の文字を書き換え、範囲も合わせる。caret = 書き換えたあとのカーソル。書き換えた所 {p, D, L} を返す
+  const o = n.t || ""; if (o === v) return null;
+  let b = Math.min(v.length - Math.min(caret ?? v.length, v.length), o.length);
+  while (b > 0 && o.slice(o.length - b) !== v.slice(v.length - b)) b--;
+  let a = 0; const lim = Math.min(o.length - b, v.length - b);
+  while (a < lim && o[a] === v[a]) a++;
+  const d = { p: a, D: o.length - b - a, L: v.length - b - a };
+  editFmt(n, d.p, d.D, d.L); n.t = v;
+  return d;
+}
+function cutFmt(n, s, e, pick) { // [s,e) から、pick に当たる形を外す(はみ出した所は残す)
+  if (!n.f) return;
+  const out = [];
+  for (const r of n.f) { if (!pick(r) || r.e <= s || r.s >= e) { out.push(r); continue; } if (r.s < s) out.push({ ...r, e: s }); if (r.e > e) out.push({ ...r, s: e }); }
+  n.f = out; if (!out.length) delete n.f;
+}
+function addFmt(n, s, e, r) { // [s,e) に形を付ける。色は、そこにあった色を外してから。同じ形で接する範囲は一つにまとめる
+  if ("c" in r) cutFmt(n, s, e, x => x.c);
+  if (r.c === "" || r.b === 0) { if (r.b === 0) cutFmt(n, s, e, x => x.b); return; }
+  (n.f ||= []).push({ s, e, ...r });
+  mergeFmt(n);
+}
+const fmtAll = (n, s, e, pick) => { let p = s; for (const r of (n.f || []).filter(pick).sort((x, y) => x.s - y.s)) { if (r.s > p) break; p = Math.max(p, r.e); } return p >= e; };
+function fmtSeg(n, a, b) { // n.t の [a,b) を、太字と色で区切って描く
+  const f = n.f || [], cuts = new Set([a, b]);
+  for (const r of f) { if (r.s > a && r.s < b) cuts.add(r.s); if (r.e > a && r.e < b) cuts.add(r.e); }
+  const pts = [...cuts].sort((x, y) => x - y); let out = "";
+  for (let i = 0; i < pts.length - 1; i++) {
+    const x = pts[i], y = pts[i + 1], txt = esc(n.t.slice(x, y)), on = f.filter(r => r.s <= x && r.e >= y);
+    const bold = on.some(r => r.b), col = on.filter(r => r.c && fmtColOk(r.c)).pop()?.c;
+    out += bold || col ? `<span class="${bold ? "fb" : ""}${col && TCOL[col] ? " tx-" + TCOL[col] : ""}"${col && !TCOL[col] ? ` style="color:${col}"` : ""}>${txt}</span>` : txt;
   }
-  return out + esc(t.slice(last));
+  return out;
 }
 function richText(n) { // [[リンク]] と、テンプレートの【…】、太字と色を描く。括弧も文字として残す(タップした位置の計算を合わせるため)
-  const plain = t => n.ph ? phHtml(t) : fmtHtml(t);
+  const seg = (a, b) => n.ph ? phHtml(n.t.slice(a, b)) : fmtSeg(n, a, b);
   let out = "", last = 0;
   for (const m of n.t.matchAll(LINK_RE)) {
     const f = findMemo(m[1]);
-    out += plain(n.t.slice(last, m.index)) + `<span class="mlb">[[</span><span class="mlink${f ? "" : " missing"}" data-mlink="${esc(m[1])}">${esc(m[1])}</span><span class="mlb">]]</span>`;
+    out += seg(last, m.index) + `<span class="mlb">[[</span><span class="mlink${f ? "" : " missing"}" data-mlink="${esc(m[1])}">${esc(m[1])}</span><span class="mlb">]]</span>`;
     last = m.index + m[0].length;
   }
-  return out + plain(n.t.slice(last));
+  return out + seg(last, n.t.length);
+}
+function paintMirror(ta, n) { // 書いている行に太字や色があれば、文字を透明にした入力欄の上に、同じ文字を色付きで重ねる
+  let w = ta.parentElement.classList.contains("ol-fw") ? ta.parentElement : null;
+  if (!n.f) { if (w) { ta.classList.remove("fmt"); w.querySelector(".ol-mirror")?.remove(); } return; }
+  if (!w) {
+    const s = ta.selectionStart, e = ta.selectionEnd, foc = document.activeElement === ta;
+    w = document.createElement("div"); w.className = "ol-fw"; ta.before(w); w.append(ta);
+    if (foc) { ta.focus(); ta.setSelectionRange(s, e); }
+  }
+  let m = w.querySelector(".ol-mirror");
+  if (!m) { m = document.createElement("div"); m.className = "ol-t ol-mirror"; m.setAttribute("aria-hidden", "true"); w.append(m); }
+  ta.classList.add("fmt"); m.innerHTML = fmtSeg(n, 0, n.t.length) + "​";
+}
+let pendFmt = null; // 選ばずに「B」や「色」を押したとき、次に書く文字に付ける形 { id, pos, r }
+function mdBold(n) { // Markdown へ持ち出すとき、太字の範囲を ** で囲む(色は持ち出せない)
+  let t = n.t || "";
+  const bs = (n.f || []).filter(r => r.b).sort((x, y) => y.s - x.s);
+  for (const r of bs) t = t.slice(0, r.s) + "**" + t.slice(r.s, r.e) + "**" + t.slice(r.e);
+  return t;
 }
 function openLink(title) {
   flushOutline();
@@ -1533,7 +1618,7 @@ sug.addEventListener("click", e => {
   const after = sugMode === "slash" ? ta.value.slice(c) : ta.value.slice(c).replace(/^[^\[\]\n]*\]\]/, "");
   const ins = `[[${b.dataset.sug}]]`;
   ta.value = before + ins + after; const nc = before.length + ins.length; ta.setSelectionRange(nc, nc);
-  const n = index[ta.dataset.t]?.n; if (n) { n.t = ta.value; saveOutline(); }
+  const n = index[ta.dataset.t]?.n; if (n) { setT(n, ta.value, nc); saveOutline(); paintMirror(ta, n); }
   if (!FIELD_SIZING) autosize(ta);
   sug.classList.remove("on");
 });
@@ -1559,7 +1644,9 @@ box.addEventListener("input", e => {
   ta.classList.remove("phsel");
   const id = ta.dataset.t; if (!index[id]) return;
   if (ta.value.includes("\n") && !e.isComposing) { splitPasted(id, ta); return; }
-  index[id].n.t = ta.value;
+  const n = index[id].n, d = setT(n, ta.value, ta.selectionEnd);
+  if (pendFmt && d) { if (pendFmt.id === id && d.L > 0 && d.p === pendFmt.pos) addFmt(n, d.p, d.p + d.L, pendFmt.r); pendFmt = null; } // 「B」や「色」を押してから書いた文字
+  paintMirror(ta, n);
   if (!e.isComposing && tryMdTyping(ta)) return;
   updateLinkSug(ta);
   saveOutline();
@@ -1567,7 +1654,7 @@ box.addEventListener("input", e => {
 });
 box.addEventListener("compositionend", e => {
   const ta = e.target.closest(".ol-t"); if (ta && ta.value.includes("\n")) { splitPasted(ta.dataset.t, ta); return; }
-  if (ta) { const n = index[ta.dataset.t]?.n; if (n) n.t = ta.value; tryMdTyping(ta); }
+  if (ta) { const n = index[ta.dataset.t]?.n; if (n) { setT(n, ta.value, ta.selectionEnd); paintMirror(ta, n); } tryMdTyping(ta); }
 });
 box.addEventListener("beforeinput", e => {
   const ta = e.target.closest(".ol-t"); if (!ta) return;
@@ -1586,7 +1673,7 @@ box.addEventListener("keydown", e => {
   else if (e.key === "Backspace" && ta.selectionStart === 0 && ta.selectionEnd === 0) { if (doBackspace(id)) e.preventDefault(); }
   else if (e.altKey && e.shiftKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) { e.preventDefault(); doMove(id, e.key === "ArrowUp" ? -1 : 1); }
   else if (e.altKey && e.shiftKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) { e.preventDefault(); e.key === "ArrowRight" ? doIndent(id) : doOutdent(id); } // パソコン:Alt+Shift+→ で字下げ、← で戻す
-  else if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "b") { e.preventDefault(); wrapFmt(id, "**", "**"); }
+  else if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "b") { e.preventDefault(); toggleBold(id); }
   else if ((e.key === "ArrowUp" && ta.selectionStart === 0) || (e.key === "ArrowDown" && ta.selectionEnd === ta.value.length)) {
     const vis = flatVisible(); const j = vis.indexOf(id) + (e.key === "ArrowUp" ? -1 : 1);
     if (vis[j]) { e.preventDefault(); focusAt(vis[j], e.key === "ArrowUp" ? index[vis[j]].n.t.length : 0); renderOutline(); }
@@ -1597,6 +1684,7 @@ box.addEventListener("focusin", e => {
   const ta = e.target.closest(".ol-t"); if (!ta) return;
   if ((drag && drag.on) || Date.now() < noFocusUntil) { ta.blur(); return; }
   focusId = ta.dataset.t; saveView();
+  if (pendFmt && pendFmt.id !== focusId) pendFmt = null;
   box.querySelectorAll(".ol-row.cur").forEach(r => r.classList.remove("cur"));
   ta.closest(".ol-row").classList.add("cur");
   document.body.classList.add("editing");
@@ -1801,36 +1889,37 @@ tools.addEventListener("click", e => {
   const id = focusId;
   ({ out: () => doOutdent(id), in: () => doIndent(id), up: () => doMove(id, -1), down: () => doMove(id, 1),
      fold: () => doToggle(id), child: () => doAddChild(id), more: () => lineMenu(id),
-     bold: () => wrapFmt(id, "**", "**"), color: () => colorSheet(id),
+     bold: () => toggleBold(id), color: () => colorSheet(id),
      kind: () => { document.activeElement?.blur?.(); kindSheet([id]); },
      del: () => { const k = countAll(index[id].n); if (k) { document.activeElement?.blur?.(); confirmSheet("行を削除しますか", `「${label(id)}」と、その下の ${k} 項目を削除します。削除の直後なら「元に戻す」で戻せます。`, "削除する", () => doDelete(id)); } else doDelete(id); },
      tpl: () => { document.activeElement?.blur?.(); openTemplates(id, false); } })[b.dataset.op]?.();
 });
-function wrapFmt(id, open, close) { // 選んだ文字を囲む。もう囲んであれば外す。選んでいなければ記号を入れて、その間に書けるようにする
-  const ta = box.querySelector(`.ol-t[data-t="${id}"]`), n = index[id]?.n; if (!ta || !n) return;
-  let s = ta.selectionStart, e = ta.selectionEnd, v = ta.value;
-  if (v.slice(s - open.length, s) === open && v.slice(e, e + close.length) === close) { v = v.slice(0, s - open.length) + v.slice(s, e) + v.slice(e + close.length); s -= open.length; e -= open.length; }
-  else { v = v.slice(0, s) + open + v.slice(s, e) + close + v.slice(e); s += open.length; e += open.length; }
-  ta.value = v; n.t = v; ta.setSelectionRange(s, e); saveOutline();
-  if (!FIELD_SIZING) autosize(ta);
+function toggleBold(id) { // 選んだ文字を太字にする(すべて太字なら外す)。選んでいなければ、これから書く文字を太字に(太字の続きなら、太字をやめる)
+  const ta = box.querySelector(`textarea.ol-t[data-t="${id}"]`), n = index[id]?.n; if (!ta || !n) return;
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  if (s === e) {
+    const inBold = s > 0 && fmtAll(n, s - 1, s, r => r.b);
+    pendFmt = { id, pos: s, r: { b: inBold ? 0 : 1 } };
+    toast(inBold ? "ここから先は、太字にせずに書きます" : "ここから書く文字を太字にします");
+    return;
+  }
+  if (fmtAll(n, s, e, r => r.b)) cutFmt(n, s, e, r => r.b); else addFmt(n, s, e, { b: 1 });
+  saveOutline(); paintMirror(ta, n); ta.focus(); ta.setSelectionRange(s, e);
 }
-function colorSheet(id) { // 選んだ文字(選んでいなければ、これから書く文字)の色
-  const ta = box.querySelector(`.ol-t[data-t="${id}"]`), n = index[id]?.n; if (!ta || !n) return;
-  const s0 = ta.selectionStart, e0 = ta.selectionEnd, v0 = ta.value;
+function colorSheet(id) { // 選んだ文字の色。選んでいなければ、色の中ならその色を変え、そうでなければこれから書く文字の色にする
+  const ta = box.querySelector(`textarea.ol-t[data-t="${id}"]`), n = index[id]?.n; if (!ta || !n) return;
+  const s = ta.selectionStart, e = ta.selectionEnd;
   flushOutline(); ta.blur();
-  openSheet(`<h2>文字の色</h2><p class="muted small" style="margin-top:-4px">${s0 === e0 ? "これから書く文字の色を選びます" : "選んだ文字の色を選びます"}</p>
+  const inCol = s === e ? (n.f || []).find(r => r.c && r.s < s && r.e > s) : null;
+  openSheet(`<h2>文字の色</h2><p class="muted small" style="margin-top:-4px">${s !== e ? "選んだ文字の色を選びます" : inCol ? "カーソルのある色の文字を、選んだ色に変えます" : "ここから書く文字の色を選びます"}</p>
     <div class="metas">${Object.entries(TCOL).map(([k, c]) => `<button class="mini tx-${c}" data-tc="${k}" style="font-weight:700">${k}</button>`).join("")}<button class="mini" data-tc="">色を外す</button>${rainbowBtn("tc")}</div>`, sh => {
     sh.addEventListener("click", ev => {
       const b = ev.target.closest("[data-tc]"); if (!b) return;
-      let v = v0, s = s0, e = e0;
-      const m = [...v.matchAll(COLOR_RE)].find(m => s >= m.index && e <= m.index + m[0].length); // もう色の中なら、その色を外してから付け直す
-      if (m) {
-        const st = m.index, off = m[1].length + 2, len = m[2].length, map = p => p <= st + off ? st : p >= st + off + len ? st + len : p - off;
-        v = v.slice(0, st) + m[2] + v.slice(st + m[0].length); [s, e] = s === e && m ? [st, st + len] : [map(s), map(e)];
-      }
-      let caret = e;
-      if (b.dataset.tc) { const open = `{${b.dataset.tc}:`; v = v.slice(0, s) + open + v.slice(s, e) + "}" + v.slice(e); caret = e + open.length; }
-      n.t = v; saveOutline(); closeSheet(); focusAt(id, caret); renderOutline();
+      const c = b.dataset.tc;
+      if (s !== e) addFmt(n, s, e, { c });
+      else if (inCol) { if (c) inCol.c = c; else n.f = n.f.filter(r => r !== inCol); fixFmt(n); }
+      else pendFmt = { id, pos: s, r: { c } };
+      saveOutline(); closeSheet(); focusAt(id, e); renderOutline();
     });
   });
 }
