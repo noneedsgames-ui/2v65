@@ -3374,7 +3374,7 @@ function renderLog() {
   const W = workTotal(days[0].getTime(), addDays(days[days.length - 1], 1).getTime()); // 作業 = 内訳(このアプリ+作業の種類+作業アプリ)の合計
   { const a0 = days[0].getTime(), b0 = addDays(days[days.length - 1], 1).getTime(); logLive = Date.now() >= a0 && Date.now() < b0 ? { a: a0, b: b0, app: WA } : null; }
   const goal = meta.prefs.goal * 60000 * days.length;
-  const hasApps = NATIVE || meta.apps.length || meta.workApps.length;
+  const hasApps = NATIVE; // ほかのアプリの時間は Android アプリ版だけ
   const isToday = logMode === "day" && ymd(days[0]) === ymd(new Date());
   const mz = mimozaLogLines(days, W, T, D);
   let html = Mimoza.html() + `<div class="seg" id="logSeg">${[["day", "日別"], ["week", "週別"], ["month", "月別"]].map(([k, l]) => `<button data-m="${k}" class="${logMode === k ? "on" : ""}">${l}</button>`).join("")}</div>
@@ -3562,7 +3562,7 @@ function typeCard(days) { // 作業時間の内訳(このアプリ+作業の種�
   if (!all) return h + `<div class="empty">まだ記録がありません。このアプリを開いている時間、作業アプリの時間、タイマーの時間が、作業の種類ごとに積み上がります。${meta.workTypes.length ? "" : `<br><button class="mini" data-goapps style="margin-top:8px">作業の種類を登録する</button>`}</div></div>`;
   h += `<div class="legend">${keys.map(k => `<span><i class="sw" style="background:${seriesColor(k)}"></i>${esc(seriesName(k))}</span>`).join("")}<span class="muted">棒をタップで内訳</span></div>`;
   h += stackChart(buckets, { hourly: days.length === 1, aria: "作業時間の内訳の積み上げ棒グラフ" });
-  h += `<p class="muted small" style="margin:6px 0 0">このアプリと作業アプリの時間は「設定」で決めた種類に入ります。タイマーと重なる分は、タイマーの種類に数えます。</p>`;
+  h += `<p class="muted small" style="margin:6px 0 0">${NATIVE ? "このアプリと作業アプリの時間" : "このページを開いていた時間"}は「設定」で決めた種類に入ります。タイマーと重なる分は、タイマーの種類に数えます。</p>`;
   h += `<div style="margin-top:10px">${keys.map(k => `<div class="tshare"><span style="width:7.5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span class="tdot" style="--tc:${seriesColor(k)}"></span>${esc(seriesName(k))}</span><span class="bar" style="--tc:${seriesColor(k)}"><i style="width:${(totals[k] / all * 100).toFixed(1)}%"></i></span><span class="num" style="width:5.2em;text-align:right">${fmtDur(totals[k])}</span><span class="num muted" style="width:3em;text-align:right">${Math.round(totals[k] / all * 100)}%</span></div>`).join("")}</div>`;
   return h + `</div>`;
 }
@@ -3829,13 +3829,9 @@ function renderTimer() {
     <div class="card"><h3>今日のタイマー合計 <span class="num" style="float:right;color:var(--text-primary)" id="tToday"></span></h3>
       ${recent.filter(t => t.e > todayA).sort((a, b) => b.s - a.s).map(t => `<div class="row small"><span class="grow"><span class="tdot" style="--tc:${seriesColor(seriesKey(t.type))}"></span>${esc(typeName(t.type))}${t.label ? " · " + esc(t.label) : ""} <span class="muted">${t.manual ? "手で足した記録" : t.mode === "pomodoro" ? "ポモドーロ" : "ストップウォッチ"}</span></span><span class="num">${hm(t.s)}〜${hm(t.e)} ${fmtDur(t.e - t.s)}</span></div>`).join("") || `<div class="empty">まだ記録はありません</div>`}
     </div>
-    ${s.running && meta.apps.length ? `<div class="card focusnote"><h3>集中中</h3><div class="small">${meta.apps.map(a => esc(a.name)).join("・")} は開かないでください。</div>
+    ${NATIVE && s.running && meta.apps.length ? `<div class="card focusnote"><h3>集中中</h3><div class="small">${meta.apps.map(a => esc(a.name)).join("・")} は開かないでください。</div>
       ${NATIVE && P.block !== false ? `<div class="small" id="blockLeft" style="margin-top:6px;font-weight:600"></div><button class="mini" id="blockAgain" style="margin-top:6px;display:none">もう一度ブロックする(最大5分)</button>` : ""}</div>` : ""}
-    <details class="card" style="${NATIVE ? "display:none" : ""}"><summary class="small" style="font-weight:600;color:var(--text-secondary)">タイマー中に妨害アプリを使えなくするには</summary>
-      <p class="small" style="line-height:1.7;margin:8px 0 0">ブラウザ版では、ほかのアプリを止めることはできません。Android の<b>集中モード</b>を使うと、選んだアプリをタイマーの間だけ使えなくできます。<br>
-      1. 端末の「設定」→「Digital Wellbeing と保護者による使用制限」<br>2. 「集中モード」→ 妨害アプリ(${meta.apps.map(a => esc(a.name)).join("・") || "YouTube など"})を選ぶ<br>3. タイマーを始めるときに「今すぐオンにする」<br>
-      <span class="muted">機種によって項目名が違います。Android アプリ版では、タイマー中に妨害アプリを開くと、アプリの画面で覆って使えなくします。</span></p></details>
-    <p class="note">タイマーの時間は、記録の「作業」に作業の種類ごとに入ります。アプリを開いていた時間や作業アプリと重なる分は、二重に数えません。ポモドーロは集中 ${P.focus} 分/休憩 ${P.brk} 分。長さは「設定」で変えられます。</p>`;
+    <p class="note">タイマーの時間は、記録の「作業」に作業の種類ごとに入ります。${NATIVE ? "アプリを開いていた時間や作業アプリ" : "このページを開いていた時間"}と重なる分は、二重に数えません。ポモドーロは集中 ${P.focus} 分/休憩 ${P.brk} 分。長さは「設定」で変えられます。</p>`;
   updateClock();
 }
 $("#timerScroll").addEventListener("click", e => {
@@ -4031,31 +4027,28 @@ function renderPrefs() {
   $("#prefsScroll").innerHTML = `
     <div class="card"><h3>画面の編集</h3><label class="row"><input type="checkbox" id="pLayoutEdit" ${document.body.classList.contains("layoutedit") ? "checked" : ""}><span class="grow">編集モード<div class="muted small">下のタブと「予定」の中の項目を、入れ替えたり消したりできます。メモの要素で新しい項目も作れます。下のタブを長押ししても入れます</div></span></label></div>
     <div class="card"><h3>画面の色</h3><div class="seg" style="display:flex">${[["auto", "端末に合わせる"], ["light", "ライト"], ["dark", "ダーク"]].map(([k, l]) => `<button style="flex:1" data-theme-set="${k}" class="${themePref() === k ? "on" : ""}">${l}</button>`).join("")}</div></div>
-    <div class="card"><h3>妨害アプリ</h3>
+    ${NATIVE ? `    <div class="card"><h3>妨害アプリ</h3>
       ${meta.apps.map(a => `<div class="row"><span class="grow">${esc(a.name)}${a.pkg ? "" : `<div class="muted small">端末のアプリと結びついていません。外して選び直してください</div>`}</span><button class="mini" data-delapp="${a.id}">外す</button></div>`).join("") || `<div class="muted small">まだ指定されていません</div>`}
       ${NATIVE ? `<button class="btn block" data-pickapps="d" style="margin-top:10px">端末のアプリから選ぶ</button>
         <label class="row"><input type="checkbox" id="pUsageOv" ${P.usageOv === true ? "checked" : ""}><span class="grow">妨害アプリの使用中、画面の隅に今日の使用時間を出す<div class="muted small">そのアプリの今日の合計を秒まで出します。タイマーを動かしていなくても出ます。動いている間は通知が一つ出ます${P.usageOv !== true ? "" : !meta.apps.some(a => a.pkg) ? `<div style="color:var(--danger)">「端末のアプリから選ぶ」で選んだアプリがないので、まだ出ません</div>` : !usageAccess() || !canOverlay() ? `<div style="color:var(--danger)">「端末の許可」の使用状況と重ね表示を許可するまで、出ません</div>` : ""}</div></span></label>` : `<p class="note">ブラウザ版からは端末のアプリを読めないので、Android アプリ版で選びます。</p>`}
     </div>
+    ` : ""}
     <div class="card"><h3>作業の種類</h3>
       ${meta.workTypes.map((t, i) => `<div class="row"><span class="tdot" style="--tc:${typeColor(t.id)}"></span><input class="inp" style="padding:7px 10px" value="${esc(t.name)}" data-wtname="${t.id}" maxlength="20" aria-label="種類の名前">
         <button class="mini" data-wtmv="${t.id}|-1" ${i ? "" : "disabled style=opacity:.35"}>↑</button><button class="mini" data-wtmv="${t.id}|1" ${i < meta.workTypes.length - 1 ? "" : "disabled style=opacity:.35"}>↓</button><button class="mini" data-wtdel="${t.id}">消す</button></div>`).join("") || `<div class="muted small">まだ登録されていません</div>`}
       <div class="btns"><button class="btn primary" id="wtAdd">＋ 種類を足す</button></div>
-      <label class="field"><span>このアプリを開いていた時間の分類</span><select class="inp" id="pAppType">${typeOpts(appType())}</select></label>
-      <p class="note">記録の積み上げグラフは、この種類ごとに分かれます。タイマーからも選べます。作業に数えるアプリを足すと、その名前の種類ができます。色は並び順で決まります(9つ目からは「その他」の灰色)。</p>
+      <label class="field"><span>${NATIVE ? "このアプリ" : "このページ"}を開いていた時間の分類</span><select class="inp" id="pAppType">${typeOpts(appType())}</select></label>
+      <p class="note">記録の積み上げグラフは、この種類ごとに分かれます。タイマーからも選べます。${NATIVE ? "作業に数えるアプリを足すと、その名前の種類ができます。" : ""}色は並び順で決まります(9つ目からは「その他」の灰色)。</p>
     </div>
-    <div class="card"><h3>作業に数えるアプリ</h3>
+    ${NATIVE ? `    <div class="card"><h3>作業に数えるアプリ</h3>
       ${meta.workApps.map(a => `<div class="row"><span class="grow" style="min-width:0">🛠 ${esc(a.name)}${a.pkg ? "" : `<div class="muted small">端末のアプリと結びついていません。外して選び直してください</div>`}</span><select class="inp" style="flex:none;width:7.5em;padding:6px 6px;font-size:13px" data-wat="${a.id}" aria-label="分類">${typeOpts(a.type || "")}</select><button class="mini" style="flex:none" data-delwork="${a.id}">外す</button></div>`).join("") || `<div class="muted small">まだ指定されていません</div>`}
       ${NATIVE ? `<button class="btn block" data-pickapps="w" style="margin-top:10px">端末のアプリから選ぶ</button><p class="note">選んだアプリは、使用時間を端末から読んで作業時間に足します。</p>` : `<p class="note">ブラウザ版からは端末のアプリを読めないので、Android アプリ版で選びます。</p>`}
     </div>
+    ` : ""}
     ${NATIVE ? `<div class="card"><h3>端末の許可</h3>
       ${Object.keys(PERMS).map(permRow).join("")}
       <p class="muted small" style="margin:6px 0 0">設定画面で「作業記録メモ帳」を選び、許可をオンにして戻ってきてください。</p>
     </div>` : ""}
-    <div class="card" style="${NATIVE ? "display:none" : ""}"><h3>使用状況へのアクセス(Android アプリ版で必要)</h3>
-      <p class="small" style="line-height:1.7;margin:0">Android アプリ版では、妨害アプリの使用時間を自動で取り込むために、端末で次の許可を手動で付けます。<br>
-      1. 端末の「設定」を開く<br>2. 「アプリ」→「特別なアプリアクセス」→「使用状況へのアクセス」<br>3. 一覧からこのアプリを選び、「使用状況へのアクセスを許可」をオン<br>
-      <span class="muted">機種により項目名は「使用履歴へのアクセス」などと異なります。</span></p>
-    </div>
     <div class="card"><h3>ポモドーロと目標</h3>
       <div style="display:flex;gap:8px">
         <label class="field" style="flex:1"><span>集中(分)</span><input class="inp" type="number" inputmode="numeric" min="1" max="180" id="pF" value="${P.focus}"></label>
