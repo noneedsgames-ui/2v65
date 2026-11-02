@@ -130,16 +130,6 @@ nav.bottom button svg{width:22px;height:22px;stroke:currentColor;fill:none;strok
 nav.bottom button.on{color:var(--text-primary);font-weight:600}
 .livebar{font-size:11px;color:var(--text-muted);text-align:center;padding:3px 0;background:var(--surface-2);border-bottom:1px solid var(--line)}
 .livebar b{color:var(--text-primary);font-variant-numeric:tabular-nums}
-/* 初めての案内:実際のボタンを枠で囲み、まわりを暗くして説明を添える */
-.tour{position:fixed;inset:0;z-index:400}
-.tour-hole{position:fixed;border:3px solid var(--accent);border-radius:12px;box-shadow:0 0 0 4px rgba(255,255,255,.25);pointer-events:none}
-.tour-dim{position:fixed;background:rgba(0,0,0,.58)} /* 枠のまわりの四方を暗くする(大きな影は、端末によって下まで描かれないため) */
-.tour-card{position:fixed;left:12px;right:12px;max-width:420px;margin:0 auto;background:var(--surface-1);color:var(--text-primary);border-radius:14px;padding:14px 16px 12px;box-shadow:0 10px 32px rgba(0,0,0,.35)}
-.tour-card h3{margin:0 0 4px;font-size:15px}
-.tour-card p{margin:0;font-size:13px;line-height:1.75}
-.tour-foot{display:flex;align-items:center;gap:8px;margin-top:12px}
-.tour-foot .btn{flex:none;padding:7px 14px}
-.tour-n{font-size:12px;color:var(--text-muted);margin-right:auto}
 .syncchip{margin-left:8px;font:inherit;font-size:11px;font-weight:700;color:var(--accent);background:none;border:1px solid var(--accent);border-radius:10px;padding:0 8px;cursor:pointer}
 
 /* memo */
@@ -256,7 +246,7 @@ body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 .c-green{background:color-mix(in srgb,#1baf7a 15%,var(--surface-1));border-color:color-mix(in srgb,#1baf7a 45%,var(--line));--cf:color-mix(in srgb,#1baf7a 15%,var(--surface-1));--cb:color-mix(in srgb,#1baf7a 45%,var(--line))}
 .c-blue{background:color-mix(in srgb,#2a78d6 15%,var(--surface-1));border-color:color-mix(in srgb,#2a78d6 45%,var(--line));--cf:color-mix(in srgb,#2a78d6 15%,var(--surface-1));--cb:color-mix(in srgb,#2a78d6 45%,var(--line))}
 .c-purple{background:color-mix(in srgb,#6250d6 15%,var(--surface-1));border-color:color-mix(in srgb,#6250d6 45%,var(--line));--cf:color-mix(in srgb,#6250d6 15%,var(--surface-1));--cb:color-mix(in srgb,#6250d6 45%,var(--line))}
-.bctl{position:absolute;right:12px;bottom:12px;display:flex;gap:6px}
+.bctl{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:stretch;gap:6px} /* 右の端に縦に並べる */
 .bctl .lasso-btn{font-size:13px;font-weight:700;color:var(--accent)}
 .bctl .lasso-btn.on{background:var(--accent);color:var(--accent-ink)}
 .board.lassoing{cursor:crosshair}
@@ -277,8 +267,8 @@ body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 .gl-h::after{content:"";position:absolute;left:3px;top:3px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
 .bctl button{min-width:42px;height:42px;padding:0 10px;border-radius:12px;background:var(--surface-1);border:1px solid var(--line);font-size:18px;box-shadow:0 1px 3px #0002}
 .bctl button[data-z="fit"]{font-size:13px;font-weight:600}
-.bhint{position:absolute;left:12px;right:170px;bottom:12px;font-size:11.5px;line-height:1.55;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--line);border-radius:10px;padding:8px 10px;pointer-events:none}
-@media (max-width:420px){.bhint{right:12px;bottom:64px}.bctl button{min-width:38px;padding:0 8px}}
+.bhint{position:absolute;left:12px;right:96px;bottom:12px;font-size:11.5px;line-height:1.55;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--line);border-radius:10px;padding:8px 10px;pointer-events:none}
+@media (max-width:420px){.bhint{right:88px}.bctl button{min-width:38px;padding:0 8px}}
 .swatches{display:flex;gap:8px;flex-wrap:wrap}
 .sw2{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface-1);font-size:10px;color:var(--text-muted)}
 .sw2.on{outline:2.5px solid var(--accent);outline-offset:2px}
@@ -574,7 +564,6 @@ textarea.inp{line-height:1.6;resize:vertical}
 <body>
 <div class="cchart" id="cchart" hidden><div class="cc-box"><b>色を選ぶ</b><div class="cc-grid" id="ccGrid"></div>
   <div class="cc-row"><span class="cc-prev" id="ccPrev"></span><input class="inp" id="ccHex" maxlength="7" aria-label="色の番号"><button class="btn" id="ccX">やめる</button><button class="btn primary" id="ccOk">決める</button></div></div></div>
-<div class="tour" id="tour" hidden><div class="tour-dim"></div><div class="tour-dim"></div><div class="tour-dim"></div><div class="tour-dim"></div><div class="tour-hole" id="tourHole"></div><div class="tour-card" id="tourCard" role="dialog" aria-live="polite"></div></div>
 <div class="livebar" id="livebar">作業時間 自動記録中 <b id="liveToday">0分</b>(今日)<button class="syncchip" id="syncChip" hidden>☁ ログインして同期</button></div>
 <main>
   <!-- メモ -->
@@ -641,7 +630,7 @@ textarea.inp{line-height:1.6;resize:vertical}
     <div class="board" id="board">
       <div class="world" id="world"><svg class="edges" id="edges"></svg><div id="cards"></div><div id="glabels"></div></div>
       <div class="bhint" id="bhint">カードはドラッグで移動、タップで開く、長押しで色や削除。カードの右下の●を別のカードへ引くと矢印、空いた所で離すと新しいメモ。「◯ 囲む」で指で描いて囲むと、その形がファイルになります(丸ごと囲めば入れ子)。空いた所はドラッグで移動、二本指で拡大縮小。矢印は二回タップで消せます。カードや丸は下のゴミ箱へドラッグすると消せます。</div>
-      <div class="bctl"><button data-z="lasso" id="lassoBtn" class="lasso-btn">◯ 囲む</button><button data-z="arrange">整列</button><button data-z="out" aria-label="縮小">−</button><button data-z="in" aria-label="拡大">＋</button><button data-z="fit">全体</button></div>
+      <div class="bctl"><button data-z="lasso" id="lassoBtn" class="lasso-btn">◯ 囲む</button><button data-z="arrange">整列</button><button data-z="in" aria-label="拡大">＋</button><button data-z="out" aria-label="縮小">−</button><button data-z="fit">全体</button></div>
     </div>
   </section>
 
@@ -1581,17 +1570,29 @@ function paintMirror(ta, n) { // 書いている行に太字や色があれば�
   ta.classList.add("fmt"); m.innerHTML = fmtSeg(n, 0, n.t.length) + "​";
 }
 let pendFmt = null; // 選ばずに「B」や「色」を押したとき、次に書く文字に付ける形 { id, pos, r }
+function fmtHere(n, s, e) { // カーソルの直前の文字(選んでいればその全体)の形。これから書く文字に決めた形があればそれ
+  const f = n.f || [], here = r => s === e ? r.s < s && r.e >= s : r.s <= s && r.e >= e;
+  let bold = f.some(r => r.b && here(r)), col = f.filter(r => r.c && here(r)).pop()?.c || "";
+  if (pendFmt && pendFmt.id === n.id && pendFmt.pos === s && s === e) { if ("b" in pendFmt.r) bold = !!pendFmt.r.b; if ("c" in pendFmt.r) col = pendFmt.r.c; }
+  return { bold, col };
+}
+const COL_CYCLE = ["赤", "橙", "黄", "緑", "青", "紫", "灰", ""]; // 「色」を押すたびに、この順に変わる(最後は色なし)
+function cycleColor(id) { // 選んだ文字、またはこれから書く文字(色の文字の途中なら、その文字全体)の色を、次の色にする
+  const ta = box.querySelector(`textarea.ol-t[data-t="${id}"]`), n = index[id]?.n; if (!ta || !n) return;
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  const c = COL_CYCLE[(COL_CYCLE.indexOf(fmtHere(n, s, e).col) + 1) % COL_CYCLE.length];
+  const inCol = s === e ? (n.f || []).find(r => r.c && r.s < s && r.e > s) : null;
+  if (s !== e) addFmt(n, s, e, { c });
+  else if (inCol) { if (c) inCol.c = c; else n.f = n.f.filter(r => r !== inCol); fixFmt(n); }
+  else pendFmt = { id, pos: s, r: { c } };
+  saveOutline(); paintMirror(ta, n); ta.focus(); ta.setSelectionRange(s, e); paintFmtTools();
+}
 function paintFmtTools() { // 操作バーの「色」をいま書く文字の色で、「B」を太字のときは押した見た目にする
   const ta = document.activeElement, bB = $('#oltools [data-op="bold"]'), bC = $('#oltools [data-op="color"]');
   if (!bB || !bC) return;
   const n = ta && ta.matches?.("textarea.ol-t") ? index[ta.dataset.t]?.n : null;
   let bold = false, col = "";
-  if (n) {
-    const s = ta.selectionStart, e = ta.selectionEnd, f = n.f || [];
-    const here = r => s === e ? r.s < s && r.e >= s : r.s <= s && r.e >= e; // カーソルの直前の文字(選んでいればその全体)の形
-    bold = f.some(r => r.b && here(r)); col = f.filter(r => r.c && here(r)).pop()?.c || "";
-    if (pendFmt && pendFmt.id === n.id && pendFmt.pos === s && s === e) { if ("b" in pendFmt.r) bold = !!pendFmt.r.b; if ("c" in pendFmt.r) col = pendFmt.r.c; }
-  }
+  if (n) ({ bold, col } = fmtHere(n, ta.selectionStart, ta.selectionEnd));
   bB.classList.toggle("on", bold);
   const hex = col ? TCOL_HEX[col] || col : ""; // 文字の色(.tx-*)と同じ色
   bC.style.color = hex; bC.style.boxShadow = hex ? `inset 0 -3px 0 ${hex}` : "";
@@ -1904,13 +1905,21 @@ function endDrag(drop) {
 const tools = $("#oltools");
 const keepFocus = e => { if (e.target.closest("button")) e.preventDefault(); };
 tools.addEventListener("pointerdown", keepFocus);
+// 「色」:押すたびに赤→橙→…→灰→色なしと変わる。長押しで、ほかの色(色の表)も選べる画面を開く
+const colorHold = { t: null, done: false };
+tools.addEventListener("pointerdown", e => {
+  if (!e.target.closest('[data-op="color"]')) return;
+  clearTimeout(colorHold.t); colorHold.done = false;
+  colorHold.t = setTimeout(() => { if (focusId && index[focusId]) { colorHold.done = true; try { navigator.vibrate && navigator.vibrate(12); } catch {} colorSheet(focusId); } }, 500);
+});
+for (const ev of ["pointerup", "pointercancel", "pointerleave"]) tools.addEventListener(ev, () => clearTimeout(colorHold.t));
 tools.addEventListener("mousedown", keepFocus);
 tools.addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b || !focusId || !index[focusId]) return;
   const id = focusId;
   ({ out: () => doOutdent(id), in: () => doIndent(id), up: () => doMove(id, -1), down: () => doMove(id, 1),
      fold: () => doToggle(id), child: () => doAddChild(id), more: () => lineMenu(id),
-     bold: () => toggleBold(id), color: () => colorSheet(id),
+     bold: () => toggleBold(id), color: () => { if (colorHold.done) { colorHold.done = false; return; } cycleColor(id); },
      kind: () => { document.activeElement?.blur?.(); kindSheet([id]); },
      del: () => { const k = countAll(index[id].n); if (k) { document.activeElement?.blur?.(); confirmSheet("行を削除しますか", `「${label(id)}」と、その下の ${k} 項目を削除します。削除の直後なら「元に戻す」で戻せます。`, "削除する", () => doDelete(id)); } else doDelete(id); },
      tpl: () => { document.activeElement?.blur?.(); openTemplates(id, false); } })[b.dataset.op]?.();
@@ -1975,7 +1984,7 @@ function openLinker(id) {
   const linked = new Set([...(n.l || []), ...(back[id] || [])]);
   const items = allPaths().filter(x => x.id !== id && x.t.trim());
   openSheet(`<h2>関連付け</h2><p class="muted small" style="margin-top:-4px">「${esc(label(id))}」と結ぶ項目を選ぶ</p>
-    <input class="inp" id="lq" placeholder="絞り込み">
+    <input class="inp" id="lq" placeholder="絞り込み" maxlength="40">
     <div id="lres" style="max-height:48dvh;overflow:auto;margin-top:6px"></div>
     <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
     const draw = () => {
@@ -2002,7 +2011,7 @@ function openSearch(q) {
   flushOutline();
   buildGlobal();
   const tags = [...new Set([...allMemoTags().map(t => "#" + t), ...Object.values(gindex).flatMap(({ n }) => (n.t.match(/#[^\s#、。,,.]+/g) || []))])].sort();
-  openSheet(`<h2>検索</h2><input class="inp" id="q" placeholder="語句、または #タグ" value="${esc(q)}" enterkeyhint="search">
+  openSheet(`<h2>検索</h2><input class="inp" id="q" maxlength="40" placeholder="語句、または #タグ" value="${esc(q)}" enterkeyhint="search">
     ${tags.length ? `<div class="metas" style="margin-top:8px">${tags.slice(0, 30).map(t => `<button class="mini" data-q="${esc(t)}">${esc(t)}</button>`).join("")}</div>` : ""}
     <div id="qres" style="margin-top:6px"></div>`, s => {
     const items = [...allPaths(), ...Object.values(files).filter(f => f.comment).map(f => ({ id: f.nodes[0].id, t: f.comment, path: memoTitle(f) + " › コメント", f: f.id }))];
@@ -2526,9 +2535,9 @@ function fitView() {
   let x0 = Math.min(...bs.map(b => b.x)), y0 = Math.min(...bs.map(b => b.y));
   let x1 = Math.max(...bs.map(b => b.x + b.w)), y1 = Math.max(...bs.map(b => b.y + b.h));
   for (const g of board.groups) { const G = groupGeo(g); if (G) { x0 = Math.min(x0, G.x0); x1 = Math.max(x1, G.x1); y0 = Math.min(y0, G.y0 - 16); y1 = Math.max(y1, G.y1); } }
-  const r = boardEl.getBoundingClientRect(), pad = 24;
-  const k = Math.max(0.2, Math.min(1.2, (r.width - pad * 2) / (x1 - x0), (r.height - pad * 2) / (y1 - y0)));
-  BV.k = k; BV.tx = (r.width - (x1 - x0) * k) / 2 - x0 * k; BV.ty = Math.max(pad, (r.height - (y1 - y0) * k) / 2) - y0 * k;
+  const r = boardEl.getBoundingClientRect(), pad = 24, uw = r.width - (($(".bctl")?.offsetWidth || 0) + 12); // 右端のボタンの列にかからないように
+  const k = Math.max(0.2, Math.min(1.2, (uw - pad * 2) / (x1 - x0), (r.height - pad * 2) / (y1 - y0)));
+  BV.k = k; BV.tx = (uw - (x1 - x0) * k) / 2 - x0 * k; BV.ty = Math.max(pad, (r.height - (y1 - y0) * k) / 2) - y0 * k;
   applyView();
 }
 function centerOn(id) {
@@ -2782,21 +2791,54 @@ function roundShape(x0, y0, x1, y1) { // 中身の外枠を収める、角の丸
   const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, a = (x1 - x0) / 2 * 1.19, b = (y1 - y0) / 2 * 1.19, N = 36;
   return [...Array(N)].map((_, i) => { const t = i / N * 2 * Math.PI, c = Math.cos(t), s = Math.sin(t); return [Math.round(cx + a * Math.sign(c) * Math.sqrt(Math.abs(c))), Math.round(cy + b * Math.sign(s) * Math.sqrt(Math.abs(s)))]; });
 }
+function chainUnits(items) { // 矢印で一列につながったもの(枝分かれも輪もない)は、矢印の向きの順に一つにまとめる。ほかは一つずつ、元の順で
+  const ids = new Set(items.map(([it]) => it.id)), adj = new Map(), into = new Map();
+  for (const e of board.edges) {
+    if (e.a === e.b || !ids.has(e.a) || !ids.has(e.b)) continue;
+    for (const [x, y] of [[e.a, e.b], [e.b, e.a]]) { if (!adj.has(x)) adj.set(x, new Set()); adj.get(x).add(y); }
+    if (e.dir !== "both" && e.dir !== "none") into.set(e.b, (into.get(e.b) || 0) + 1);
+  }
+  const deg = v => adj.get(v)?.size || 0, chainOf = new Map(), seen = new Set();
+  for (const [it] of items) {
+    if (seen.has(it.id) || !deg(it.id)) continue;
+    const comp = [], st = [it.id]; seen.add(it.id);
+    while (st.length) { const v = st.pop(); comp.push(v); for (const w of adj.get(v)) if (!seen.has(w)) { seen.add(w); st.push(w); } }
+    const ends = comp.filter(v => deg(v) === 1);
+    if (comp.length < 2 || ends.length !== 2 || comp.some(v => deg(v) > 2)) continue; // 一本の線でないものは、まとめない
+    let v = ends.sort((a, b) => (into.get(a) || 0) - (into.get(b) || 0))[0], prev = null; const order = []; // 矢印の来ない端から
+    while (v) { order.push(v); const nx = [...adj.get(v)].find(w => w !== prev); prev = v; v = nx; }
+    for (const x of order) chainOf.set(x, order);
+  }
+  const byId = new Map(items.map(x => [x[0].id, x])), done = new Set(), units = [];
+  for (const x of items) {
+    const ch = chainOf.get(x[0].id);
+    if (!ch) units.push([x]);
+    else if (!done.has(ch)) { done.add(ch); units.push(ch.map(id => byId.get(id))); }
+  }
+  return units;
+}
+function placeUnits(items, colsOf, gap) { // (0,0) 基準の並べ方 [[it, b, x, y]]。矢印の列は一行に、高さの真ん中をそろえて(矢印がまっすぐになる)
+  const units = chainUnits(items), cols = colsOf(units.filter(u => u.length === 1).length), rel = [];
+  let y = 0, W = 0, row = [];
+  const flush = () => { if (!row.length) return; let x = 0; for (const [it, b] of row) { rel.push([it, b, x, y]); x += b.w + gap; } W = Math.max(W, x - gap); y += Math.max(...row.map(([, b]) => b.h)) + gap; row = []; };
+  for (const u of units) {
+    if (u.length === 1) { row.push(u[0]); if (row.length >= cols) flush(); continue; }
+    flush();
+    const h = Math.max(...u.map(([, b]) => b.h)); let x = 0;
+    for (const [it, b] of u) { rel.push([it, b, x, y + Math.round((h - b.h) / 2)]); x += b.w + gap * 2; }
+    W = Math.max(W, x - gap * 2); y += h + gap;
+  }
+  flush();
+  return { rel, W, H: y - gap };
+}
 function arrangeGroup(g, deep) {
   if (!g || !g.pts) return;
   if (deep) for (const k of board.groups.filter(h => h.parent === g.id)) arrangeGroup(k, true);
   const items = sideKids(g.id).map(it => [it, layoutBox(it)]).filter(([, b]) => b);
   if (!items.length) return;
   const G = groupGeo(g);
-  const n = items.length, cols = n <= 2 ? n : n <= 4 ? 2 : 3, gap = 24;
-  const colW = [...Array(cols)].map((_, j) => Math.max(...items.filter((_, i) => i % cols === j).map(([, b]) => b.w)));
-  const rel = []; let y = 0, W = 0;
-  for (let r = 0; r * cols < n; r++) { // まず (0,0) 基準で並べ方を決める
-    const row = items.slice(r * cols, r * cols + cols); let x = 0;
-    row.forEach(([it, b], j) => { rel.push([it, b, x, y]); W = Math.max(W, x + b.w); x += colW[j] + gap; });
-    y += Math.max(...row.map(([, b]) => b.h)) + gap;
-  }
-  const H = y - gap, ox = Math.round(G.cx - W / 2), oy = Math.round(G.cy - H / 2 + 8); // 元の丸の中心に、まとまりの中心を合わせる
+  const { rel, W, H } = placeUnits(items, n => n <= 2 ? Math.max(1, n) : n <= 4 ? 2 : 3, 24);
+  const ox = Math.round(G.cx - W / 2), oy = Math.round(G.cy - H / 2 + 8); // 元の丸の中心に、まとまりの中心を合わせる
   for (const [it, b, x, y2] of rel) {
     if (it.t === "m") { const c = board.cards[it.id]; c.x = ox + x; c.y = oy + y2; }
     else translateGroup(groupById(it.id), ox + x - b.x, oy + y2 - b.y);
@@ -2813,17 +2855,11 @@ function arrangeAll() { // ボード全体を整列:丸の中をそろえてか�
   recomputeTree();
   const items = sideKids(null).map(it => [it, layoutBox(it)]).filter(([, b]) => b);
   if (!items.length) return;
-  const n = items.length, cols = Math.min(5, Math.ceil(Math.sqrt(n))), gap = 44;
-  const colW = [...Array(cols)].map((_, j) => Math.max(0, ...items.filter((_, i) => i % cols === j).map(([, b]) => b.w)));
-  let y = 60;
-  for (let r = 0; r * cols < n; r++) {
-    const row = items.slice(r * cols, r * cols + cols); let x = 60;
-    row.forEach(([it, b], j) => {
-      if (it.t === "m") { const c = board.cards[it.id]; c.x = x; c.y = y; }
-      else translateGroup(groupById(it.id), x - b.x, y - b.y);
-      x += colW[j] + gap;
-    });
-    y += Math.max(...row.map(([, b]) => b.h)) + gap;
+  const { rel } = placeUnits(items, n => Math.min(5, Math.max(1, Math.ceil(Math.sqrt(n)))), 44);
+  for (const [it, b, x0, y0] of rel) {
+    const x = 60 + x0, y = 60 + y0;
+    if (it.t === "m") { const c = board.cards[it.id]; c.x = x; c.y = y; }
+    else translateGroup(groupById(it.id), x - b.x, y - b.y);
   }
   recomputeTree(); reconcileTree(intended); saveBoard(); renderBoard(); fitView();
   snack("全体を整列しました");
@@ -3226,7 +3262,7 @@ function putSheet(fresh) {
   openSheet(`<h2>${fresh ? "ボードを作りました" : "このボードに入れる"}</h2>
     <p class="muted small" style="margin-top:-4px">◧ ${esc(boardName(curBoard))} に置くメモやファイルを選んでください。${fresh ? "あとからでも、上の「＋ 入れる」で足せます。" : ""}</p>
     <div class="seg" id="puTab"><button data-pt="m" class="on">メモ</button><button data-pt="g">ファイル(ほかのボードの丸)</button></div>
-    <input class="inp" id="puQ" placeholder="名前で絞り込む" style="margin-top:8px">
+    <input class="inp" id="puQ" maxlength="40" placeholder="名前で絞り込む" style="margin-top:8px">
     <div class="pulist" id="puL"></div>
     <div class="btns"><button class="btn" data-x>${fresh ? "あとで" : "やめる"}</button><button class="btn primary" data-ok>入れる</button></div>`, s => {
     const draw = () => {
@@ -4240,7 +4276,7 @@ function editEvent(ev) {
     <div style="display:flex;gap:8px"><label class="field" style="flex:1"><span>開始</span><input class="inp" type="time" id="eS" value="${esc(e.start)}"></label>
     <label class="field" style="flex:1"><span>終了</span><input class="inp" type="time" id="eE" value="${esc(e.end)}"></label></div>
     <label class="field"><span>通知</span><select class="inp" id="eN">${[[-1, "通知しない"], [0, "開始時"], [5, "5分前"], [10, "10分前"], [15, "15分前"], [30, "30分前"], [60, "1時間前"]].map(([v, l]) => `<option value="${v}" ${(e.notify ?? -1) == v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
-    <label class="field"><span>補足</span><textarea class="inp" id="eM" rows="3">${esc(e.note)}</textarea></label>
+    <label class="field"><span>補足</span><textarea class="inp" id="eM" rows="3" maxlength="500">${esc(e.note)}</textarea></label>
     <div class="btns">${ev ? `<button class="btn danger" data-del>削除</button>` : `<button class="btn" data-x>やめる</button>`}<button class="btn primary" data-ok>保存</button></div>`, s => {
     $("[data-x]", s) && ($("[data-x]", s).onclick = closeSheet);
     $("[data-ok]", s).onclick = () => {
@@ -4266,7 +4302,7 @@ function pickDeviceApps(kind) { // 端末に入っているアプリから、妨
   const mine = kind === "d" ? meta.apps : meta.workApps, other = kind === "d" ? meta.workApps : meta.apps;
   const on = new Set(mine.map(a => a.pkg).filter(Boolean)), taken = new Set(other.map(a => a.pkg).filter(Boolean));
   openSheet(`<h2>${kind === "d" ? "妨害アプリ" : "作業に数えるアプリ"}を選ぶ</h2>
-    <input class="inp" id="paQ" placeholder="絞り込み">
+    <input class="inp" id="paQ" placeholder="絞り込み" maxlength="40">
     <div id="paL" style="max-height:52dvh;overflow:auto;margin-top:6px"></div>
     <div class="btns"><button class="btn" data-x>やめる</button><button class="btn primary" data-ok>決定</button></div>`, s => {
     const draw = () => { const q = $("#paQ").value.trim().toLowerCase();
@@ -4326,7 +4362,7 @@ function renderPrefs() {
       ${Object.keys(P.templates).map(k => `<div class="tplbox">
         <div style="display:flex;gap:6px;align-items:center"><input class="inp" style="font-weight:700" value="${esc(k)}" data-tplname="${esc(k)}" maxlength="20" aria-label="テンプレート名">
           <button class="mini" style="flex:none;white-space:nowrap" data-tpldel="${esc(k)}">削除</button></div>
-        <textarea class="inp" rows="6" data-tplk="${esc(k)}" style="margin-top:6px" aria-label="${esc(k)}の中身">${esc(P.templates[k])}</textarea></div>`).join("") || `<div class="muted small" style="margin:10px 0">テンプレートがありません</div>`}
+        <textarea class="inp" rows="6" maxlength="2000" data-tplk="${esc(k)}" style="margin-top:6px" aria-label="${esc(k)}の中身">${esc(P.templates[k])}</textarea></div>`).join("") || `<div class="muted small" style="margin:10px 0">テンプレートがありません</div>`}
       <div class="btns"><button class="btn primary" id="tplAdd">＋ テンプレートを追加</button></div>
       <button class="mini" id="tplReset" style="margin-top:10px">初期の3つ(素材・アイテム・設定)を戻す</button>
     </div>
@@ -4347,7 +4383,7 @@ function renderPrefs() {
       <div class="small">状態:<b>${esc(Store.status)}</b></div>
       <div class="small" style="margin-top:4px">使っている容量:<b>${(storageUsed() / 1e6).toFixed(1)}MB</b> / 約5MB${storageUsed() > 4e6 ? `<span style="color:var(--danger)"> もうすぐいっぱいです。書き出して、使わないメモを消してください</span>` : ""}</div>
       <p class="muted small" style="line-height:1.6">${ON_CLAUDE ? "入力はまずこの端末に保存し、claude.ai にサインインして開いている場合は、あなた専用の領域へ追って同期します。ほかの人からは見えません。" : NATIVE ? "入力はこの端末の中に保存します。書き出しや自動バックアップで選んだ保存先のほかへは送りません。" : "入力はこのブラウザの中にだけ保存します。外へは送らず、ほかの人からは見えません。"}</p>
-      <button class="mini" id="reGuide">はじめにの案内をもう一度見る</button>
+      <button class="mini" id="reGuide">チュートリアルのメモを開く</button>
     </div>
     ${syncCardHtml()}
     <div class="card"><h3>データの引っ越し</h3>
@@ -4401,7 +4437,7 @@ $("#prefsScroll").addEventListener("click", e => {
     const k = b.dataset.tpldel;
     confirmSheet("テンプレートを削除しますか", `「${k}」を削除します。メモに入れ済みの行はそのまま残ります。`, "削除する", () => { delete meta.prefs.templates[k]; saveMeta(); renderPrefs(); toast("削除しました"); });
   }
-  else if (b.id === "reGuide") guide();
+  else if (b.id === "reGuide") openTutorial();
   else if (b.dataset.wtcol) typeColorSheet(b.dataset.wtcol);
   else if (b.id === "syncOn" || b.id === "syncLogin") Sync.start();
   else if (b.id === "syncNow") Sync.run("manual");
@@ -4918,6 +4954,7 @@ try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", appl
 // ---- 収支:月ごとの文書 money-YYYY-MM に収支を持つ。分類と固定費は meta ----
 let moneyMonth = ym(new Date());
 const yen = n => "¥" + Math.round(n).toLocaleString("ja-JP");
+const YEN_MAX = 999999999, yenNum = v => Math.max(0, Math.min(YEN_MAX, Math.round(+v) || 0)); // 金額は 9億9999万9999円まで
 const moneyDoc = k => moneyDocs[k] ||= { items: [], skip: [] };
 const saveMoney = k => Store.put("money-" + k, moneyDoc(k));
 const moneyCat = (kind, id) => (meta.moneyCats[kind] || []).find(c => c.id === id);
@@ -4980,12 +5017,12 @@ function projectSheet(p) {
     <div style="display:flex;gap:8px"><label class="field" style="flex:1;min-width:0"><span>始まり</span><input class="inp" id="pjS" type="date" value="${esc(e.start || "")}"></label><label class="field" style="flex:1;min-width:0"><span>終わり(なくてもよい)</span><input class="inp" id="pjD" type="date" value="${esc(e.due || "")}"></label></div>
     <div class="field"><span>費目と予算(例:素材、音楽、機材、外注)</span><div id="pjL"></div><button class="mini" data-lnadd style="margin-top:8px">＋ 費目を足す</button></div>
     <div class="small" style="display:flex;justify-content:space-between;padding:8px 0"><b>予算の合計</b><b class="num" id="pjT"></b></div>
-    <label class="field" id="pjBW"><span>費目に分けないときの予算(円)</span><input class="inp num" id="pjB" type="number" inputmode="numeric" value="${e.budget || ""}"></label>
-    <label class="field"><span>メモ</span><textarea class="inp" id="pjM" rows="2">${esc(e.note || "")}</textarea></label>
+    <label class="field" id="pjBW"><span>費目に分けないときの予算(円)</span><input class="inp num" id="pjB" type="number" max="999999999" inputmode="numeric" value="${e.budget || ""}"></label>
+    <label class="field"><span>メモ</span><textarea class="inp" id="pjM" rows="2" maxlength="500">${esc(e.note || "")}</textarea></label>
     <div class="btns">${p ? `<button class="btn danger" data-del>削除</button>` : `<button class="btn" data-x>やめる</button>`}<button class="btn primary" data-ok>保存</button></div>`, s => {
-    const read = () => { document.querySelectorAll("[data-lid]").forEach(row => { const l = e.lines.find(x => x.id === row.dataset.lid); if (l) { l.name = row.querySelector("[data-ln-n]").value; l.amt = Math.max(0, Math.round(+row.querySelector("[data-ln-a]").value)) || 0; } }); };
+    const read = () => { document.querySelectorAll("[data-lid]").forEach(row => { const l = e.lines.find(x => x.id === row.dataset.lid); if (l) { l.name = row.querySelector("[data-ln-n]").value; l.amt = yenNum(row.querySelector("[data-ln-a]").value); } }); };
     const total = () => { read(); const named = e.lines.filter(l => l.name.trim() || l.amt); $("#pjBW").style.display = named.length ? "none" : ""; $("#pjT").textContent = yen(named.length ? named.reduce((t, l) => t + l.amt, 0) : Math.max(0, +$("#pjB").value || 0)); };
-    const draw = () => { $("#pjL").innerHTML = e.lines.map(l => `<div class="row" data-lid="${l.id}" style="padding:5px 0;border:0"><input class="inp" data-ln-n style="flex:1;min-width:0;padding:7px 10px" maxlength="24" placeholder="費目" value="${esc(l.name)}"><input class="inp num" data-ln-a style="flex:none;width:6.5em;padding:7px 8px" type="number" inputmode="numeric" placeholder="円" value="${l.amt || ""}"><button class="mini" style="flex:none" data-lnx="${l.id}" aria-label="この費目を消す">✕</button></div>`).join(""); total(); };
+    const draw = () => { $("#pjL").innerHTML = e.lines.map(l => `<div class="row" data-lid="${l.id}" style="padding:5px 0;border:0"><input class="inp" data-ln-n style="flex:1;min-width:0;padding:7px 10px" maxlength="24" placeholder="費目" value="${esc(l.name)}"><input class="inp num" data-ln-a style="flex:none;width:6.5em;padding:7px 8px" type="number" max="999999999" inputmode="numeric" placeholder="円" value="${l.amt || ""}"><button class="mini" style="flex:none" data-lnx="${l.id}" aria-label="この費目を消す">✕</button></div>`).join(""); total(); };
     draw(); if (!p) $("#pjN").focus();
     s.addEventListener("input", total);
     s.addEventListener("click", ev => {
@@ -5002,7 +5039,7 @@ function projectSheet(p) {
         if (!e.name) { toast("名前を入れてください"); return; }
         if (e.start && e.due && e.due < e.start) { toast("終わりは始まりより後にしてください"); return; }
         e.lines = e.lines.filter(l => (l.name = l.name.trim()) || l.amt).map(l => ({ ...l, name: l.name || "費目" }));
-        e.budget = Math.max(0, Math.round(+$("#pjB").value)) || 0;
+        e.budget = yenNum($("#pjB").value);
         if (p) Object.assign(p, e); else projects.list.push(e);
         saveProjects(); closeSheet(); projOpen = e.id; renderPlan();
       }
@@ -5031,7 +5068,7 @@ function moneyForm(e, o) { // 収支と固定費の共通の入力欄
   let kind = e.kind || "out", cat = e.cat || "", proj = e.proj || "", line = e.line || "";
   openSheet(`<h2>${o.title}</h2>
     <div class="seg" id="mfK" style="display:flex"><button style="flex:1" data-k="out">支出</button><button style="flex:1" data-k="in">収入</button></div>
-    <label class="field"><span>金額(円)</span><input class="inp num" id="mfA" type="number" inputmode="numeric" min="1" step="1" value="${e.amt || ""}"></label>
+    <label class="field"><span>金額(円)</span><input class="inp num" id="mfA" type="number" max="999999999" inputmode="numeric" min="1" step="1" value="${e.amt || ""}"></label>
     ${!o.repeat && projects.list.length ? `<label class="field"><span>プロジェクト</span><select class="inp" id="mfP"><option value="">なし</option>${projects.list.map(p => `<option value="${p.id}" ${p.id === e.proj ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select></label><div class="field" id="mfLW"><span>費目</span><div class="typechips" id="mfL"></div></div>` : ""}
     <div class="field" id="mfCW"><span>分類</span><div class="typechips" id="mfC"></div><div id="mfNew" style="display:none;gap:6px;margin-top:6px"><input class="inp" id="mfNI" style="flex:1;min-width:0" maxlength="16" placeholder="新しい分類の名前"><button class="btn" data-cnadd style="flex:none">足す</button></div></div>
     ${o.repeat ? `<label class="field"><span>毎月の日(1〜31。月末を超えるときは月末)</span><input class="inp" id="mfD" type="number" inputmode="numeric" min="1" max="31" value="${e.day || 1}"></label>` : `<label class="field"><span>日付</span><input class="inp" id="mfD" type="date" value="${esc(e.date)}"></label>`}
@@ -5066,7 +5103,7 @@ function moneyForm(e, o) { // 収支と固定費の共通の入力欄
       else if ("x" in b.dataset) closeSheet();
       else if ("del" in b.dataset) confirmSheet("削除しますか", o.delText, "削除する", o.onDelete);
       else if ("ok" in b.dataset) {
-        const amt = Math.round(+$("#mfA").value), d = $("#mfD").value;
+        const amt = Math.min(YEN_MAX, Math.round(+$("#mfA").value)), d = $("#mfD").value;
         if (!(amt > 0) || amt > 1e11) { toast("金額を入れてください"); return; }
         if (o.repeat ? !(+d >= 1 && +d <= 31) : !d) { toast(o.repeat ? "日は1〜31で入れてください" : "日付を入れてください"); return; }
         const v = { kind, cat, amt, note: $("#mfN").value.trim(), [o.repeat ? "day" : "date"]: o.repeat ? Math.round(+d) : d };
@@ -5095,8 +5132,8 @@ function moneyCatsSheet(after) {
   let kind = "out";
   const draw = () => {
     openSheet(`<h2>分類の編集と予算</h2><p class="muted small" style="margin-top:-4px">名前を変える、足す、消す、並べ替えることができます。</p><div class="seg" style="display:flex"><button style="flex:1" data-k="out" class="${kind === "out" ? "on" : ""}">支出</button><button style="flex:1" data-k="in" class="${kind === "in" ? "on" : ""}">収入</button></div>
-      ${kind === "out" ? `<label class="field"><span>1か月の予算の合計(円。空欄なら使わない)</span><input class="inp num" id="mcB" type="number" inputmode="numeric" value="${meta.prefs.moneyBudget || ""}"></label>` : ""}
-      ${meta.moneyCats[kind].map(c => `<div class="row" style="flex-wrap:wrap"><input class="inp" style="padding:7px 10px;min-width:0;flex:1 1 100%" value="${esc(c.name)}" data-cn="${c.id}" maxlength="16" aria-label="分類の名前">${kind === "out" ? `<input class="inp num" style="padding:7px 8px;width:6em;flex:none" type="number" inputmode="numeric" placeholder="予算" value="${c.budget || ""}" data-cb="${c.id}" aria-label="予算">` : ""}<span class="grow"></span><button class="mini" style="flex:none" data-cm="${c.id}|-1" aria-label="上へ">↑</button><button class="mini" style="flex:none" data-cm="${c.id}|1" aria-label="下へ">↓</button><button class="mini" style="flex:none;color:var(--danger)" data-cd="${c.id}">消す</button></div>`).join("")}
+      ${kind === "out" ? `<label class="field"><span>1か月の予算の合計(円。空欄なら使わない)</span><input class="inp num" id="mcB" type="number" max="999999999" inputmode="numeric" value="${meta.prefs.moneyBudget || ""}"></label>` : ""}
+      ${meta.moneyCats[kind].map(c => `<div class="row" style="flex-wrap:wrap"><input class="inp" style="padding:7px 10px;min-width:0;flex:1 1 100%" value="${esc(c.name)}" data-cn="${c.id}" maxlength="16" aria-label="分類の名前">${kind === "out" ? `<input class="inp num" style="padding:7px 8px;width:6em;flex:none" type="number" inputmode="numeric" placeholder="予算" max="999999999" value="${c.budget || ""}" data-cb="${c.id}" aria-label="予算">` : ""}<span class="grow"></span><button class="mini" style="flex:none" data-cm="${c.id}|-1" aria-label="上へ">↑</button><button class="mini" style="flex:none" data-cm="${c.id}|1" aria-label="下へ">↓</button><button class="mini" style="flex:none;color:var(--danger)" data-cd="${c.id}">消す</button></div>`).join("")}
       <div class="btns"><button class="btn" data-add>＋ 分類を足す</button><button class="btn primary" data-ok>閉じる</button></div>`, s => {
       s.addEventListener("click", e => {
         const b = e.target.closest("button"); if (!b) return;
@@ -5109,9 +5146,9 @@ function moneyCatsSheet(after) {
     });
   };
   const save = () => {
-    const bi = $("#mcB"); if (bi) { const v = Math.round(+bi.value); if (v > 0) meta.prefs.moneyBudget = v; else delete meta.prefs.moneyBudget; }
+    const bi = $("#mcB"); if (bi) { const v = yenNum(bi.value); if (v > 0) meta.prefs.moneyBudget = v; else delete meta.prefs.moneyBudget; }
     document.querySelectorAll("[data-cn]").forEach(i => { const c = moneyCat(kind, i.dataset.cn); if (c && i.value.trim()) c.name = i.value.trim(); });
-    document.querySelectorAll("[data-cb]").forEach(i => { const c = moneyCat(kind, i.dataset.cb), v = Math.round(+i.value); if (c) { if (v > 0) c.budget = v; else delete c.budget; } });
+    document.querySelectorAll("[data-cb]").forEach(i => { const c = moneyCat(kind, i.dataset.cb), v = yenNum(i.value); if (c) { if (v > 0) c.budget = v; else delete c.budget; } });
     saveMeta();
   };
   draw();
@@ -5189,7 +5226,7 @@ function goalSheet(g) {
     <div class="field"><span>節目(すべて済むと100%)</span><div id="gM"></div>
       <div style="display:flex;gap:6px;margin-top:6px"><input class="inp" id="gMT" style="flex:1;min-width:0" maxlength="40" placeholder="例:体験版を出す"><input class="inp" id="gMD" type="date" style="flex:none;width:9.5em"><button class="btn" id="gMA" style="flex:none">足す</button></div></div>
     <label class="field" id="gPW"><span>進みぐあい(節目がないとき)</span><input id="gP" type="range" min="0" max="100" step="5" value="${e.pct || 0}" style="width:100%"></label>
-    <label class="field"><span>メモ</span><textarea class="inp" id="gN" rows="3">${esc(e.note || "")}</textarea></label>
+    <label class="field"><span>メモ</span><textarea class="inp" id="gN" rows="3" maxlength="500">${esc(e.note || "")}</textarea></label>
     ${g ? `<button class="btn block" data-dn>${g.done ? "進行中に戻す" : "達成にする"}</button>` : ""}
     <div class="btns">${g ? `<button class="btn danger" data-del>削除</button>` : `<button class="btn" data-x>やめる</button>`}<button class="btn primary" data-ok>保存</button></div>`, s => {
     const drawM = () => {
@@ -5423,63 +5460,6 @@ async function wipeAll() {
   for (const k of LS.keys()) LS.del(k);
   location.reload();
 }
-// ---- 初めて開いたときの案内:実際の画面のボタンを枠で囲み、順に説明する(「設定」からもう一度見られる) ----
-function guide() {
-  const page = NATIVE ? "このアプリ" : "このページ";
-  const data = NATIVE ? "この端末" : "このブラウザ";
-  const steps = [
-    { el: "#livebar", h: "開いているあいだが、作業時間", p: `${page}を開いているあいだは、作業時間として自動で記録します。ほかのアプリへ切り替えたり、画面が消えたりすると止まります。今日の合計は、いつもこの帯に出ています。` },
-    { el: "#outline .ol-row", h: "ここにメモを書く", p: "一行が一つの項目です。改行で次の行へ、→ で字下げして下の段へ、← で戻ります。行を長押しすると持ち上がり、指で好きな場所へ動かせます。" },
-    { el: "#newMemo", h: "メモを増やす", p: "メモはいくつでも作れます。名前を付けなければ、一行目がメモの名前になります。" },
-    { el: "#sideBtn", h: "メモの一覧", p: "ファイルとメモが、入れ子の一覧で並びます。押すとそのメモへ移り、長押しで並べ替えたり、ファイルへ出し入れしたりできます。" },
-    { el: "#fileBar", h: "ボードで並べる", p: "すべてのメモがカードになって並びます。カードを動かし、矢印でつなぎ、指でぐるっと囲むとファイルにまとまります。" },
-    { el: ".toolbar", h: "メモの道具", p: "すべてのメモからの検索、行をまとめて選ぶ、コピー、タグ、テンプレートなどが、ここにそろっています。" },
-    { el: '#nav [data-v="timer"]', h: "タイマー", p: `作業の種類を選んで計ると、その時間が記録に積み上がります。ストップウォッチとポモドーロがあります。${NATIVE ? "ロック画面の通知や、ホーム画面のウィジェットからも始められます。" : ""}` },
-    { el: '#nav [data-v="log"]', h: "記録", p: "日・週・月ごとに、どの作業にどれだけ時間を使ったかを、積み上げグラフで振り返れます。" },
-    { el: '#nav [data-v="plan"]', h: "予定・収支・長期計画", p: `予定のほかに、作るものごとの予算と支出、何年もかけて進める計画もここで管理します。${NATIVE ? "予定の時刻は通知で知らせます。" : "予定の知らせは、このページを開いているあいだだけ鳴ります。"}` },
-    { el: '#nav [data-v="prefs"]', h: "設定とデータ", p: `メモや記録は${data}の中に保存します。${canSync() ? "「ドライブで同期」で Google にログインすると、ほかの端末とも同じデータを使えます。" : ""}機種変更の前には「データの引っ越し」で書き出してください。この案内も、設定からもう一度見られます。` },
-  ];
-  closeSheet(); show("memo"); document.activeElement?.blur?.();
-  const tour = $("#tour"), hole = $("#tourHole"), card = $("#tourCard");
-  const rectOf = st => { const e = $(st.el); if (!e) return null; const r = e.getBoundingClientRect(); return r.width && r.height ? r : null; };
-  const list = steps.filter(rectOf); // 隠した画面(編集モード)など、いま見えない部品の説明は飛ばす
-  let i = 0;
-  const place = () => {
-    const r = rectOf(list[i]); if (!r) return;
-    const m = 6, x0 = Math.max(4, r.left - m), y0 = Math.max(4, r.top - m), x1 = Math.min(innerWidth - 4, r.right + m), y1 = Math.min(innerHeight - 4, r.bottom + m);
-    Object.assign(hole.style, { left: x0 + "px", top: y0 + "px", width: x1 - x0 + "px", height: y1 - y0 + "px" });
-    const [dt, db, dl, dr] = tour.querySelectorAll(".tour-dim"), px = v => Math.max(0, v) + "px";
-    Object.assign(dt.style, { left: 0, right: 0, top: 0, height: px(y0) });
-    Object.assign(db.style, { left: 0, right: 0, top: px(y1), bottom: 0 });
-    Object.assign(dl.style, { left: 0, width: px(x0), top: px(y0), height: px(y1 - y0) });
-    Object.assign(dr.style, { left: px(x1), right: 0, top: px(y0), height: px(y1 - y0) });
-    card.style.top = card.style.bottom = "";
-    const ch = card.offsetHeight; // 枠の下に入ればその下、入らなければ上、どちらも無理なら画面の下に添える
-    if (innerHeight - y1 >= ch + 24) card.style.top = y1 + 12 + "px";
-    else if (y0 >= ch + 24) card.style.bottom = innerHeight - y0 + 12 + "px";
-    else card.style.bottom = "16px";
-  };
-  const finish = () => {
-    tour.hidden = true; removeEventListener("resize", place);
-    if (!meta.guideSeen) { meta.guideSeen = true; saveMeta(); }
-    show("memo"); focusStart();
-    if (NATIVE) try { Android.requestNotifyPerm(); } catch {}
-  };
-  const draw = () => {
-    const st = list[i], last = i === list.length - 1;
-    card.innerHTML = `<h3>${esc(st.h)}</h3><p>${esc(st.p)}</p>
-      <div class="tour-foot"><span class="tour-n">${i + 1} / ${list.length}</span>${last ? "" : `<button class="btn" data-tskip>とばす</button>`}${i ? `<button class="btn" data-tpv>戻る</button>` : ""}<button class="btn primary" data-tnx>${last ? "書きはじめる" : "次へ"}</button></div>`;
-    place();
-  };
-  card.onclick = e => {
-    const b = e.target.closest("button"); if (!b) return;
-    if ("tskip" in b.dataset) finish();
-    else if ("tpv" in b.dataset) { i--; draw(); }
-    else if ("tnx" in b.dataset) { if (i === list.length - 1) finish(); else { i++; draw(); } }
-  };
-  if (!list.length) return finish();
-  tour.hidden = false; addEventListener("resize", place); draw();
-}
 
 /* ============================================================
    起動と時計
@@ -5527,6 +5507,73 @@ function focusStart() { // 起動直後にすぐ書けるよう、前回の行(�
   const vis = flatVisible(); const id = focusId && vis.includes(focusId) ? focusId : vis[vis.length - 1];
   if (id) { focusAt(id, index[id].n.t.length); renderOutline(); }
 }
+// ---- チュートリアルのメモ:初めて開いたときに置く(「設定」からも開ける)。触りながら覚えられるよう、ふつうのメモとして書いてある ----
+// 1行 = 「字下げ(空白2つで1段)+ 印 + 文」。印は ・ふつう ☐チェック ☑済み ■見出し。**太字** と {赤:色} はメモを開くときに範囲へ直る
+const TUTORIAL_ID = "tutorial";
+function tutorialLines() {
+  const where = NATIVE ? "この端末" : "このブラウザ";
+  return [
+    "・チュートリアル",
+    "・←ここを押すと子をたためます",
+    "  ・→を押すか「・」をドラッグで行を入れ子にできます",
+    "    ・何段でも階層構造を作れます",
+    "・書いてみる",
+    "  ・行をタップすると書けます。改行で次の行へ進みます",
+    "  ・行を**長押し**すると持ち上がり、好きな場所へ動かせます",
+    "  ・書いているときに下に出る「形式」で、行をチェックや見出しに変えられます",
+    "    ☐ 行の頭で「[] 」と打つと、チェックになります",
+    "    ☑ 済んだら「☐」を押して、済みにします",
+    "  ・「B」で**太字**に。「色」は押すたびに{赤:赤}{橙:橙}{黄:黄}{緑:緑}{青:青}{紫:紫}と変わり、長押しでほかの色も選べます",
+    "  ・「/」を打つと、ほかのメモへのリンクを作れます",
+    "・メモを整理する",
+    "  ・上の「◧ ボード」を押すと、メモがカードになって並びます",
+    "  ・カードの右下の●を、別のカードへ引くと矢印でつながります",
+    "  ・指でぐるっと囲むと、ファイルにまとまります",
+    "  ・左上の「☰」で、ファイルとメモの一覧が出ます",
+    "・時間を記録する",
+    `  ・${NATIVE ? "このアプリ" : "このページ"}を開いているあいだは、自動で作業時間に入ります`,
+    "  ・下の「タイマー」で作業の種類を選んで計ると、「記録」にグラフで積み上がります",
+    "  ・「予定」では、予定・収支・長期計画を管理できます",
+    "・データについて",
+    `  ・メモや記録は、${where}の中に保存されます`,
+    ...(canSync() ? ["  ・「設定 › ドライブで同期」で、ほかの端末とも同じデータを使えます"] : []),
+    "  ・機種変更の前は「設定 › データの引っ越し」で書き出してください",
+    "・例",
+    "・好きな果物",
+    "  ・りんご",
+    "    ☐ 文字の色は{赤:あいうえお}{青:かきくけこ}いっかい",
+    "  ■ ぶどうつぶつぶだよわーい",
+    "  ・ばなな",
+    "・このメモは消してもかまいません。「設定」から、いつでもまた開けます",
+  ];
+}
+function tutorialNodes() {
+  const root = { c: [] }, stack = [[-1, root]];
+  for (const line of tutorialLines()) {
+    const m = line.match(/^( *)([・☐☑■])\s?(.*)$/); if (!m) continue;
+    const d = m[1].length / 2, n = N(m[3]);
+    if (m[2] === "☐" || m[2] === "☑") { n.k = "check"; if (m[2] === "☑") n.done = true; }
+    else if (m[2] === "■") n.k = "head";
+    while (stack[stack.length - 1][0] >= d) stack.pop();
+    stack[stack.length - 1][1].c.push(n); stack.push([d, n]);
+  }
+  convertTree(root.c);
+  return root.c;
+}
+function openTutorial() { // チュートリアルのメモを開く。消していたら置き直す
+  if (!files[TUTORIAL_ID]) {
+    const f = newFileObj("", null); f.id = TUTORIAL_ID; f.nodes = tutorialNodes();
+    files[f.id] = f; Store.put("file-" + f.id, f);
+    withBoard("main", () => { board.cards[f.id] = freeSpot(40, 40); saveBoard(); });
+  }
+  closeSheet(); openFile(TUTORIAL_ID);
+}
+function firstRun() { // 初めて開いたとき:空のメモの代わりにチュートリアルのメモを置いて開く
+  meta.guideSeen = true; saveMeta();
+  for (const f of Object.values(files)) if (f.auto && isEmptyMemo(f)) { delete files[f.id]; for (const b of Object.values(boards)) delete b.cards[f.id]; }
+  openTutorial();
+  if (NATIVE) setTimeout(() => { try { Android.requestNotifyPerm(); } catch {} }, 1500); // 予定やタイマーの知らせのため
+}
 // Android の戻るボタン:開いているものを一つずつ閉じる。何もなければアプリを閉じる
 // ---- ホーム画面のウィジェット(Android アプリのみ):ストップウォッチ/タイマーを始める・止める ----
 const TIMER_NAME = { stopwatch: "ストップウォッチ", pomodoro: "タイマー" };
@@ -5563,7 +5610,6 @@ window.onWidget = action => {
   else if (action === "prefs") show("prefs");
 };
 window.androidBack = () => {
-  if (!$("#tour").hidden) { $("#tourCard [data-tskip]") ? $("#tourCard [data-tskip]").click() : $("#tourCard [data-tnx]").click(); return true; }
   if ($("#veil").classList.contains("on")) { closeSheet(); return true; }
   if (document.body.classList.contains("side-open") && !isWide()) { setSide(false); return true; }
   if (document.body.classList.contains("layoutedit")) { setLayoutEdit(false); return true; }
@@ -5593,7 +5639,7 @@ function boot() {
   renderNav();
   show(location.hash.slice(1) || navHome(), false);
   refreshLive();
-  if (!meta.guideSeen) guide(); else if (view === "memo") focusStart();
+  if (!meta.guideSeen) firstRun(); else if (view === "memo") focusStart();
   setInterval(() => Work.beat(), 10000);
   setInterval(refreshLive, 1000);
   setInterval(() => { takeNoticeEvents(); Timer.tick(); updateClock(); checkTimerForgot(); }, 1000);
