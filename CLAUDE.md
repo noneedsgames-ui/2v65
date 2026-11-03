@@ -1,9 +1,8 @@
 # このリポジトリで作業する Claude へ(引き継ぎ)
 
-このリポジトリには二つのものが入っている。
+このリポジトリには **作業記録メモ帳**(`prototype/`)だけが入っている。以下はこのアプリの引き継ぎ。
 
-- **Gathering Frontier**(ルートの `project.godot`・`scenes/`・`scripts/`・`assets/`):Godot 4 の横スクロール素材採集ゲーム。詳しくはルートの `README.md`。
-- **作業記録メモ帳**(`prototype/`):いま主に作っているアプリ。以下はこのアプリの引き継ぎ。
+以前同居していた Godot のゲーム「Gathering Frontier」は、利用者の希望で 2026-11-03 にリポジトリから外した。履歴のコミット `1657f1a` に、ゲームの最後の姿がまるごと残っている(取り戻すなら `git checkout 1657f1a -- scenes scripts assets project.godot icon.svg README.md`)。
 
 作業するブランチは `ccr-a6f51c3a-jl9xh6`(main ではない)。
 
@@ -24,7 +23,7 @@ prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は ind
 .github/workflows/worklog-memo-apk.yml APK・AAB を作る GitHub Actions(手で「Run workflow」したときだけ動く)
 ```
 
-ブラウザ版は、別の公開リポジトリ `noneedsgames-ui/worklog-memo`(パソコンでは `C:\dev\worklog-memo-web`)に `index.html` を写して、GitHub Pages(https://noneedsgames-ui.github.io/worklog-memo/)で配る。こちらのリポジトリは鍵やゲームの素材を含むので公開しない。index.html を直したら、写してコミットし、利用者が GitHub Desktop で push する。claude.ai の試作ページ(https://claude.ai/artifact/92TaFhMc1gCyY58VBR1CsZ)も同じ index.html。
+ブラウザ版は、別の公開リポジトリ `noneedsgames-ui/worklog-memo`(パソコンでは `C:\dev\worklog-memo-web`)に `index.html` を写して、GitHub Pages(https://noneedsgames-ui.github.io/worklog-memo/)で配る。こちらのリポジトリ(`noneedsgames-ui/2v65`)は公開になっているが、利用者はそれでよいとしている。鍵はコミットしない(試作用の `debug.keystore` だけは入っている)。index.html を直したら、写してコミットし、利用者が GitHub Desktop で push する。claude.ai の試作ページ(https://claude.ai/artifact/92TaFhMc1gCyY58VBR1CsZ)も同じ index.html。
 
 ### index.html の中の区切り
 
@@ -84,4 +83,4 @@ prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は ind
 - **データの書き出し/読み込み**:設定の「データの引っ越し」として実装した。Android の保存・ファイル選択(`MainActivity.kt`)と claude.ai 上の `downloads` は実機で未確認。
 - **実機で未確認**:Google ドライブのファイルからの読み込み、翌日以降の自動の上書き、書き出しの保存先の選択、再起動のあとの通知、新しい画面を指で触った使い心地。ロック画面の通知、閉じているときの知らせ、妨害アプリの使用時間の隅の表示は、利用者の実機で確認済み。
 - **Norton 360**:直接入れた試作版を入れるたびに「疑わしいアプリ」と出る。Play の版でどうなるかは未確認。
-- **Google Play の内部テスト**:Secrets にアップロード鍵がまだ入っていないので、AAB は作られていない。Actions で「Releases に置く」が 403(権限)で失敗するが、APK は実行結果の Artifacts から落とせる(失敗扱いにはしないよう直してある)。
+- **Google Play の内部テスト**:2026-11-03 に Play Console の本人確認が済み、利用者が `2v65` の Secrets にアップロード鍵を入れた(Run workflow で `-play.aab` ができるかは未確認)。Actions で「Releases に置く」が 403(権限)で失敗するが、APK は実行結果の Artifacts から落とせる(失敗扱いにはしないよう直してある)。
