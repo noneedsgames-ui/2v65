@@ -310,9 +310,6 @@ body.side-open .side{display:flex}
 .side-foot{display:flex;gap:6px;padding:0 4px}
 .side-foot .side-new{flex:1}
 .bl-h{display:flex;align-items:center;gap:8px;padding:2px 2px 10px;position:sticky;top:-8px;background:var(--bg);z-index:1}
-.bcard.alias{border-style:dashed}
-.bcard.alias .bc-m{color:var(--text-muted)}
-.srow.alias .s-name{color:var(--text-secondary)}
 .bl-path{font-size:13px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bl-row{display:flex;align-items:center;gap:10px;padding:11px 10px;margin-bottom:6px;background:var(--surface-1);border:1px solid var(--line);border-left:4px solid var(--gc,var(--line));border-radius:10px;cursor:pointer}
 .bl-row.cur{outline:1.5px solid var(--accent)}
@@ -562,14 +559,14 @@ textarea.inp{line-height:1.6;resize:vertical}
 <main>
   <!-- メモ -->
   <section class="view" id="v-memo">
-    <div class="filebar"><button class="fb-side" id="sideBtn" aria-label="ファイルとメモの一覧">☰</button><b class="fb-title" id="fbName"></b>
+    <div class="filebar"><button class="fb-side" id="sideBtn" aria-label="グループとメモの一覧">☰</button><b class="fb-title" id="fbName"></b>
       <button class="fb-boardbtn" id="fileBar" aria-label="ボードを開く">◧ ボード</button>
       <button class="fb-new" id="newMemo">＋ メモ</button></div>
     <div class="memo-body">
-      <aside class="side" id="side" aria-label="ファイルとメモ">
-        <div class="side-h"><span id="sideBoard">ファイルとメモ</span><span class="muted small">長押しで移動</span></div>
+      <aside class="side" id="side" aria-label="グループとメモ">
+        <div class="side-h"><span id="sideBoard">グループとメモ</span><span class="muted small">長押しで移動</span></div>
         <div class="side-list" id="sideList"></div>
-        <div class="side-foot"><button class="side-new" id="sideNew">＋ メモ</button><button class="side-new" id="sideNewG">＋ ファイル</button></div>
+        <div class="side-foot"><button class="side-new" id="sideNew">＋ メモ</button><button class="side-new" id="sideNewG">＋ グループ</button></div>
       </aside>
       <div class="side-scrim" id="sideScrim"></div>
       <div class="memo-main">
@@ -622,7 +619,7 @@ textarea.inp{line-height:1.6;resize:vertical}
     <div class="blist" id="blist"></div>
     <div class="board" id="board">
       <div class="world" id="world"><svg class="edges" id="edges"></svg><div id="cards"></div><div id="glabels"></div></div>
-      <div class="bhint" id="bhint">カードはドラッグで移動、タップで開く、長押しで色や削除。カードの右下の●を別のカードへ引くと矢印、空いた所で離すと新しいメモ。「◯ 囲む」で指で描いて囲むと、その形がファイルになります(丸ごと囲めば入れ子)。空いた所はドラッグで移動、二本指で拡大縮小。矢印は二回タップで消せます。カードや丸は下のゴミ箱へドラッグすると消せます。</div>
+      <div class="bhint" id="bhint">カードはドラッグで移動、タップで開く、長押しで色や削除。カードの右下の●を別のカードへ引くと矢印、空いた所で離すと新しいメモ。「◯ 囲む」で指で描いて囲むと、その形がグループになります(丸ごと囲めば入れ子)。空いた所はドラッグで移動、二本指で拡大縮小。矢印は二回タップで消せます。カードや丸は下のゴミ箱へドラッグすると消せます。</div>
       <div class="bctl"><button data-z="lasso" id="lassoBtn" class="lasso-btn">◯ 囲む</button><button data-z="arrange">整列</button><button data-z="in" aria-label="拡大">＋</button><button data-z="out" aria-label="縮小">−</button><button data-z="fit">全体</button></div>
     </div>
   </section>
@@ -1074,12 +1071,12 @@ function saveView() { // 開いているメモと、メモごとの絞り込み�
   v.files[curFile] = { zoom: zoomId, focus: focusId };
   LS.set("view", v);
 }
-const groupOf = f => null; // ファイル(まとまり)はボードに置き換えた
+const groupOf = f => null; // グループ(まとまり)はボードに置き換えた
 const sortedGroups = () => meta.groups.slice().sort((a, b) => a.order - b.order);
 const sortedFiles = gid => Object.values(files).filter(f => groupOf(f) === gid).sort((a, b) => a.order - b.order || a.created - b.created);
 const allFilesSorted = () => Object.values(files).sort((a, b) => b.updated - a.updated); // 新しく書いたメモから
 const saveFile = f => { f.updated = Date.now(); delete f.auto; Store.put("file-" + f.id, f); };
-// すべてのファイルの行を id で引けるように(ファイルをまたぐ検索・関連付け用)
+// すべてのグループの行を id で引けるように(グループをまたぐ検索・関連付け用)
 let gindex = {};
 function buildGlobal() {
   gindex = {};
@@ -2078,7 +2075,7 @@ function memoTitle(f) {
   return (first(f.nodes).replace(/\[\[([^\[\]\n]+?)\]\]/g, "$1") || "新しいメモ").slice(0, 30); // 名前ではリンクの [[ ]] を外す
 }
 function renderFileBar() {
-  $("#fbName").textContent = memoTitle(files[curFile]); // ファイルの所属は左のツリーで見る
+  $("#fbName").textContent = memoTitle(files[curFile]); // グループの所属は左のツリーで見る
   $("#btnCmt").textContent = files[curFile].comment ? "コメント●" : "コメント";
   if (typeof renderLinkbar === "function") renderLinkbar();
   if (typeof renderSide === "function" && typeof sideList !== "undefined") renderSide();
@@ -2111,7 +2108,6 @@ const saveFileQuiet = f => { delete f.auto; Store.put("file-" + f.id, f); };
 function removeMemo(id, quiet) {
   const gone = files[id]; if (gone && !gone.auto && !isEmptyMemo(gone)) Store.put("trash-" + id, { file: JSON.parse(JSON.stringify(gone)), at: Date.now() }); // 消したメモは、しばらくゴミ箱に残す
   delete files[id]; Store.remove("file-" + id);
-  for (const [bid, b] of Object.entries(boards)) for (const [aid, a] of Object.entries(b.alias || {})) if (a.m === id) { delete b.alias[aid]; saveBoardOf(bid); } // 分身もなくす
   for (const [bid, b] of Object.entries(boards)) { // どのボードからも消す
     if (!b.cards[id] && !b.edges.some(e => e.a === id || e.b === id)) continue;
     delete b.cards[id];
@@ -2125,9 +2121,9 @@ function removeMemo(id, quiet) {
 }
 
 /* ============================================================
-   ボード:すべてのメモをカードとして並べ、矢印でつなぐ。指で描いて囲った形が「ファイル」
+   ボード:すべてのメモをカードとして並べ、矢印でつなぐ。指で描いて囲った形が「グループ」
    board : { cards: { メモid: { x, y, c:色 } },
-             groups: [{ id, name, c:色, pts: [[x,y],…] 描いた形, parent, members }],  ← ファイル(丸)
+             groups: [{ id, name, c:色, pts: [[x,y],…] 描いた形, parent, members }],  ← グループ(丸)
              edges: [{ id, a, b, dir: to|both|none, label }] }                     ← a・b はメモか丸の id
    丸の中身(members・parent)は形から決まる:カードの中心・丸の重心が線の内側にあれば、その丸に入る。
    いくつもの丸に入っているときは、いちばん小さい(内側の)丸に属する。これで入れ子になる。
@@ -2187,15 +2183,15 @@ document.addEventListener("click", e => { // 虹色の丸
   });
 }, true);
 const COMPACT_K = 0.6; // これより縮小したら、カードはタイトルだけ
-const ZOOM_MIN = 0.08; // 「全体」で、たくさんのファイルも一度に見渡せるように
+const ZOOM_MIN = 0.08; // 「全体」で、たくさんのグループも一度に見渡せるように
 /* ボードはいくつでも作れる。"main"(メイン)には、すべてのメモが自動で並ぶ(doc "board")。
-   ほかのボード(doc "board-<id>"、名前と順は meta.boards)には、選んだメモやファイルだけを置く。
-   同じメモを複数のボードに置ける。丸(ファイル)・矢印・位置はボードごとに別々。いま開いているのが board */
+   ほかのボード(doc "board-<id>"、名前と順は meta.boards)には、選んだメモやグループだけを置く。
+   同じメモを複数のボードに置ける。丸(グループ)・矢印・位置はボードごとに別々。いま開いているのが board */
 let boards = {}, curBoard = LS.get("curBoard") || "main";
 const boardDocId = id => id === "main" ? "board" : "board-" + id;
 const boardList = () => [{ id: "main", name: meta.prefs.mainBoardName || "メイン" }, ...(meta.boards || [])];
 const boardName = id => (boardList().find(b => b.id === id) || {}).name || "メイン";
-const normBoard = b => { b = b || {}; b.cards ||= {}; b.edges ||= []; b.groups ||= []; b.alias ||= {}; return b; };
+const normBoard = b => { b = b || {}; b.cards ||= {}; b.edges ||= []; b.groups ||= []; return b; };
 const boardIdOf = b => Object.keys(boards).find(k => boards[k] === b);
 function withBoard(id, fn) { const prev = board; board = boards[id]; try { return fn(); } finally { board = prev; } }
 function loadBoard(docs) {
@@ -2205,7 +2201,7 @@ function loadBoard(docs) {
   if (!boards[curBoard]) curBoard = "main";
   board = boards.main; ftCache = null;
   placeMissing();
-  if (!board.gm) { // 以前の「ファイル」(一覧でまとめたもの)を、丸に置き換えて引き継ぐ
+  if (!board.gm) { // 以前の「グループ」(一覧でまとめたもの)を、丸に置き換えて引き継ぐ
     for (const g of meta.groups || []) {
       const members = Object.values(files).filter(f => f.group === g.id && board.cards[f.id]).map(f => f.id);
       if (members.length && !board.groups.some(x => x.id === g.id)) board.groups.push({ id: g.id, name: g.name, members });
@@ -2221,7 +2217,7 @@ function flushBoards() { // 閉じる直前や書き出しの前に、待って�
   for (const id of Object.keys(boardTimers)) { clearTimeout(boardTimers[id]); delete boardTimers[id]; if (boards[id]) Store.put(boardDocId(id), boards[id]); }
 }
 function saveBoard() { saveBoardOf(boardIdOf(board) || curBoard); }
-// ---- ファイルから付くタグ:「このファイル内のメモにタグを追加する」をオンにした丸の中(中の丸も)のメモに付く。どのボードの丸でも ----
+// ---- グループから付くタグ:「このグループ内のメモにタグを追加する」をオンにした丸の中(中の丸も)のメモに付く。どのボードの丸でも ----
 let ftCache = null;
 function fileTagMap() {
   if (ftCache) return ftCache;
@@ -2232,7 +2228,6 @@ function fileTagMap() {
     const stack = [g], seen = new Set();
     while (stack.length) { const x = stack.pop(); if (seen.has(x.id)) continue; seen.add(x.id);
       for (const id of x.members || []) (m[id] ||= new Set()).add(t);
-      for (const aid of x.amembers || []) { const a = (b.alias || {})[aid]; if (a) (m[a.m] ||= new Set()).add(t); }
       for (const h of b.groups) if (h.parent === x.id) stack.push(h); }
   }
   return ftCache = m;
@@ -2241,16 +2236,8 @@ const fileTags = id => [...(fileTagMap()[id] || [])].filter(t => !(files[id] && 
 const memoTags = f => [...new Set([...(f.tags || []), ...(fileTagMap()[f.id] || [])])];
 const groupById = id => board.groups.find(g => g.id === id);
 const groupOfCard = id => board.groups.find(g => (g.members || []).includes(id));
-// ---- 分身:一つのメモを、ほかのファイルにも入れる。board.alias = { 分身id: { m: メモid, x, y } }。入っている丸の g.amembers に分身id ----
-const aliasesOf = (b = board) => b.alias || (b.alias = {});
-const groupOfAlias = aid => board.groups.find(g => (g.amembers || []).includes(aid));
-const aliasGroupsOfMemo = id => Object.entries(aliasesOf()).filter(([, a]) => a.m === id).map(([aid]) => groupOfAlias(aid)).filter(Boolean);
-function aliasBox(aid) {
-  const a = aliasesOf()[aid]; if (!a || !files[a.m]) return null;
-  const el = cardsEl.querySelector(`[data-alias="${aid}"]`); let w, h;
-  if (el && el.offsetWidth) { w = el.offsetWidth; h = el.offsetHeight; sizeCache["a:" + aid] = { w, h }; } else ({ w, h } = sizeCache["a:" + aid] || { w: CARD_W, h: 56 });
-  return { x: a.x, y: a.y, w, h, cx: a.x + w / 2, cy: a.y + h / 2 };
-}
+const groupsOfCard = id => board.groups.filter(g => (g.members || []).includes(id)); // 重なりにあるメモは、いくつものグループに入る
+const groupsKey = id => groupsOfCard(id).map(g => g.id).sort().join(",") || null;
 const ancestorsOfGroup = g => { const a = []; let p = g && groupById(g.parent); let guard = 0; while (p && guard++ < 30) { a.unshift(p); p = groupById(p.parent); } return a; };
 const nameOf = id => files[id] ? memoTitle(files[id]) : (groupById(id) ? "📁 " + groupById(id).name : "");
 function freeSpot(x, y) { // ほかのカードに重ならない場所を、下へ・右へと探す
@@ -2260,7 +2247,7 @@ function freeSpot(x, y) { // ほかのカードに重ならない場所を、下
   }
   return { x, y };
 }
-// ボードにまだ置かれていないメモを並べる。以前ファイルにまとめていたメモは、同じ列にそろえる
+// ボードにまだ置かれていないメモを並べる。以前グループにまとめていたメモは、同じ列にそろえる
 function placeMissing() {
   const ids = Object.keys(files).filter(id => !board.cards[id]);
   if (!ids.length) return;
@@ -2395,22 +2382,14 @@ function recomputeTree() {
   const area = new Map(gs.map(g => [g, polyArea(g.pts)]));
   for (const g of gs) {
     const c = centroid(g.pts); let best = null;
-    for (const h of gs) if (h !== g && area.get(h) > area.get(g) && insidePts(h.pts, c.x, c.y) && (!best || area.get(h) < area.get(best))) best = h;
+    for (const h of gs) if (h !== g && area.get(h) > area.get(g) && insidePts(h.pts, c.x, c.y) && g.pts.filter(p => insidePts(h.pts, p[0], p[1])).length >= g.pts.length * 0.9 && (!best || area.get(h) < area.get(best))) best = h; // ほとんど(9割)が中にあれば入れ子。一部が重なっているだけなら、入れ子にしない
     g.parent = best ? best.id : null;
   }
   for (const g of gs) g.members = [];
-  for (const id of Object.keys(files)) {
+  for (const id of Object.keys(files)) { // 入れ子の丸ではいちばん内側に、重なっているだけの丸どうしでは、重なりにあるメモがそのすべてに入る
     const p = cardCenter(id); if (!p) continue;
-    let best = null;
-    for (const g of gs) if (insidePts(g.pts, p.x, p.y) && (!best || area.get(g) < area.get(best))) best = g;
-    if (best) best.members.push(id);
-  }
-  for (const g of gs) g.amembers = [];
-  for (const aid of Object.keys(aliasesOf())) { // 分身も、いちばん内側の丸に入る。どの丸にも入っていない分身はなくす(メモは残る)
-    const b = aliasBox(aid); if (!b) { delete board.alias[aid]; continue; }
-    let best = null;
-    for (const g of gs) if (insidePts(g.pts, b.cx, b.cy) && (!best || area.get(g) < area.get(best))) best = g;
-    if (best) best.amembers.push(aid); else delete board.alias[aid];
+    const inn = gs.filter(g => insidePts(g.pts, p.x, p.y)), outer = new Set(inn.flatMap(g => ancestorsOfGroup(g).map(a => a.id)));
+    for (const g of inn) if (!outer.has(g.id)) g.members.push(id);
   }
   saveBoard();
 }
@@ -2448,8 +2427,7 @@ function renderBoard() {
       ${memoTags(f).length ? `<div class="bc-tags">${tagChips(f)}</div>` : ""}
       <div class="bc-m">${countNodes(f.nodes)}行 · ${fmtWhen(f.updated)}</div>${f.comment ? `<div class="bc-cm">${esc(f.comment)}</div>` : ""}
       <div class="bc-h" data-handle="${id}" aria-label="引いて矢印をつなぐ"></div></div>`;
-  }).join("") + Object.entries(aliasesOf()).filter(([, a]) => files[a.m]).map(([aid, a]) => { const t = groupColor(groupOfAlias(aid));
-    return `<div class="bcard alias${t ? " t-" + ck(t) : ""}${a.m === curFile ? " cur" : ""}" data-alias="${aid}" style="left:${a.x}px;top:${a.y}px;width:${CARD_W}px"><div class="bc-t">📎 ${esc(memoTitle(files[a.m]))}</div><div class="bc-m">分身(中身は同じメモ)</div></div>`; }).join("");
+  }).join("");
   // 以前の版の丸(形を持たない)は、中のカードを囲む楕円の形にして引き継ぐ
   let migrated = false;
   for (const g of board.groups) if (!g.pts) {
@@ -2461,11 +2439,11 @@ function renderBoard() {
     migrated = true;
   }
   if (board.groups.some(g => g.drop)) { board.groups = board.groups.filter(g => !g.drop); migrated = true; }
-  if (migrated || board.groups.some(g => !g.members || !g.amembers)) recomputeTree();
+  if (migrated || board.groups.some(g => !g.members)) recomputeTree();
   ensureAutoColors();
   cardsEl.querySelectorAll("[data-card]").forEach(el => { const id = el.dataset.card; el.className = "bcard" + cardColorClass(id) + cardFrame(id) + (id === curFile ? " cur" : ""); });
   ensureAutoColors();
-  glabelsEl.innerHTML = board.groups.map(g => `<div class="glabel${groupColor(g) ? " c-" + ck(groupColor(g)) : ""}" data-group="${g.id}"><span class="gl-n">📁 ${esc(g.name)}</span><span class="gl-k">${(g.members || []).length + (g.amembers || []).length + descendantsOf(g).length}</span>` +
+  glabelsEl.innerHTML = board.groups.map(g => `<div class="glabel${groupColor(g) ? " c-" + ck(groupColor(g)) : ""}" data-group="${g.id}"><span class="gl-n">📁 ${esc(g.name)}</span><span class="gl-k">${(g.members || []).length + descendantsOf(g).length}</span>` +
     `<span class="gl-h" data-ghandle="${g.id}" aria-label="引いて矢印をつなぐ"></span></div>`).join("");
   drawEdges();
   applyView();
@@ -2492,7 +2470,7 @@ function clipTo(G, dx, dy, gap) { // 中心から (dx,dy) 方向へ進み、縁�
   return { x: G.cx + dx * t, y: G.cy + dy * t };
 }
 let tmpLine = null, lassoPts = null, hotGroup = null; // 引いている途中の矢印・描いている途中の囲み・入りそうな丸
-// 矢印の色:別のファイルのメモ同士=緑、ファイル同士=青で少し太く(設定で変えられる)
+// 矢印の色:別のグループのメモ同士=緑、グループ同士=青で少し太く(設定で変えられる)
 const ARROW_DEF = { cross: "green", group: "blue", groupW: 2.8 };
 const arrowPrefs = () => ({ ...ARROW_DEF, ...(meta.prefs.arrows || {}) });
 const edgeColor = k => (k ? colHex(k) : "var(--text-secondary)");
@@ -2570,7 +2548,7 @@ function groupAt(w, skip) { // その点を含む、いちばん内側の丸(ski
 
 // ---- 指の操作 ----
 // カード=動かす/タップで開く/長押しでメニュー、●=矢印、丸の名札=中身ごと動かす/タップでメニュー、
-// 空き=動かす、二本指=拡大縮小、「◯ 囲む」=指で描いた形でファイルにする(丸ごと囲めば入れ子)
+// 空き=動かす、二本指=拡大縮小、「◯ 囲む」=指で描いた形でグループにする(丸ごと囲めば入れ子)
 const ptrs = new Map(); let gest = null, lastTap = null, lassoMode = false, lassoFor = null;
 function setLasso(on, forGroup) {
   lassoMode = on; lassoFor = on ? forGroup || null : null;
@@ -2594,25 +2572,20 @@ boardEl.addEventListener("pointerdown", e => {
   if (ptrs.size > 2) return;
   const base = { x0: e.clientX, y0: e.clientY, moved: false, pid: e.pointerId };
   if (lassoMode) { gest = { ...base, type: "lasso" }; lassoPts = [toWorld(e.clientX, e.clientY)]; return; }
-  const handle = e.target.closest("[data-handle]"), ghandle = e.target.closest("[data-ghandle]"), card = e.target.closest("[data-card]"), alias = e.target.closest("[data-alias]"),
+  const handle = e.target.closest("[data-handle]"), ghandle = e.target.closest("[data-ghandle]"), card = e.target.closest("[data-card]"),
     glabel = e.target.closest("[data-group]"), edge = e.target.closest("[data-edge]");
   if (handle || ghandle) {
     const id = handle ? handle.dataset.handle : ghandle.dataset.ghandle, G = endGeo(id), w = toWorld(e.clientX, e.clientY);
     gest = { ...base, type: "link", from: id }; tmpLine = { x1: G.cx, y1: G.cy, x2: w.x, y2: w.y };
-  } else if (alias) { // 分身:動かす/タップで元のメモを開く/長押しでメニュー
-    const aid = alias.dataset.alias, a = aliasesOf()[aid];
-    gest = { ...base, type: "alias", id: aid, el: alias, cx: a.x, cy: a.y };
-    gest.timer = setTimeout(() => { if (gest && gest.type === "alias" && !gest.moved) { gest.long = true; try { navigator.vibrate && navigator.vibrate(12); } catch {} aliasMenu(aid); } }, 500);
   } else if (card) {
     const id = card.dataset.card, c = board.cards[id];
     gest = { ...base, type: "card", id, el: card, cx: c.x, cy: c.y, from: groupOfCard(id)?.id || null };
     gest.timer = setTimeout(() => { if (gest && gest.type === "card" && !gest.moved) { gest.long = true; try { navigator.vibrate && navigator.vibrate(12); } catch {} cardMenu(id); } }, 500);
   } else if (glabel) { // 丸を動かすときは、中の丸・カードもいっしょに
     const g = groupById(glabel.dataset.group), desc = descendantsOf(g);
-    const cardIds = [g, ...desc].flatMap(x => x.members || []);
+    const inside = new Set([g, ...desc].map(x => x.id)), cardIds = [g, ...desc].flatMap(x => x.members || []).filter(m => groupsOfCard(m).every(h => inside.has(h.id))); // ほかのグループとの重なりにあるメモは、その場に残す
     gest = { ...base, type: "group", id: g.id, from: g.parent || null, skip: new Set([g.id, ...desc.map(x => x.id)]),
-      pts: [g, ...desc].map(x => [x, x.pts.map(p => p.slice())]), cards: cardIds.filter(m => board.cards[m]).map(m => [m, board.cards[m].x, board.cards[m].y]),
-      aliases: [g, ...desc].flatMap(x => x.amembers || []).filter(aid => aliasesOf()[aid]).map(aid => [aid, aliasesOf()[aid].x, aliasesOf()[aid].y]) };
+      pts: [g, ...desc].map(x => [x, x.pts.map(p => p.slice())]), cards: cardIds.filter(m => board.cards[m]).map(m => [m, board.cards[m].x, board.cards[m].y]) };
   } else if (edge) gest = { ...base, type: "edge", id: edge.dataset.edge, tx: BV.tx, ty: BV.ty };
   else gest = { ...base, type: "pan", tx: BV.tx, ty: BV.ty };
 });
@@ -2632,7 +2605,7 @@ boardEl.addEventListener("pointermove", e => {
   }
   if (e.pointerId !== gest.pid) return;
   const dx = e.clientX - gest.x0, dy = e.clientY - gest.y0;
-  if (!gest.moved && Math.hypot(dx, dy) > 6) { gest.moved = true; clearTimeout(gest.timer); if (gest.type === "edge") gest.type = "pan"; if (gest.type === "card") { gest.el.classList.add("moving"); showTrash(trashLabel("m")); } if (gest.type === "alias") gest.el.classList.add("moving"); if (gest.type === "group") showTrash(trashLabel("g")); }
+  if (!gest.moved && Math.hypot(dx, dy) > 6) { gest.moved = true; clearTimeout(gest.timer); if (gest.type === "edge") gest.type = "pan"; if (gest.type === "card") { gest.el.classList.add("moving"); showTrash(trashLabel("m")); } if (gest.type === "group") showTrash(trashLabel("g")); }
   if (!gest.moved) return;
   if (gest.type === "pan") { BV.tx = gest.tx + dx; BV.ty = gest.ty + dy; applyView(); }
   else if (gest.type === "lasso") { lassoPts.push(toWorld(e.clientX, e.clientY)); drawEdges(); }
@@ -2640,15 +2613,10 @@ boardEl.addEventListener("pointermove", e => {
     const c = board.cards[gest.id]; c.x = Math.round(gest.cx + dx / BV.k); c.y = Math.round(gest.cy + dy / BV.k);
     gest.el.style.left = c.x + "px"; gest.el.style.top = c.y + "px";
     gest.trash = overTrash(e.clientX, e.clientY); const p = cardCenter(gest.id); hotGroup = gest.trash ? null : groupAt(p)?.id || null; drawEdges();
-  } else if (gest.type === "alias" && !gest.long) {
-    const a = aliasesOf()[gest.id]; a.x = Math.round(gest.cx + dx / BV.k); a.y = Math.round(gest.cy + dy / BV.k);
-    gest.el.style.left = a.x + "px"; gest.el.style.top = a.y + "px";
-    const b = aliasBox(gest.id); hotGroup = groupAt({ x: b.cx, y: b.cy })?.id || null; drawEdges();
   } else if (gest.type === "group") {
     const ox = dx / BV.k, oy = dy / BV.k;
     for (const [g, pts] of gest.pts) g.pts = pts.map(p => [Math.round(p[0] + ox), Math.round(p[1] + oy)]);
     for (const [m, x, y] of gest.cards) { const c = board.cards[m]; c.x = Math.round(x + ox); c.y = Math.round(y + oy); const el = cardsEl.querySelector(`[data-card="${m}"]`); if (el) { el.style.left = c.x + "px"; el.style.top = c.y + "px"; } }
-    for (const [aid, x, y] of gest.aliases) { const a = aliasesOf()[aid]; if (!a) continue; a.x = Math.round(x + ox); a.y = Math.round(y + oy); const el = cardsEl.querySelector(`[data-alias="${aid}"]`); if (el) { el.style.left = a.x + "px"; el.style.top = a.y + "px"; } }
     gest.trash = overTrash(e.clientX, e.clientY); hotGroup = gest.trash ? null : groupAt(toWorld(e.clientX, e.clientY), gest.skip)?.id || null; // 指の下の丸が入れ先(大きさは問わず、入れたら丸がふくらむ)
     drawEdges();
   } else if (gest.type === "link") {
@@ -2686,24 +2654,16 @@ function endGesture(e, cancel) {
   if (g.type === "card") {
     if (g.moved && !g.long && g.trash) { const c = board.cards[g.id]; c.x = g.cx; c.y = g.cy; dropDelete({ t: "m", id: g.id }); }
     else if (g.moved && !g.long) { // 線の内側に落とせば、その丸(いちばん内側)に入る/外へ出せば抜ける
-      const before = groupOfCard(g.id)?.id || null, intended = treeSnapshot(); // 動かす前の所属(ふくらんだ丸が隣を巻き込んだら戻すため)
-      recomputeTree(); intended.set("m:" + g.id, groupOfCard(g.id)?.id || null);
+      const before = groupsKey(g.id), intended = treeSnapshot(); // 動かす前の所属(ふくらんだ丸が隣を巻き込んだら戻すため)
+      recomputeTree(); intended.set("m:" + g.id, groupsKey(g.id));
       if (cardIntoShape(g.id)) { recomputeTree(); reconcileTree(intended); } // 入った丸を、カードが収まる形にふくらませる
-      const after = groupOfCard(g.id);
-      if ((after?.id || null) !== before) toast(after ? `「${after.name}」に入れました` : `「${groupById(before)?.name || "ファイル"}」から出しました`);
+      const after = groupsOfCard(g.id);
+      if (groupsKey(g.id) !== before) toast(after.length ? `「${after.map(x => x.name).join("」と「")}」に入れました` : "グループの外に出しました");
       renderBoard(); renderFileBar(); hintDone();
     } else if (!g.moved && !g.long) openFile(g.id);
     else drawEdges();
-  } else if (g.type === "alias") {
-    if (g.moved && !g.long) { // ほかの丸の中へ落とせば、そのファイルにも入る。どの丸にも入らない所へ出せば、分身はなくなる
-      const b = aliasBox(g.id), hit = b && groupAt({ x: b.cx, y: b.cy });
-      if (!hit) { delete board.alias[g.id]; toast("分身を外しました(メモは残っています)"); }
-      else { const intended = treeSnapshot(); ensureContains(hit, rectPts(b, 14)); recomputeTree(); reconcileTree(intended); toast(`「${hit.name}」にも入れました`); }
-      recomputeTree(); renderBoard(); renderFileBar();
-    } else if (!g.moved && !g.long) { const a = aliasesOf()[g.id]; if (a) openFile(a.m); }
-    else drawEdges();
   } else if (g.type === "group") {
-    if (g.moved && g.trash) { for (const [x, pts] of g.pts) x.pts = pts; for (const [m, x, y] of g.cards) { const c = board.cards[m]; c.x = x; c.y = y; } for (const [aid, x, y] of g.aliases) { const a = aliasesOf()[aid]; if (a) { a.x = x; a.y = y; } } dropDelete({ t: "g", id: g.id }); }
+    if (g.moved && g.trash) { for (const [x, pts] of g.pts) x.pts = pts; for (const [m, x, y] of g.cards) { const c = board.cards[m]; c.x = x; c.y = y; } dropDelete({ t: "g", id: g.id }); }
     else if (g.moved) {
       const intended = treeSnapshot();
       if (hotAtEnd && groupById(hotAtEnd)) ensureContains(groupById(hotAtEnd), pushOut(groupById(g.id).pts, 16)); // 指を離した所の丸を、この丸が収まる形に
@@ -2723,7 +2683,7 @@ function endGesture(e, cancel) {
     }
     drawEdges();
   } else if (g.type === "edge" && !g.moved) edgeTap(g.id);
-  else if (g.type === "pan" && !g.moved) { // 空いた所をすばやく2回タップ → そこに新しいメモ(丸の中なら、そのファイルに入る)
+  else if (g.type === "pan" && !g.moved) { // 空いた所をすばやく2回タップ → そこに新しいメモ(丸の中なら、そのグループに入る)
     const now = Date.now();
     if (lastTap && now - lastTap.t < 350 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 24) {
       lastTap = null; const w = toWorld(e.clientX, e.clientY);
@@ -2744,7 +2704,7 @@ $("#v-board .bctl").addEventListener("click", e => {
   else if (b.dataset.z === "arrange") arrangeAll();
   else if (b.dataset.z === "lasso") setLasso(!lassoMode);
 });
-function finishLasso() { // 描いた形をファイル(丸)にする。形の内側のカードと丸が中身になる
+function finishLasso() { // 描いた形をグループ(丸)にする。形の内側のカードと丸が中身になる
   const raw = lassoPts, forG = lassoFor; lassoPts = null; setLasso(false);
   const pts = raw ? tidyShape(raw) : [];
   if (pts.length < 4 || polyArea(pts) < 2500) { drawEdges(); toast("もう少し大きく、ぐるっと囲んでください"); return; }
@@ -2754,7 +2714,7 @@ function finishLasso() { // 描いた形をファイル(丸)にする。形の�
   const hasCard = Object.keys(files).some(id => { const p = cardCenter(id); return p && insidePts(pts, p.x, p.y); });
   const hasGroup = board.groups.some(g => g.pts && (() => { const c = centroid(g.pts); return insidePts(pts, c.x, c.y); })());
   if (!hasCard && !hasGroup) { drawEdges(); toast("カードの真ん中か、丸が入るように囲んでください"); return; }
-  const g = { id: uid(), name: "新しいファイル", pts };
+  const g = { id: uid(), name: "新しいグループ", pts };
   board.groups.push(g);
   recomputeTree(); renderBoard(); hintDone();
   groupNameSheet(g.id, true);
@@ -2793,7 +2753,7 @@ function colorSwatches(cur, noneLabel, attrs = "") { // 決まった色、色の
   const keys = [...COLORS, ...(isHex(cur) ? [cur] : [])];
   return `<div class="swatches">${keys.map(k => `<button class="sw2${k ? " c-" + ck(k) : ""}${(cur || "") === k ? " on" : ""}"${attrs} data-col="${k}" aria-label="${k ? COLOR_NAMES[k] || k : noneLabel || "なし"}">${k ? "" : noneLabel || "なし"}</button>`).join("")}${rainbowBtn("col")}</div>`;
 }
-// ---- ファイルごとの色(自動)と、中のメモの淡い色 ----
+// ---- グループごとの色(自動)と、中のメモの淡い色 ----
 const BC_DEF = { auto: true, tint: true, arrange: true };
 const boardColors = () => ({ ...BC_DEF, ...(meta.prefs.boardColors || {}) });
 const PAL_AUTO = ["blue", "green", "orange", "purple", "red", "yellow"];
@@ -2808,15 +2768,14 @@ function ensureAutoColors() { // 色を持たない丸に、なるべくほか�
 }
 const groupColor = g => (g ? g.c || (boardColors().auto ? g.autoC || "" : "") : "");
 const cardFrame = id => { const c = board.cards[id] || {}; return (c.bd ? " bd-" + c.bd : "") + (c.bs ? " bs-" + c.bs : ""); };
-function cardColorClass(id) { // 自分で選んだ色はそのまま、なければ入っているファイルの色を淡く
+function cardColorClass(id) { // 自分で選んだ色はそのまま、なければ入っているグループの色を淡く
   const c = board.cards[id] || {};
   if (c.c) return " c-" + ck(c.c);
   const t = boardColors().tint ? groupColor(groupOfCard(id)) : "";
   return t ? " t-" + ck(t) : "";
 }
-// ---- ファイルの中を整列:ツリーと同じ順で、カードと中の丸を行と列にそろえ、丸を中身に合う形にする ----
+// ---- グループの中を整列:ツリーと同じ順で、カードと中の丸を行と列にそろえ、丸を中身に合う形にする ----
 function layoutBox(it) {
-  if (it.t === "a") { const b = aliasBox(it.id); return b ? { x: b.x, y: b.y, w: b.w, h: b.h } : null; }
   if (it.t === "m") {
     const c = board.cards[it.id], el = cardsEl.querySelector(`[data-card="${it.id}"]`);
     let h = el && el.offsetWidth && !boardEl.classList.contains("compact") ? el.offsetHeight : 0;
@@ -2869,20 +2828,26 @@ function placeUnits(items, colsOf, gap) { // (0,0) 基準の並べ方 [[it, b, x
   flush();
   return { rel, W, H: y - gap };
 }
+const topGroup = g => { let x = g, guard = 0; while (x.parent && groupById(x.parent) && guard++ < 30) x = groupById(x.parent); return x; };
+function sharesOutside(g) { // そのグループ(中のグループも)のメモが、外のグループとの重なりにあるか
+  const inside = new Set([g, ...descendantsOf(g)].map(x => x.id));
+  return [g, ...descendantsOf(g)].some(x => (x.members || []).some(m => groupsOfCard(m).some(h => !inside.has(h.id))));
+}
 function arrangeGroup(g, deep) {
+  if (!g || sharesOutside(g)) return; // 重なっているグループの中は整列しない(重なりのメモが抜けないように)
   if (!g || !g.pts) return;
   if (deep) for (const k of board.groups.filter(h => h.parent === g.id)) arrangeGroup(k, true);
-  const items = sideKids(g.id).map(it => [it, layoutBox(it)]).filter(([, b]) => b);
+  const items = sideKids(g.id).filter(it => it.t !== "m" || groupsOfCard(it.id).length < 2).map(it => [it, layoutBox(it)]).filter(([, b]) => b);
   if (!items.length) return;
   const G = groupGeo(g);
   const { rel, W, H } = placeUnits(items, n => n <= 2 ? Math.max(1, n) : n <= 4 ? 2 : 3, 24);
   const ox = Math.round(G.cx - W / 2), oy = Math.round(G.cy - H / 2 + 8); // 元の丸の中心に、まとまりの中心を合わせる
   for (const [it, b, x, y2] of rel) {
     if (it.t === "m") { const c = board.cards[it.id]; c.x = ox + x; c.y = oy + y2; }
-    else if (it.t === "a") { const a = aliasesOf()[it.id]; a.x = ox + x; a.y = oy + y2; }
     else translateGroup(groupById(it.id), ox + x - b.x, oy + y2 - b.y);
   }
   g.pts = roundShape(ox - 18, oy - 26, ox + W + 18, oy + H + 18);
+  for (const m of g.members || []) if (groupsOfCard(m).length > 1) { const b = cardBox(m); if (b) expandToInclude(g, rectPts(b, 14)); } // 重なりにあるメモも、形の中に残す
   evictStrangers(g);
   if (g.parent && groupById(g.parent)) ensureContains(groupById(g.parent), pushOut(g.pts, 16));
   saveBoard();
@@ -2892,20 +2857,31 @@ function arrangeAll() { // ボード全体を整列:丸の中をそろえてか�
   const bd = board, snap = JSON.stringify({ cards: bd.cards, groups: bd.groups }), intended = treeSnapshot();
   for (const g of bd.groups.filter(x => !x.parent)) arrangeGroup(g, true);
   recomputeTree();
-  const items = sideKids(null).map(it => [it, layoutBox(it)]).filter(([, b]) => b);
+  // 同じメモを共有して重なっているグループは、ひとかたまりとして並べる
+  const club = new Map(), root = id => { while (club.get(id) !== id) id = club.get(id); return id; };
+  for (const g of bd.groups.filter(x => !x.parent)) club.set(g.id, g.id);
+  for (const id of Object.keys(files)) { const tops = [...new Set(groupsOfCard(id).map(g => topGroup(g).id))]; for (const t of tops.slice(1)) club.set(root(t), root(tops[0])); }
+  const clusters = new Map(); for (const id of club.keys()) (clusters.get(root(id)) || clusters.set(root(id), []).get(root(id))).push(groupById(id));
+  const items = sideKids(null).filter(it => it.t !== "g" || root(it.id) === it.id).map(it => {
+    if (it.t !== "g" || clusters.get(it.id).length < 2) return [it, layoutBox(it)];
+    const gs = clusters.get(it.id), bs = gs.map(g => layoutBox({ t: "g", id: g.id })).filter(Boolean); if (!bs.length) return [it, null];
+    const x0 = Math.min(...bs.map(b => b.x)), y0 = Math.min(...bs.map(b => b.y)), x1 = Math.max(...bs.map(b => b.x + b.w)), y1 = Math.max(...bs.map(b => b.y + b.h));
+    return [{ t: "c", id: it.id, gs }, { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }];
+  }).filter(([, b]) => b);
   if (!items.length) return;
   const { rel } = placeUnits(items, n => { const r = boardEl.getBoundingClientRect(), asp = r.width && r.height ? r.width / r.height : 1; return Math.min(5, Math.max(1, Math.round(Math.sqrt(n * asp)))); }, 44);
   for (const [it, b, x0, y0] of rel) {
     const x = 60 + x0, y = 60 + y0;
     if (it.t === "m") { const c = board.cards[it.id]; c.x = x; c.y = y; }
+    else if (it.t === "c") translateGroups(it.gs, x - b.x, y - b.y);
     else translateGroup(groupById(it.id), x - b.x, y - b.y);
   }
   recomputeTree(); reconcileTree(intended); saveBoard(); renderBoard(); fitView();
   snack("全体を整列しました");
   snack.undo = () => { const o = JSON.parse(snap); bd.cards = o.cards; bd.groups = o.groups; saveBoardOf(boardIdOf(bd) || curBoard); renderBoard(); fitView(); };
 }
-function createEmptyGroup(parent) { // 空のファイルを作る。parent があればその中の空いた所(なければ縁の外)に置き、外側をふくらませる
-  const W = 230, H = 120, intended = treeSnapshot(); // 丸がふくらんで、隣のファイルやメモを巻き込んだら戻すために
+function createEmptyGroup(parent) { // 空のグループを作る。parent があればその中の空いた所(なければ縁の外)に置き、外側をふくらませる
+  const W = 230, H = 120, intended = treeSnapshot(); // 丸がふくらんで、隣のグループやメモを巻き込んだら戻すために
   let x, y;
   if (parent) {
     const P = groupGeo(parent), others = Object.keys(files).map(cardBox).filter(Boolean);
@@ -2924,7 +2900,7 @@ function createEmptyGroup(parent) { // 空のファイルを作る。parent が�
     }
     [x, y] = spot || [P.x1 + 20, P.cy - H / 2];
   } else { const B = contentBounds(); x = B.x1 + 60; y = B.y0 + 20; }
-  const g = { id: uid(), name: "新しいファイル", pts: roundShape(x, y, x + W, y + H) };
+  const g = { id: uid(), name: "新しいグループ", pts: roundShape(x, y, x + W, y + H) };
   board.groups.push(g);
   if (parent) ensureContains(parent, pushOut(g.pts, 16));
   recomputeTree();
@@ -2943,64 +2919,18 @@ function evictStrangers(g) { // 整列した丸に、もともと中身でなか
   }
 }
 const groupChain = g => [...ancestorsOfGroup(g), g].map(x => "📁 " + x.name).join(" › ");
-function aliasPickSheet(id) { // カードのメニュー「ほかのファイルにも入れる」:入れる先のファイルを選ぶ
-  const own = groupOfCard(id)?.id, has = new Set(aliasGroupsOfMemo(id).map(g => g.id));
-  const gs = board.groups.filter(g => g.pts && g.id !== own && !has.has(g.id));
-  openSheet(`<h2>ほかのファイルにも入れる</h2><p class="muted small" style="margin-top:-4px">「${esc(memoTitle(files[id]))}」の分身(📎)を、選んだファイルの中に置きます。中身は同じメモなので、どちらで書いても同じです。</p>
-    ${gs.map(g => `<button class="row" style="width:100%;text-align:left" data-pg="${g.id}"><span class="grow"><b>📁 ${esc(g.name)}</b>${g.parent ? `<div class="muted small">${esc(groupChain(groupById(g.parent)))} の中</div>` : ""}</span><span>＋</span></button>`).join("") || `<div class="empty">入れられるファイルがありません</div>`}
-    <div class="btns"><button class="btn" data-x>閉じる</button></div>`, s => {
-    s.addEventListener("click", e => {
-      const b = e.target.closest("button"); if (!b) return;
-      if (b.dataset.pg) { closeSheet(); createAlias(id, b.dataset.pg); renderBoardView(); renderFileBar(); toast(`「${groupById(b.dataset.pg)?.name}」にも入れました`); }
-      else if ("x" in b.dataset) closeSheet();
-    });
-  });
-}
-function createAlias(m, gid) { // ファイルの中の空いた所に分身を置く。空きがなければすぐ下に置き、丸をふくらませる
-  const g = groupById(gid); if (!g || !files[m]) return null;
-  const aid = uid(), G = groupGeo(g), W = CARD_W, H = 56, intended = treeSnapshot();
-  const boxes = [...Object.keys(files).map(cardBox), ...Object.keys(aliasesOf()).map(aliasBox)].filter(Boolean);
-  const allowed = new Set([g.id, ...ancestorsOfGroup(g).map(x => x.id)]);
-  const free = (x, y) => !boxes.some(o => x < o.x + o.w + 10 && x + W + 10 > o.x && y < o.y + o.h + 10 && y + H + 10 > o.y);
-  const ok = (x, y) => rectPts({ x, y, w: W, h: H }, 6).every(q => insidePts(g.pts, q[0], q[1])) && free(x, y) && !board.groups.some(h => !allowed.has(h.id) && h.pts && insidePts(h.pts, x + W / 2, y + H / 2));
-  const cand = []; for (let y = G.y0; y <= G.y1 - H; y += 20) for (let x = G.x0; x <= G.x1 - W; x += 20) cand.push([x, y]);
-  cand.sort((p, q) => Math.hypot(p[0] + W / 2 - G.cx, p[1] + H / 2 - G.cy) - Math.hypot(q[0] + W / 2 - G.cx, q[1] + H / 2 - G.cy));
-  let spot = cand.find(([x, y]) => ok(x, y));
-  for (let d = 24; d <= 2000 && !spot; d += 24) { const x = G.cx - W / 2, y = G.y1 + d; if (free(x, y) && !board.groups.some(h => { if (allowed.has(h.id) || !h.pts) return false; const Q = groupGeo(h); return x < Q.x1 + 24 && x + W + 24 > Q.x0 && y < Q.y1 + 24 && y + H + 24 > Q.y0; })) spot = [x, y]; }
-  spot ||= [G.cx - W / 2, G.y1 + 24];
-  aliasesOf()[aid] = { m, x: Math.round(spot[0]), y: Math.round(spot[1]) };
-  ensureContains(g, rectPts({ x: spot[0], y: spot[1], w: W, h: H }, 14));
-  recomputeTree(); reconcileTree(intended); recomputeTree(); saveBoard();
-  return aid;
-}
-function aliasMenu(aid) {
-  const a = aliasesOf()[aid]; if (!a || !files[a.m]) return;
-  const g = groupOfAlias(aid), home = groupOfCard(a.m);
-  openSheet(`<h2>📎 ${esc(memoTitle(files[a.m]))}</h2><p class="muted small" style="margin-top:-4px">${g ? `「${esc(g.name)}」に置いた分身です。` : ""}中身は${home ? `「${esc(home.name)}」にある` : ""}元のメモと同じです。外しても、メモは消えません。</p>
-    <button class="btn primary block" data-open>開いて書く</button>
-    <button class="btn block" data-un style="margin-top:8px">${g ? `「${esc(g.name)}」から外す` : "分身を外す"}</button>
-    <div class="btns"><button class="btn" data-x>閉じる</button></div>`, s => {
-    s.addEventListener("click", e => {
-      const b = e.target.closest("button"); if (!b) return;
-      if ("open" in b.dataset) { closeSheet(); openFile(a.m); }
-      else if ("un" in b.dataset) { delete board.alias[aid]; recomputeTree(); closeSheet(); renderBoardView(); renderFileBar(); toast("分身を外しました(メモは残っています)"); }
-      else if ("x" in b.dataset) closeSheet();
-    });
-  });
-}
 function cardMenu(id) {
   const f = files[id], c = board.cards[id], g = groupOfCard(id);
   const n = board.edges.filter(e => e.a === id || e.b === id).length;
-  openSheet(`<h2>${esc(memoTitle(f))}</h2>${g ? `<p class="muted small" style="margin-top:-4px">${esc(groupChain(g))} に入っています</p>` : ""}
+  openSheet(`<h2>${esc(memoTitle(f))}</h2>${g ? `<p class="muted small" style="margin-top:-4px">${groupsOfCard(id).map(x => esc(groupChain(x))).join("、")} に入っています</p>` : ""}
     <button class="btn primary block" data-open>開いて書く</button>
     <label class="field"><span>名前</span><input class="inp" id="cmName" value="${esc(f.name || "")}" maxlength="40" placeholder="空欄なら1行目が名前(${esc(memoTitle({ ...f, name: "" }))})"></label>
-    <div class="field"><span>色</span>${colorSwatches(c.c, boardColors().tint && groupColor(g) ? "ファイルの色" : "なし")}</div>
+    <div class="field"><span>色</span>${colorSwatches(c.c, boardColors().tint && groupColor(g) ? "グループの色" : "なし")}</div>
     <div class="field"><span>外枠</span><div class="seg" style="display:flex">${[["", "通常"], ["dash", "点線"], ["thick", "太線"], ["double", "二重"], ["none", "なし"]].map(([k, l]) => `<button style="flex:1;padding:6px 2px" data-bd="${k}" class="${(c.bd || "") === k ? "on" : ""}">${l}</button>`).join("")}</div></div>
     <div class="field"><span>形</span><div class="seg" style="display:flex">${[["", "通常"], ["sq", "四角"], ["round", "丸く"], ["diamond", "菱形"]].map(([k, l]) => `<button style="flex:1" data-bs="${k}" class="${(c.bs || "") === k ? "on" : ""}">${l}</button>`).join("")}</div></div>
     ${g ? `<button class="btn block" data-out style="margin-top:4px">「${esc(g.name)}」の外へ出す</button>` : ""}
-    ${fileTags(id).length ? `<p class="muted small" style="margin:6px 0 0">ファイルから付いたタグ:${fileTags(id).map(t => "📁#" + esc(t)).join(" ")}</p>` : ""}
+    ${fileTags(id).length ? `<p class="muted small" style="margin:6px 0 0">グループから付いたタグ:${fileTags(id).map(t => "📁#" + esc(t)).join(" ")}</p>` : ""}
     ${meta.boards.length ? `<p class="muted small" style="margin:6px 0 0">置いてあるボード:${boardsOfMemo(id).map(b => "◧ " + esc(b.name)).join("、")}</p>` : ""}
-    ${board.groups.length ? `<button class="btn block" data-addalias style="margin-top:6px">ほかのファイルにも入れる</button>` : ""}
     <button class="btn block" data-onb style="margin-top:6px">ほかのボードにも置く</button>${curBoard !== "main" ? `<button class="btn block" data-unb style="margin-top:6px">このボードから外す(メモは残す)</button>` : ""}
     <button class="btn danger block" data-del style="margin-top:8px">このメモを削除${meta.boards.length ? "(すべてのボードから)" : ""}</button>
     <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
@@ -3015,17 +2945,16 @@ function cardMenu(id) {
         c.x = p.x; c.y = p.y; closeSheet(); renderBoard(); recomputeTree(); renderBoard(); renderFileBar(); toast(`「${g.name}」から出しました`);
       }
       else if ("ok" in b.dataset) { apply(); closeSheet(); renderBoard(); }
-      else if ("addalias" in b.dataset) { apply(); closeSheet(); aliasPickSheet(id); }
       else if ("onb" in b.dataset) { apply(); closeSheet(); placeOnBoardSheet(id); }
       else if ("unb" in b.dataset) { apply(); closeSheet(); removeFromBoard(id); recomputeTree(); renderBoardView(); renderFileBar(); toast(`◧ ${boardName(curBoard)} から外しました(メモは残っています)`); }
       else if ("del" in b.dataset) confirmSheet("メモを削除しますか", `「${memoTitle(f)}」(${countNodes(f.nodes)}行)${n ? `と、つながっている矢印 ${n} 本` : ""}を削除します。メモは30日間、「設定 › ゴミ箱」から戻せます。`, "削除する", () => { removeMemo(id); renderBoard(); recomputeTree(); renderBoardView(); renderFileBar(); });
     });
   });
 }
-function groupNameSheet(gid, fresh) { // 囲んだ直後に、ファイルの名前を付ける
+function groupNameSheet(gid, fresh) { // 囲んだ直後に、グループの名前を付ける
   const g = groupById(gid);
   const inner = [...(g.members || []).map(m => memoTitle(files[m])), ...board.groups.filter(h => h.parent === gid).map(h => "📁 " + h.name)];
-  openSheet(`<h2>${fresh ? (g.members?.length || board.groups.some(h => h.parent === gid) ? "ファイルにしました" : "新しいファイル") : "ファイルの名前"}</h2>
+  openSheet(`<h2>${fresh ? (g.members?.length || board.groups.some(h => h.parent === gid) ? "グループにしました" : "新しいグループ") : "グループの名前"}</h2>
     <p class="muted small" style="margin-top:-4px">${g.parent ? esc(groupChain(groupById(g.parent))) + " の中 · " : ""}${inner.map(esc).join("、") || "まだ空です"}</p>
     <label class="field"><span>名前</span><input class="inp" id="gnN" value="${esc(g.name)}" maxlength="30"></label>
     <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
@@ -3043,12 +2972,12 @@ function groupMenu(gid) {
     <p class="muted small" style="margin-top:-4px">${g.parent ? esc(groupChain(groupById(g.parent))) + " の中 · " : ""}${inner.map(esc).join("、") || "まだ空です"}</p>
     <label class="field"><span>名前</span><input class="inp" id="gmN" value="${esc(g.name)}" maxlength="30"></label>
     <div class="field"><span>丸の色</span>${colorSwatches(g.c, boardColors().auto ? "自動" : "なし")}</div>
-    <label class="row"><input type="checkbox" id="gmTag"${g.tagOn ? " checked" : ""}><span class="grow">このファイル内のメモにタグを追加する</span></label>
+    <label class="row"><input type="checkbox" id="gmTag"${g.tagOn ? " checked" : ""}><span class="grow">このグループ内のメモにタグを追加する</span></label>
     <div id="gmTagF"${g.tagOn ? "" : " hidden"}><label class="field"><span>付けるタグ</span><input class="inp" id="gmTagN" value="${esc(g.tagName || g.name)}" maxlength="20" placeholder="${esc(g.name)}"></label>
-      <p class="muted small" style="margin-top:-2px">中の丸のメモにも付きます(メモには 📁 の印で出ます)。丸から出すと外れます。タグがファイルと同じ名前のままなら、ファイルの名前を変えるとタグも変わります。</p></div>
+      <p class="muted small" style="margin-top:-2px">中の丸のメモにも付きます(メモには 📁 の印で出ます)。丸から出すと外れます。タグがグループと同じ名前のままなら、グループの名前を変えるとタグも変わります。</p></div>
     <div class="btns" style="margin-top:4px"><button class="btn" data-arrange>中を整列</button><button class="btn" data-redraw>形を描き直す</button></div>
-    <button class="btn block" data-subgroup style="margin-top:8px">この中に新しいファイルを作る</button>
-    <button class="btn danger block" data-delall style="margin-top:8px">${curBoard === "main" ? "ファイルと中身を削除" : "ファイルをこのボードから外す"}</button>
+    <button class="btn block" data-subgroup style="margin-top:8px">この中に新しいグループを作る</button>
+    <button class="btn danger block" data-delall style="margin-top:8px">${curBoard === "main" ? "グループと中身を削除" : "グループをこのボードから外す"}</button>
     <button class="btn block" data-del style="margin-top:8px">丸だけ消す(中身は残す)</button>
     <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
     $("#gmTag").onchange = e => { $("#gmTagF").hidden = !e.target.checked; if (e.target.checked && !$("#gmTagN").value.trim()) $("#gmTagN").value = $("#gmN").value.trim() || g.name; };
@@ -3065,9 +2994,10 @@ function groupMenu(gid) {
       else if ("ok" in b.dataset) { applyG(); closeSheet(); renderBoard(); renderFileBar(); }
       else if ("redraw" in b.dataset) { applyG(); closeSheet(); if (boardMode !== "map") setBoardMode("map"); setLasso(true, gid); }
       else if ("subgroup" in b.dataset) { applyG(); const k = createEmptyGroup(g); sideFold.delete(g.id); renderBoard(); groupNameSheet(k.id, true); }
+      else if ("arrange" in b.dataset && sharesOutside(g)) { applyG(); closeSheet(); toast("ほかのグループと重なっているので、中は整列しません(重なりのメモが抜けないように)"); }
       else if ("arrange" in b.dataset) { applyG(); closeSheet(); arrangeGroup(g, true); recomputeTree(); renderBoard(); renderFileBar(); toast(`「${g.name}」の中を整列しました`); }
       else if ("delall" in b.dataset) { closeSheet(); dropDelete({ t: "g", id: gid }); }
-      else if ("del" in b.dataset) confirmSheet("丸を消しますか", `ファイル「${g.name}」を消します${n ? `(つながっている矢印 ${n} 本も)` : ""}。中のメモや丸は消えず、ひとつ外側に移ります。`, "消す", () => {
+      else if ("del" in b.dataset) confirmSheet("丸を消しますか", `グループ「${g.name}」を消します${n ? `(つながっている矢印 ${n} 本も)` : ""}。中のメモや丸は消えず、ひとつ外側に移ります。`, "消す", () => {
         board.groups = board.groups.filter(x => x !== g); board.edges = board.edges.filter(e => e.a !== gid && e.b !== gid);
         recomputeTree(); renderBoard(); renderBoardView(); renderFileBar(); toast("丸を消しました");
       });
@@ -3105,8 +3035,8 @@ function edgeMenu(eid) {
 }
 
 /* ============================================================
-   メモ画面の左の縦のツリー:ファイル(丸)とメモを入れ子で並べ、長押しで並べ替え・ファイルの移動。
-   移した結果はボードに反映する(カードや丸をそのファイルの中へ動かし、丸を収まる形にふくらませる)。
+   メモ画面の左の縦のツリー:グループ(丸)とメモを入れ子で並べ、長押しで並べ替え・グループの移動。
+   移した結果はボードに反映する(カードや丸をそのグループの中へ動かし、丸を収まる形にふくらませる)。
    並び順は board.order に持つ(ボード上の位置には関係しない)
    ============================================================ */
 const sideEl = $("#side"), sideList = $("#sideList"), blistEl = $("#blist");
@@ -3119,19 +3049,18 @@ function setSide(open) {
 }
 $("#sideBtn").onclick = () => setSide(!document.body.classList.contains("side-open"));
 $("#sideScrim").onclick = () => setSide(false);
-const itemParent = it => it.t === "g" ? (groupById(it.id)?.parent || null) : it.t === "a" ? (groupOfAlias(it.id)?.id || null) : (groupOfCard(it.id)?.id || null);
-const itemName = it => it.t === "g" ? groupById(it.id).name : memoTitle(files[it.t === "a" ? it.m : it.id]);
+const itemParent = it => it.t === "g" ? (groupById(it.id)?.parent || null) : (groupOfCard(it.id)?.id || null);
+const itemName = it => it.t === "g" ? groupById(it.id).name : memoTitle(files[it.id]);
 function sideKids(pid) {
   const order = board.order || {};
   const gs = board.groups.filter(g => (g.parent || null) === pid).map(g => ({ t: "g", id: g.id }));
-  const ms = Object.keys(files).filter(id => board.cards[id] && (groupOfCard(id)?.id || null) === pid).map(id => ({ t: "m", id }));
-  const as = pid ? (groupById(pid)?.amembers || []).filter(aid => files[aliasesOf()[aid]?.m]).map(aid => ({ t: "a", id: aid, m: aliasesOf()[aid].m })) : []; // 分身
-  return [...gs, ...ms, ...as].sort((a, b) => (order[a.id] ?? Infinity) - (order[b.id] ?? Infinity) || (a.t === b.t ? 0 : a.t === "g" ? -1 : 1) || itemName(a).localeCompare(itemName(b), "ja", { numeric: true }));
+  const ms = Object.keys(files).filter(id => board.cards[id] && (pid ? (groupById(pid)?.members || []).includes(id) : !groupOfCard(id))).map(id => ({ t: "m", id }));
+  return [...gs, ...ms].sort((a, b) => (order[a.id] ?? Infinity) - (order[b.id] ?? Infinity) || (a.t === b.t ? 0 : a.t === "g" ? -1 : 1) || itemName(a).localeCompare(itemName(b), "ja", { numeric: true }));
 }
 // ツリーを描く。rich = ボードのリスト表示(1行目のひとことと、矢印のつながりも添える)
 function treeHtml(rich) {
   const rows = [];
-  const cur = curFile, curChain = new Set((groupOfCard(cur) ? [...ancestorsOfGroup(groupOfCard(cur)), groupOfCard(cur)] : []).map(g => g.id));
+  const cur = curFile, curChain = new Set(groupsOfCard(cur).flatMap(g => [...ancestorsOfGroup(g), g]).map(g => g.id));
   const links = id => {
     if (!rich) return "";
     const out = board.edges.filter(e => e.a === id || (e.dir === "both" && e.b === id)).map(e => "→ " + nameOf(e.a === id ? e.b : e.a));
@@ -3146,8 +3075,6 @@ function treeHtml(rich) {
         rows.push(`<div class="srow sg" data-sid="g:${g.id}" style="--d:${d};--gc:${colHex(groupColor(g))}"><button class="s-fold" data-sfold="${g.id}" aria-label="${folded ? "開く" : "畳む"}">${folded ? "▸" : "▾"}</button>` +
           `<div class="s-body"><div class="s-line"><span class="s-name">📁 ${esc(g.name)}</span><span class="s-k">${n}</span></div>${links(g.id)}</div>${more("g", g.id)}</div>`);
         if (!folded) walk(g.id, d + 1);
-      } else if (it.t === "a") {
-        rows.push(`<div class="srow sm alias${it.m === cur ? " cur" : ""}" data-sid="a:${it.id}" style="--d:${d}"><span class="s-dot">📎</span><div class="s-body"><div class="s-line"><span class="s-name">${esc(memoTitle(files[it.m]))}</span></div></div></div>`);
       } else {
         const f = files[it.id], pv = rich ? previewLines(f)[0] : "";
         rows.push(`<div class="srow sm${it.id === cur ? " cur" : ""}${rich ? cardColorClass(it.id) : ""}" data-sid="m:${it.id}" style="--d:${d}"><span class="s-dot">•</span>` +
@@ -3164,11 +3091,11 @@ function renderSide() {
     sideList.querySelector(".srow.cur")?.scrollIntoView({ block: "nearest" });
   }
   if (view === "board" && boardMode === "list") renderBoardList();
-  const sb = $("#sideBoard"); if (sb) sb.textContent = (meta.boards || []).length ? "◧ " + boardName(curBoard) : "ファイルとメモ";
+  const sb = $("#sideBoard"); if (sb) sb.textContent = (meta.boards || []).length ? "◧ " + boardName(curBoard) : "グループとメモ";
 }
-/* ---- ボードの「リスト」:一段ずつ開く一覧。ボードがいくつもあれば、いちばん外はボード(大きなファイル)の一覧。
-   ファイルを押すとその中身の一覧に入れ替わり、「‹ 戻る」で外へ。メモを押すと開く ---- */
-let listPath = LS.get("listPath") || [], listAtBoards = !!LS.get("listAtBoards"); // listPath = いまのボードの中で、開いているファイル(外から順)
+/* ---- ボードの「リスト」:一段ずつ開く一覧。ボードがいくつもあれば、いちばん外はボード(大きなグループ)の一覧。
+   グループを押すとその中身の一覧に入れ替わり、「‹ 戻る」で外へ。メモを押すと開く ---- */
+let listPath = LS.get("listPath") || [], listAtBoards = !!LS.get("listAtBoards"); // listPath = いまのボードの中で、開いているグループ(外から順)
 const saveListPath = () => { LS.set("listPath", listPath); LS.set("listAtBoards", listAtBoards); };
 const listCount = gid => sideKids(gid).length;
 function renderBoardList() {
@@ -3184,20 +3111,19 @@ function renderBoardList() {
   } else {
     const gid = listPath[listPath.length - 1] || null;
     const path = [multi ? "◧ " + boardName(curBoard) : "", ...listPath.map(id => "📁 " + groupById(id).name)].filter(Boolean);
-    h = `<div class="bl-h">${listPath.length || multi ? `<button class="mini" data-blback>‹ 戻る</button>` : ""}<span class="bl-path">${esc(path.join(" › ") || "すべてのメモ")}</span><span class="spacer"></span><button class="mini" data-blnewg>＋ ファイル</button></div>` +
+    h = `<div class="bl-h">${listPath.length || multi ? `<button class="mini" data-blback>‹ 戻る</button>` : ""}<span class="bl-path">${esc(path.join(" › ") || "すべてのメモ")}</span><span class="spacer"></span><button class="mini" data-blnewg>＋ グループ</button></div>` +
       (sideKids(gid).map(it => {
         if (it.t === "g") { const g = groupById(it.id); return `<div class="bl-row" data-blg="${g.id}" style="--gc:${colHex(groupColor(g))}"><span class="bl-ic">📁</span><span class="grow"><b>${esc(g.name)}</b><span class="bl-sub">${listCount(g.id)} 件</span></span>${more("g:" + g.id)}<span class="bl-go">›</span></div>`; }
-        if (it.t === "a") return `<div class="bl-row${it.m === curFile ? " cur" : ""}" data-blm="${it.m}"><span class="bl-ic">📎</span><span class="grow"><b>${esc(memoTitle(files[it.m]))}</b><span class="bl-sub">分身(中身は同じメモ)</span></span>${more("a:" + it.id)}</div>`;
         const f = files[it.id], pv = previewLines(f)[0];
         return `<div class="bl-row${it.id === curFile ? " cur" : ""}" data-blm="${it.id}"><span class="bl-ic">•</span><span class="grow"><b>${esc(memoTitle(f))}</b>${pv ? `<span class="bl-sub">${esc(pv.trim())}</span>` : ""}</span>${more("m:" + it.id)}</div>`;
-      }).join("") || `<div class="empty">${gid ? "このファイルはまだ空です。右上の「＋ メモ」で、この中にメモを作れます" : "メモがありません"}</div>`);
+      }).join("") || `<div class="empty">${gid ? "このグループはまだ空です。右上の「＋ メモ」で、この中にメモを作れます" : "メモがありません"}</div>`);
   }
   blistEl.innerHTML = h; blistEl.scrollTop = st;
   $("#v-board").classList.toggle("listboards", multi); // ボードは一覧の中で選ぶので、上の切り替えは隠す
 }
 blistEl.addEventListener("click", e => {
   const m = e.target.closest("[data-blmore]");
-  if (m) { const [t, id] = m.dataset.blmore.split(":"); if (t === "b") { switchBoard(id); boardMenu(); } else if (t === "a") aliasMenu(id); else t === "g" ? groupMenu(id) : cardMenu(id); return; }
+  if (m) { const [t, id] = m.dataset.blmore.split(":"); if (t === "b") { switchBoard(id); boardMenu(); } else t === "g" ? groupMenu(id) : cardMenu(id); return; }
   const r = e.target.closest("[data-blb],[data-blg],[data-blm],[data-blback],[data-blnewg],[data-blnewb]"); if (!r) return;
   if (r.dataset.blb) { switchBoard(r.dataset.blb); listAtBoards = false; listPath = []; }
   else if (r.dataset.blg) listPath.push(r.dataset.blg);
@@ -3207,7 +3133,7 @@ blistEl.addEventListener("click", e => {
   else if ("blnewb" in r.dataset) { newBoardSheet(); return; }
   saveListPath(); blistEl.scrollTop = 0; renderBoardList();
 });
-function newMemoInList() { // リストで「＋ メモ」:開いているファイルの中にメモを作り、そのまま書く
+function newMemoInList() { // リストで「＋ メモ」:開いているグループの中にメモを作り、そのまま書く
   const B = contentBounds(), f = createMemo("", { x: Math.round(B.x0), y: Math.round(B.y1 + 60) }), gid = listPath[listPath.length - 1];
   if (gid && groupById(gid)) sideMove({ t: "m", id: f.id }, { t: "g", id: gid }, "into");
   openFile(f.id); focusStart();
@@ -3221,15 +3147,14 @@ function bindTree(list, rich) {
     const f = e.target.closest("[data-sfold]");
     const row = e.target.closest(".srow"); if (!row) return;
     const [t, id] = row.dataset.sid.split(":");
-    if (t === "a") { const a = aliasesOf()[id]; if (a) openFile(a.m); if (!rich) { if (!isWide()) setSide(false); else renderSide(); } return; }
     if (t === "g" || f) { const gid = f ? f.dataset.sfold : id; sideFold.has(gid) ? sideFold.delete(gid) : sideFold.add(gid); LS.set("sideFold", [...sideFold]); rich ? renderBoardList() : renderSide(); return; }
     openFile(id); if (!rich) { if (!isWide()) setSide(false); else renderSide(); }
   });
-  // ---- 長押しで持ち上げて動かす:行の上=前へ、下=後ろへ、ファイルの行の真ん中=その中へ ----
+  // ---- 長押しで持ち上げて動かす:行の上=前へ、下=後ろへ、グループの行の真ん中=その中へ ----
   list.addEventListener("pointerdown", e => {
     const row = e.target.closest(".srow"); if (!row || e.button > 0 || e.target.closest("[data-sfold],[data-smore]")) return;
     clearTimeout(sdrag?.timer);
-    const [t, id] = row.dataset.sid.split(":"); if (t === "a") return; // 分身は一覧では動かさない(ボードで動かす)
+    const [t, id] = row.dataset.sid.split(":");
     sdrag = { list, rich, it: { t, id }, row, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, pid: e.pointerId, on: false, target: null };
     row.classList.add("pressing");
     sdrag.timer = setTimeout(() => { if (sdrag && !sdrag.on) sStart(); }, LONGPRESS_MS);
@@ -3297,7 +3222,7 @@ document.addEventListener("touchend", () => { if (sdrag && sdrag.on) sEnd(true);
 document.addEventListener("touchcancel", () => { if (sdrag && sdrag.on) sEnd(false); });
 
 // ---- ボードの表示の切り替え:図/リスト ----
-let boardMode = LS.get("boardMode") === "list" ? "list" : "map"; // 以前の「タグ」(円の図)は廃止。ファイルで分ける
+let boardMode = LS.get("boardMode") === "list" ? "list" : "map"; // 以前の「タグ」(円の図)は廃止。グループで分ける
 function setBoardMode(m) {
   boardMode = m; LS.set("boardMode", m);
   $("#v-board").classList.toggle("listmode", m === "list");
@@ -3308,7 +3233,7 @@ $("#bmode").addEventListener("click", e => { const b = e.target.closest("[data-b
 $("#v-board").classList.toggle("listmode", boardMode === "list");
 $("#bmode").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.bm === boardMode));
 
-// ---- ボードの切り替え・作成・名前・削除と、メモやファイルを入れる ----
+// ---- ボードの切り替え・作成・名前・削除と、メモやグループを入れる ----
 function renderBoardBar() {
   const el = $("#bbar"); if (!el) return;
   el.innerHTML = boardList().map(b => `<button class="bchip${b.id === curBoard ? " on" : ""}" data-bid="${b.id}">${b.id === "main" ? "◧ " : ""}${esc(b.name)}${b.id === curBoard ? ` <span class="bc-dd">▾</span>` : ""}</button>`).join("") +
@@ -3336,7 +3261,7 @@ function switchBoard(id) {
 }
 function newBoardSheet() {
   openSheet(`<h2>新しいボード</h2>
-    <p class="muted small" style="margin-top:-4px">選んだメモやファイルだけを置くボードです。同じメモを、いくつものボードに置けます。メインには、これまでどおりすべてのメモが並びます。</p>
+    <p class="muted small" style="margin-top:-4px">選んだメモやグループだけを置くボードです。同じメモを、いくつものボードに置けます。メインには、これまでどおりすべてのメモが並びます。</p>
     <label class="field"><span>名前</span><input class="inp" id="nbN" maxlength="24" placeholder="例:第2章の構成"></label>
     <div class="btns"><button class="btn" data-x>やめる</button><button class="btn primary" data-ok>作る</button></div>`, s => {
     const i = $("#nbN"); i.focus();
@@ -3364,9 +3289,9 @@ function boardMenu() {
   }
   const meB = meta.boards.find(b => b.id === curBoard), n = Object.keys(board.cards).filter(id => files[id]).length;
   openSheet(`<h2>◧ ${esc(meB.name)}</h2>
-    <p class="muted small" style="margin-top:-4px">メモ ${n} 件 · ファイル ${board.groups.length} 個</p>
+    <p class="muted small" style="margin-top:-4px">メモ ${n} 件 · グループ ${board.groups.length} 個</p>
     <label class="field"><span>名前</span><input class="inp" id="bmN" value="${esc(meB.name)}" maxlength="24"></label>
-    <button class="btn block" data-put style="margin-top:4px">＋ メモやファイルを入れる</button>
+    <button class="btn block" data-put style="margin-top:4px">＋ メモやグループを入れる</button>
     <div class="btns" style="margin-top:8px"><button class="btn" data-up>← 前へ</button><button class="btn" data-down>後ろへ →</button></div>
     <button class="btn danger block" data-del style="margin-top:8px">このボードを消す</button>
     <p class="muted small">ボードを消しても、メモは消えません(メインやほかのボードに残ります)。このボードに描いた丸と矢印は消えます。</p>
@@ -3386,7 +3311,7 @@ function boardMenu() {
     });
   });
 }
-// このボードにメモやファイルを入れる。ファイルは、ほかのボードの丸を中のメモごと写す
+// このボードにメモやグループを入れる。グループは、ほかのボードの丸を中のメモごと写す
 function putSheet(fresh) {
   const here = new Set(Object.keys(board.cards).filter(id => files[id]));
   const memosOut = allFilesSorted().filter(f => !here.has(f.id));
@@ -3397,8 +3322,8 @@ function putSheet(fresh) {
   }
   let tab = "m"; const pickM = new Set(), pickG = new Set(); let q = "";
   openSheet(`<h2>${fresh ? "ボードを作りました" : "このボードに入れる"}</h2>
-    <p class="muted small" style="margin-top:-4px">◧ ${esc(boardName(curBoard))} に置くメモやファイルを選んでください。${fresh ? "あとからでも、上の「＋ 入れる」で足せます。" : ""}</p>
-    <div class="seg" id="puTab"><button data-pt="m" class="on">メモ</button><button data-pt="g">ファイル(ほかのボードの丸)</button></div>
+    <p class="muted small" style="margin-top:-4px">◧ ${esc(boardName(curBoard))} に置くメモやグループを選んでください。${fresh ? "あとからでも、上の「＋ 入れる」で足せます。" : ""}</p>
+    <div class="seg" id="puTab"><button data-pt="m" class="on">メモ</button><button data-pt="g">グループ(ほかのボードの丸)</button></div>
     <input class="inp" id="puQ" maxlength="40" placeholder="名前で絞り込む" style="margin-top:8px">
     <div class="pulist" id="puL"></div>
     <div class="btns"><button class="btn" data-x>${fresh ? "あとで" : "やめる"}</button><button class="btn primary" data-ok>入れる</button></div>`, s => {
@@ -3406,7 +3331,7 @@ function putSheet(fresh) {
       s.querySelectorAll("#puTab button").forEach(x => x.classList.toggle("on", x.dataset.pt === tab));
       const ql = q.toLowerCase();
       if (tab === "m") $("#puL").innerHTML = memosOut.filter(f => !ql || fullTitle(f).toLowerCase().includes(ql)).map(f => `<label class="purow"><input type="checkbox" data-pm="${f.id}"${pickM.has(f.id) ? " checked" : ""}><span class="grow"><b>${esc(memoTitle(f))}</b><span class="muted small">${countNodes(f.nodes)}行${memoTags(f).length ? " · " + memoTags(f).map(t => "#" + esc(t)).join(" ") : ""}</span></span></label>`).join("") || `<div class="empty">${memosOut.length ? "当てはまるメモがありません" : "すべてのメモが、もうこのボードにあります"}</div>`;
-      else $("#puL").innerHTML = srcGroups.map((x, i) => [x, i]).filter(([x]) => !ql || x.g.name.toLowerCase().includes(ql)).map(([x, i]) => `<label class="purow"><input type="checkbox" data-pg="${i}"${pickG.has(i) ? " checked" : ""}><span class="grow"><b>📁 ${esc(x.g.name)}</b><span class="muted small">◧ ${esc(x.bname)}${x.g.parent ? " · " + esc(groupChain(withBoard(x.bid, () => groupById(x.g.parent)))) + " の中" : ""} · メモ ${x.n} 件${x.k ? ` · 中の丸 ${x.k} 個` : ""}</span></span></label>`).join("") || `<div class="empty">ほかのボードに、まだ丸(ファイル)がありません</div>`;
+      else $("#puL").innerHTML = srcGroups.map((x, i) => [x, i]).filter(([x]) => !ql || x.g.name.toLowerCase().includes(ql)).map(([x, i]) => `<label class="purow"><input type="checkbox" data-pg="${i}"${pickG.has(i) ? " checked" : ""}><span class="grow"><b>📁 ${esc(x.g.name)}</b><span class="muted small">◧ ${esc(x.bname)}${x.g.parent ? " · " + esc(groupChain(withBoard(x.bid, () => groupById(x.g.parent)))) + " の中" : ""} · メモ ${x.n} 件${x.k ? ` · 中の丸 ${x.k} 個` : ""}</span></span></label>`).join("") || `<div class="empty">ほかのボードに、まだ丸(グループ)がありません</div>`;
       const c = pickM.size + pickG.size; $("[data-ok]", s).textContent = c ? `入れる(${c})` : "入れる";
     };
     draw();
@@ -3423,7 +3348,7 @@ function putSheet(fresh) {
         let nm = 0; for (const x of top) nm += copyGroupHere(x.bid, x.g);
         for (const id of pickM) if (!board.cards[id]) { putCardHere(id); nm++; }
         closeSheet(); renderBoard(); recomputeTree(); renderBoardView(); if (boardMode === "map") fitView();
-        if (nm || top.length) toast(`${top.length ? `ファイル ${top.length} 個` : ""}${top.length && pickM.size ? "と" : ""}${pickM.size ? `メモ ${pickM.size} 件` : ""}を入れました`);
+        if (nm || top.length) toast(`${top.length ? `グループ ${top.length} 個` : ""}${top.length && pickM.size ? "と" : ""}${pickM.size ? `メモ ${pickM.size} 件` : ""}を入れました`);
       }
     });
   });
@@ -3463,7 +3388,7 @@ function placeOnBoardSheet(id) { // カードのメニューから:ほかのボ�
     <div class="btns"><button class="btn" data-x>閉じる</button></div>`, s => {
     s.addEventListener("click", e => {
       const b = e.target.closest("button"); if (!b || b.disabled) return;
-      if (b.dataset.pb) { withBoard(b.dataset.pb, () => putCardHere(id)); closeSheet(); toast(`◧ ${boardName(b.dataset.pb)} に置きました`); renderBoardBar(); }
+      if (b.dataset.pb) { withBoard(b.dataset.pb, () => putCardHere(id)); toast(`◧ ${boardName(b.dataset.pb)} に置きました`); renderBoardBar(); b.disabled = true; b.lastElementChild.textContent = "✓"; } // 閉じずに、続けてほかのボードにも置ける
       else if ("bnew" in b.dataset) {
         const nb = { id: uid(), name: "ボード " + (meta.boards.length + 1) }; meta.boards.push(nb); saveMeta();
         boards[nb.id] = normBoard(); withBoard(nb.id, () => putCardHere(id)); closeSheet(); renderBoardBar(); toast(`◧ ${nb.name} を作って置きました(名前はボードを開いて ▾ から)`);
@@ -3474,46 +3399,45 @@ function placeOnBoardSheet(id) { // カードのメニューから:ほかのボ�
 }
 function removeFromBoard(id) { // このボードから外す(メモは消さない)
   delete board.cards[id];
-  for (const [aid, a] of Object.entries(aliasesOf())) if (a.m === id) delete board.alias[aid];
   board.edges = board.edges.filter(e => e.a !== id && e.b !== id);
   for (const g of board.groups) g.members = (g.members || []).filter(x => x !== id);
   saveBoard();
 }
 
-// ---- 並べ替え・ファイルの移動と、ボードへの反映 ----
+// ---- 並べ替え・グループの移動と、ボードへの反映 ----
 function sideMove(src, tgt, zone) {
   if (src.t === tgt.t && src.id === tgt.id) return renderSide();
   const newParent = zone === "into" ? tgt.id : itemParent(tgt);
-  if (src.t === "g") { const g = groupById(src.id); if (newParent === g.id || descendantsOf(g).some(x => x.id === newParent)) { toast("ファイルを自分の中には入れられません"); return renderSide(); } }
+  if (src.t === "g") { const g = groupById(src.id); if (newParent === g.id || descendantsOf(g).some(x => x.id === newParent)) { toast("グループを自分の中には入れられません"); return renderSide(); } }
   const oldParent = itemParent(src);
   recomputeTree();
-  const intended = treeSnapshot(); intended.set(src.t + ":" + src.id, newParent); // 移したもの以外は、元のファイルのまま
+  const intended = treeSnapshot(); intended.set(src.t + ":" + src.id, newParent); // 移したもの以外は、元のグループのまま
   board.order ||= {};
   const sib = sideKids(newParent).filter(x => !(x.t === src.t && x.id === src.id));
   let at = sib.length;
   if (zone !== "into") { const i = sib.findIndex(x => x.t === tgt.t && x.id === tgt.id); at = i < 0 ? sib.length : i + (zone === "after" ? 1 : 0); }
   sib.splice(at, 0, src);
   sib.forEach((x, k) => { board.order[x.id] = k; });
-  if (newParent !== oldParent) { // ボードの上でも、そのファイルの中(外)へ動かす
+  if (newParent !== oldParent) { // ボードの上でも、そのグループの中(外)へ動かす
     if (src.t === "m") newParent ? placeCardInGroup(src.id, groupById(newParent)) : placeCardOutside(src.id);
     else newParent ? placeGroupIn(groupById(src.id), groupById(newParent)) : placeGroupOutside(groupById(src.id));
     recomputeTree();
     const now = itemParent(src);
-    toast(now ? `「${groupById(now).name}」に入れました` : "ファイルの外に出しました");
+    toast(now ? `「${groupById(now).name}」に入れました` : "グループの外に出しました");
     if (now) sideFold.delete(now);
   }
-  if (boardColors().arrange) { // 移した先(と移した元)のファイルの中を、ツリーの順に整列する
+  if (boardColors().arrange) { // 移した先(と移した元)のグループの中を、ツリーの順に整列する
     for (const gid of new Set([newParent, oldParent])) if (gid && groupById(gid)) arrangeGroup(groupById(gid), false);
     recomputeTree();
   }
-  reconcileTree(intended); // 丸が広がって、関係ないファイルやメモを巻き込んでいたら、元の場所へ戻す
+  reconcileTree(intended); // 丸が広がって、関係ないグループやメモを巻き込んでいたら、元の場所へ戻す
   saveBoard(); renderSide(); renderFileBar();
 }
-// ツリー(どれがどのファイルに入っているか)を覚える:"g:丸のid" / "m:メモのid" → 入っているファイルのid
+// ツリー(どれがどのグループに入っているか)を覚える:"g:丸のid" / "m:メモのid" → 入っているグループのid
 function treeSnapshot() {
   const m = new Map();
   for (const g of board.groups) m.set("g:" + g.id, g.parent || null);
-  for (const id of Object.keys(files)) if (board.cards[id]) m.set("m:" + id, groupOfCard(id)?.id || null);
+  for (const id of Object.keys(files)) if (board.cards[id]) m.set("m:" + id, groupsKey(id));
   return m;
 }
 function reconcileTree(intended) { // 形から決まった所属が、意図したツリーと違うものを置き直す(浅いものから)
@@ -3527,7 +3451,7 @@ function reconcileTree(intended) { // 形から決まった所属が、意図し
       if (t === "g" && !groupById(id)) continue;
       if (t === "m" && !files[id]) continue;
       if (want && !groupById(want)) continue;
-      const now = t === "g" ? (groupById(id).parent || null) : (groupOfCard(id)?.id || null);
+      const now = t === "g" ? (groupById(id).parent || null) : groupsKey(id);
       if (now === want) continue;
       bad++;
       if (t === "m") want ? placeCardInGroup(id, groupById(want)) : placeCardOutside(id);
@@ -3569,11 +3493,15 @@ function placeCardOutside(id) {
   const B = contentBounds(new Set(["m:" + id])), c = board.cards[id];
   const p = freeSpot(Math.round(B.x1 + 50), Math.round(B.y0)); c.x = p.x; c.y = p.y;
 }
+function translateGroups(gs, dx, dy) { // いくつものグループを、まとめて同じだけ動かす(共有するメモは一度だけ)
+  const all = [...new Set(gs.flatMap(g => [g, ...descendantsOf(g)]))], cards = new Set(all.flatMap(x => x.members || []));
+  for (const x of all) x.pts = x.pts.map(p => [Math.round(p[0] + dx), Math.round(p[1] + dy)]);
+  for (const m of cards) { const c = board.cards[m]; if (c) { c.x = Math.round(c.x + dx); c.y = Math.round(c.y + dy); } }
+}
 function translateGroup(g, dx, dy) {
   const all = [g, ...descendantsOf(g)];
   for (const x of all) x.pts = x.pts.map(p => [Math.round(p[0] + dx), Math.round(p[1] + dy)]);
   for (const x of all) for (const m of x.members || []) { const c = board.cards[m]; if (c) { c.x = Math.round(c.x + dx); c.y = Math.round(c.y + dy); } }
-  for (const x of all) for (const aid of x.amembers || []) { const a = aliasesOf()[aid]; if (a) { a.x = Math.round(a.x + dx); a.y = Math.round(a.y + dy); } }
 }
 function placeGroupIn(g, P) { // 丸を、外側にする丸の右の縁に並べてから、外側の丸をふくらませて収める
   const G = groupGeo(g), Q = groupGeo(P); if (!G || !Q) return;
@@ -3587,7 +3515,7 @@ function placeGroupOutside(g) {
 }
 
 /* ============================================================
-   メモ画面の「つながり」:そのメモ(と入っているファイル)の矢印をたどって、ほかのメモへ移る
+   メモ画面の「つながり」:そのメモ(と入っているグループ)の矢印をたどって、ほかのメモへ移る
    ============================================================ */
 const navBack = [];
 function memoLinks(id) {
@@ -3600,8 +3528,7 @@ function memoLinks(id) {
     out.push({ other, arrow, label: e.label || "", kind: via ? "via" : (outward || e.dir === "both" ? "out" : "in"), via });
   };
   for (const e of board.edges) if (e.a === id || e.b === id) add(e, id, null);
-  for (const g of [groupOfCard(id), ...aliasGroupsOfMemo(id)].filter(Boolean)) // 分身を置いたファイルの矢印もたどる
-    for (const x of [g, ...ancestorsOfGroup(g).reverse()]) for (const e of board.edges) if (e.a === x.id || e.b === x.id) add(e, x.id, x);
+  for (const g of groupsOfCard(id)) for (const x of [g, ...ancestorsOfGroup(g).reverse()]) for (const e of board.edges) if (e.a === x.id || e.b === x.id) add(e, x.id, x);
   // [[リンク]]:このメモから(↗)と、このメモへ(↙)
   const linksIn = f => { const s = new Set(); const w = l => l.forEach(n => { for (const m of (n.t || "").matchAll(LINK_RE)) s.add(m[1].trim().toLowerCase()); w(n.c || []); }); w(f.nodes); return s; };
   const me = files[id], myT = fullTitle(me).toLowerCase(), mine = linksIn(me);
@@ -3618,7 +3545,7 @@ function tagSheet() {
   const f = files[curFile]; let tags = [...(f.tags || [])];
   openSheet(`<h2>このメモのタグ</h2>
     <div class="metas" id="tgCur"></div>
-    ${fileTags(f.id).length ? `<p class="muted small" style="margin:0">ファイルから付いたタグ:${fileTags(f.id).map(t => "📁#" + esc(t)).join(" ")}(ファイルの設定で変えられます)</p>` : ""}
+    ${fileTags(f.id).length ? `<p class="muted small" style="margin:0">グループから付いたタグ:${fileTags(f.id).map(t => "📁#" + esc(t)).join(" ")}(グループの設定で変えられます)</p>` : ""}
     <div style="display:flex;gap:8px;margin-top:6px"><input class="inp" id="tgIn" placeholder="タグを足す(例:敵キャラ)" maxlength="20"><button class="btn primary" id="tgAdd" style="flex:none">足す</button></div>
     <div class="field"><span>ほかのメモのタグから</span><div class="metas" id="tgAll"></div></div>
     <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
@@ -3666,7 +3593,7 @@ function renderLinkbar() {
   const bar = $("#linkbar"); if (!bar || !files[curFile] || !board) return;
   const ls = memoLinks(curFile);
   const tg = (files[curFile].tags || []).map(t => `<button class="lchip tagc" data-mtag="${esc(t)}">#${esc(t)}</button>`).join("") +
-    fileTags(curFile).map(t => `<button class="lchip tagc ft" data-mtag="${esc(t)}" title="ファイルから付いたタグ">📁#${esc(t)}</button>`).join("");
+    fileTags(curFile).map(t => `<button class="lchip tagc ft" data-mtag="${esc(t)}" title="グループから付いたタグ">📁#${esc(t)}</button>`).join("");
   const back = navBack.length && files[navBack[navBack.length - 1]] ? `<button class="lchip back" data-lback>‹ ${esc(memoTitle(files[navBack[navBack.length - 1]]))}</button>` : "";
   bar.innerHTML = back + tg + ls.map(l => `<button class="lchip ${l.kind}" data-lgo="${l.other}" title="${l.via ? esc("📁 " + l.via.name + " から") : ""}">` +
     `${l.via ? `<span class="lb">📁${esc(l.via.name)}</span>` : ""}<span>${l.arrow}</span><span class="n">${esc(nameOf(l.other))}</span>${l.label ? `<span class="lb">${esc(l.label)}</span>` : ""}</button>`).join("");
@@ -3679,10 +3606,10 @@ $("#linkbar").addEventListener("click", e => {
   if (files[to]) { navBack.push(curFile); if (navBack.length > 30) navBack.shift(); openFile(to); }
   else if (groupById(to)) pickFromGroup(groupById(to));
 });
-function pickFromGroup(g) { // 矢印の先がファイルなら、中のメモから選ぶ
-  const ms = [g, ...descendantsOf(g)].flatMap(x => [...(x.members || []), ...(x.amembers || []).map(aid => aliasesOf()[aid]?.m).filter(m => files[m])].map(m => [m, x]));
+function pickFromGroup(g) { // 矢印の先がグループなら、中のメモから選ぶ
+  const ms = [g, ...descendantsOf(g)].flatMap(x => (x.members || []).map(m => [m, x]));
   openSheet(`<h2>📁 ${esc(g.name)}</h2><p class="muted small" style="margin-top:-4px">開くメモを選んでください</p>
-    ${ms.map(([m, x]) => `<button class="row" style="width:100%;text-align:left" data-pick="${m}"><span class="grow"><b>${esc(memoTitle(files[m]))}</b>${x !== g ? `<div class="muted small">📁 ${esc(x.name)}</div>` : ""}</span><span>›</span></button>`).join("") || `<div class="empty">このファイルにはまだメモがありません</div>`}
+    ${ms.map(([m, x]) => `<button class="row" style="width:100%;text-align:left" data-pick="${m}"><span class="grow"><b>${esc(memoTitle(files[m]))}</b>${x !== g ? `<div class="muted small">📁 ${esc(x.name)}</div>` : ""}</span><span>›</span></button>`).join("") || `<div class="empty">このグループにはまだメモがありません</div>`}
     <div class="btns"><button class="btn" data-x>閉じる</button><button class="btn" data-board>ボードで見る</button></div>`, s => {
     s.addEventListener("click", e => {
       const b = e.target.closest("button"); if (!b) return;
@@ -3808,7 +3735,7 @@ function mimozaLogLines(days, W, T, D) { // 記録画面でミモザが話すこ
   const goal = meta.prefs.goal * 60000 * days.length;
   if (goal) L.push(W >= goal ? "もくひょう たっせい！すごいすごい！" : `もくひょうまで あと ${fmtDur(goal - W)}！`);
   if (D > 10 * 60000 && D > W * 0.5) L.push(`${meta.apps[0]?.name || "ほかのアプリ"}…ちょっと みすぎかも？ ぼくが みはってようか？`);
-  L.push(["メモで /(スラッシュ)を うつと、ほかのメモに リンクできるよ！", "ボードで ゆびで まるく かこむと、ファイルに なるんだ！", "グラフの ぼうを タップすると、うちわけが みられるよ。", "メモの ぎょうの あたまで「[] 」と うつと、チェックに なるよ！"][Math.floor(Date.now() / 864e5) % 4]);
+  L.push(["メモで /(スラッシュ)を うつと、ほかのメモに リンクできるよ！", "ボードで ゆびで まるく かこむと、グループに なるんだ！", "グラフの ぼうを タップすると、うちわけが みられるよ。", "メモの ぎょうの あたまで「[] 」と うつと、チェックに なるよ！"][Math.floor(Date.now() / 864e5) % 4]);
   return { first: false, lines: L };
 }
 
@@ -4443,15 +4370,15 @@ function renderPrefs() {
     </div>
     <div class="card"><h3>ボードの色と整列</h3>
       ${(() => { const C = boardColors(); const row = (k, t, d) => `<label class="row"><input type="checkbox" data-bc="${k}" ${C[k] ? "checked" : ""}><span class="grow">${t}<div class="muted small">${d}</div></span></label>`;
-        return row("auto", "ファイルごとに色を自動で付ける", "丸ごとに、ほかと重ならない色を付けます。自分で選んだ色が優先です") +
-          row("tint", "メモをファイルの色で淡く塗る", "カードを、入っているファイルの色でうっすら塗ります") +
-          row("arrange", "左のツリーで移したら、ファイルの中を整列する", "移した先と元のファイルの中を、ツリーの順にそろえます"); })()}
+        return row("auto", "グループごとに色を自動で付ける", "丸ごとに、ほかと重ならない色を付けます。自分で選んだ色が優先です") +
+          row("tint", "メモをグループの色で淡く塗る", "カードを、入っているグループの色でうっすら塗ります") +
+          row("arrange", "左のツリーで移したら、グループの中を整列する", "移した先と元のグループの中を、ツリーの順にそろえます"); })()}
     </div>
     <div class="card"><h3>ボードの矢印</h3>
       ${(() => { const A = arrowPrefs(); const sw = (key, cur) => `<div style="margin-top:6px">${colorSwatches(cur, "通常", ` data-arc="${key}"`)}</div>`;
-        return `<div class="field"><span>別のファイルのメモへの矢印</span>${sw("cross", A.cross)}</div>
-        <div class="field"><span>ファイル同士の矢印</span>${sw("group", A.group)}</div>
-        <div class="field"><span>ファイル同士の矢印の太さ</span><div class="seg">${[[1.8, "ふつう"], [2.8, "少し太い"], [4, "太い"]].map(([w, l]) => `<button data-agw="${w}" class="${A.groupW === w ? "on" : ""}">${l}</button>`).join("")}</div></div>
+        return `<div class="field"><span>別のグループのメモへの矢印</span>${sw("cross", A.cross)}</div>
+        <div class="field"><span>グループ同士の矢印</span>${sw("group", A.group)}</div>
+        <div class="field"><span>グループ同士の矢印の太さ</span><div class="seg">${[[1.8, "ふつう"], [2.8, "少し太い"], [4, "太い"]].map(([w, l]) => `<button data-agw="${w}" class="${A.groupW === w ? "on" : ""}">${l}</button>`).join("")}</div></div>
         <p class="muted small" style="margin:0">「通常」を選ぶと、ほかの矢印と同じ色になります。<button class="mini" id="arrowReset">初期に戻す</button></p>`; })()}
     </div>
     <div class="card"><h3>保存</h3>
@@ -4689,7 +4616,7 @@ async function saveBackupFile() {
 window.onBackupSaved = ok => { if (ok) markExported(); toast(ok ? "ファイルに保存しました" : "保存できませんでした"); };
 function exportSheet() {
   openSheet(`<h2>データを書き出す</h2>
-    <p class="muted small" style="line-height:1.6">保存したファイルを、移したい先の「設定 › データの引っ越し › 読み込む」で選びます。ファイルにはメモの中身がそのまま入っています。</p>
+    <p class="muted small" style="line-height:1.6">保存したグループを、移したい先の「設定 › データの引っ越し › 読み込む」で選びます。ファイルにはメモの中身がそのまま入っています。</p>
     <button class="btn block" data-file>ファイルに保存</button>
     <button class="btn block" data-copy style="margin-top:8px">文章としてコピー</button>
     <p class="muted small" style="line-height:1.6">ファイルを保存できないときは、コピーして、移したい先の読み込みの欄に貼り付けてください。</p>
@@ -4998,7 +4925,7 @@ window.onBackupChosen = ok => {
 function autoBackupHtml() {
   const t = backupTarget(), at = LS.get("autoBackupAt"), err = LS.get("autoBackupErr");
   if (!t) return `<button class="btn block" id="bkAutoSet" style="margin-top:8px">Google ドライブへ自動でバックアップする</button>`;
-  return `<div class="small" style="margin-top:10px;line-height:1.7"><b>自動バックアップ:</b>${esc(t.name || "選んだファイル")}${t.drive ? "(Google ドライブ)" : ""}<br>最後:${at ? `${fmtDate(at)} ${hm(at)}` : "まだありません"}${err ? `<br><span style="color:var(--danger)">前回は書き込めませんでした。保存先のファイルを消した場合は、選び直してください</span>` : ""}</div>
+  return `<div class="small" style="margin-top:10px;line-height:1.7"><b>自動バックアップ:</b>${esc(t.name || "選んだグループ")}${t.drive ? "(Google ドライブ)" : ""}<br>最後:${at ? `${fmtDate(at)} ${hm(at)}` : "まだありません"}${err ? `<br><span style="color:var(--danger)">前回は書き込めませんでした。保存先のファイルを消した場合は、選び直してください</span>` : ""}</div>
     ${t.drive ? "" : `<p class="muted small" style="margin:4px 0 0">保存先が Google ドライブではありません。この端末の中なら、故障や紛失には備えられません。</p>`}
     <div class="btns"><button class="btn" id="bkAutoOff">やめる</button><button class="btn" id="bkAutoSet">選び直す</button><button class="btn primary" id="bkAutoNow">今すぐ</button></div>`;
 }
@@ -5443,7 +5370,7 @@ function newItemSheet() {
 }
 // ---- ドラッグで消す:動かしている間だけ下にゴミ箱を出す。落としたら消し、直後なら元に戻せる ----
 const trashEl = document.createElement("div"); trashEl.className = "droptrash"; document.body.appendChild(trashEl);
-const trashLabel = t => curBoard !== "main" ? `🗑 ドラッグで${t === "g" ? "ファイルを" : ""}このボードから外す` : t === "g" ? "🗑 ドラッグでファイルと中身を削除" : "🗑 ドラッグでメモを削除";
+const trashLabel = t => curBoard !== "main" ? `🗑 ドラッグで${t === "g" ? "グループを" : ""}このボードから外す` : t === "g" ? "🗑 ドラッグでグループと中身を削除" : "🗑 ドラッグでメモを削除";
 function showTrash(text) { trashEl.textContent = text; trashEl.style.bottom = ($("#nav").offsetHeight + 10) + "px"; trashEl.classList.add("on"); trashEl.classList.remove("hot"); trashEl.classList.toggle("warn", text.includes("ボードから外す")); }
 function hideTrash() { trashEl.classList.remove("on", "hot", "warn"); }
 function overTrash(x, y) {
@@ -5459,11 +5386,11 @@ function dropDelete(it) {
     if (!main) removeFromBoard(id); else if (files[id]) { copies.push(JSON.parse(JSON.stringify(files[id]))); removeMemo(id, true); }
   };
   flushOutline();
-  if (it.t === "g") { // ファイルは中の丸とメモごと
-    const g = groupById(it.id), all = [g, ...descendantsOf(g)], ids = new Set(all.map(x => x.id)), mems = [...new Set(all.flatMap(x => x.members || []))];
+  if (it.t === "g") { // グループは中の丸とメモごと
+    const g = groupById(it.id), all = [g, ...descendantsOf(g)], ids = new Set(all.map(x => x.id)), mems = [...new Set(all.flatMap(x => x.members || []))].filter(m => groupsOfCard(m).every(x => ids.has(x.id))); // ほかのグループにも入っているメモは残す
     board.groups = board.groups.filter(x => !ids.has(x.id)); board.edges = board.edges.filter(e => !ids.has(e.a) && !ids.has(e.b));
     mems.forEach(dropMemo); recomputeTree();
-    msg = main ? `ファイル「${g.name}」と中のメモ ${mems.length} 件を削除しました` : `ファイル「${g.name}」をこのボードから外しました`;
+    msg = main ? `グループ「${g.name}」と中のメモ ${mems.length} 件を削除しました` : `グループ「${g.name}」をこのボードから外しました`;
   } else {
     const name = memoTitle(files[it.id]); dropMemo(it.id); recomputeTree();
     msg = main ? `「${name}」を削除しました` : `「${name}」をこのボードから外しました`;
@@ -5603,9 +5530,10 @@ function tutorialLines() {
     "・メモを整理する",
     "  ・上の「◧ ボード」を押すと、メモがカードになって並びます",
     "  ・カードの右下の●を、別のカードへ引くと矢印でつながります",
-    "  ・指でぐるっと囲むと、ファイルにまとまります",
-    "  ・左上の「☰」で、ファイルとメモの一覧が出ます",
-    "  ・カードを長押しして「ほかのファイルにも入れる」を選ぶと、一つのメモを二つのファイルに入れられます",
+    "  ・指でぐるっと囲むと、グループにまとまります",
+    "  ・丸どうしを重ねて、その重なりにカードを置くと、どちらのグループにも入ります(女性 かつ ウサギ族、のように)",
+    "  ・カードを長押しして「ほかのボードにも置く」で、同じメモをいくつものボードに置けます",
+    "  ・左上の「☰」で、グループとメモの一覧が出ます",
     "・時間を記録する",
     `  ・${NATIVE ? "このアプリ" : "このページ"}を開いているあいだは、自動で作業時間に入ります`,
     "  ・下の「タイマー」で作業の種類を選んで計ると、「記録」にグラフで積み上がります",
