@@ -52,7 +52,37 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .scroll{flex:1;min-height:0;overflow:auto;padding:12px 14px 24px}
 /* 広い画面:タイマー・記録・予定・設定は真ん中に寄せて、横に伸びすぎないようにする。とても広ければ、設定は二列に並べる */
 @media (min-width:900px){#timerScroll,#logScroll,#planScroll,#prefsScroll{padding-left:max(14px,calc((100% - 860px) / 2));padding-right:max(14px,calc((100% - 860px) / 2))}}
-@media (min-width:1200px){#prefsScroll{display:grid;grid-template-columns:1fr 1fr;column-gap:16px;align-content:start;align-items:start;padding-left:max(14px,calc((100% - 1180px) / 2));padding-right:max(14px,calc((100% - 1180px) / 2))}#prefsScroll>:not(.card){grid-column:1/-1}}
+@media (min-width:1200px){#prefsScroll{display:grid;grid-template-columns:1fr 1fr;column-gap:16px;align-content:start;align-items:start;padding-left:max(14px,calc((100% - 1180px) / 2));padding-right:max(14px,calc((100% - 1180px) / 2))}}
+/* 設定:区切りの見出し、左に名前と説明・右に操作の行、入り切りのスイッチ */
+.psec-h{margin:22px 4px 8px;font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--text-muted)}
+.psec:first-child .psec-h{margin-top:4px}
+.card.pcard{padding:0;overflow:hidden}
+.pcard>h3{margin:0;padding:14px 16px 2px;font-size:13px;font-weight:700;letter-spacing:.04em;color:var(--text-secondary)}
+.prow,.pcard .row{display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:52px;border:0;border-top:1px solid var(--line)}
+.pcard>.prow:first-child,.pcard>h3+.prow,.pcard>h3+.row,.pcard>h3+p.pnote{border-top:0}
+.prow .lbl{flex:1;min-width:0;font-size:15px}
+.prow .lbl small{display:block;margin-top:3px;font-size:12px;line-height:1.55;color:var(--text-muted)}
+.prow.pcol{flex-direction:column;align-items:stretch;gap:8px}
+.prow .btn{flex:none;padding:8px 14px;font-size:14px}
+.prow .seg{flex:none}
+.pval{font-weight:600;font-size:14px;text-align:right}
+.pmuted{color:var(--text-muted);font-weight:400;font-size:12px}
+.pselect{flex:none;width:auto;max-width:10em;padding:7px 8px;font-size:13px}
+.pnote{margin:0;padding:10px 16px 14px;font-size:12px;line-height:1.65;color:var(--text-muted);border-top:1px solid var(--line)}
+.wtrow .inp{flex:1;min-width:0;padding:7px 10px}
+.wtrow .mini{flex:none}
+.wtrow .mini:disabled{opacity:.3}
+.ptpl{border-top:1px solid var(--line)}
+.ptpl>summary{display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:52px;cursor:pointer;list-style:none}
+.ptpl>summary::-webkit-details-marker{display:none}
+.ptpl>summary .lbl{flex:1;font-size:15px}
+.ptpl>summary::after{content:"›";font-size:18px;color:var(--text-muted);transition:transform .15s}
+.ptpl[open]>summary::after{transform:rotate(90deg)}
+.ptpl-ed{padding:0 16px 14px}
+input.sw{appearance:none;-webkit-appearance:none;flex:none;width:44px;height:24px;margin:0;background:var(--surface-2);border:1.5px solid var(--line);position:relative;cursor:pointer;transition:background .15s,border-color .15s}
+input.sw::after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;background:var(--text-muted);transition:left .15s,background .15s}
+input.sw:checked{background:var(--accent);border-color:var(--accent)}
+input.sw:checked::after{left:21px;background:var(--accent-ink)}
 .wtcol{flex:none;padding:8px;margin:-8px -2px -8px -8px;background:none;border:0;cursor:pointer}
 .wtcol .tdot{width:14px;height:14px}
 
@@ -4349,79 +4379,72 @@ function pickDeviceApps(kind) { // 端末に入っているアプリから、妨
 }
 const typeOpts = sel => [{ id: "", name: "種類なし" }, ...meta.workTypes].map(t => `<option value="${t.id}" ${t.id === sel ? "selected" : ""}>${esc(t.name)}</option>`).join("");
 function renderPrefsIfOpen() { if (view === "prefs") renderPrefs(); }
+const tplOpen = new Set(); // 開いているテンプレート(設定を描き直しても開いたままにする)
 function renderPrefs() {
   const P = meta.prefs;
-  $("#prefsScroll").innerHTML = `
-    <div class="card"><h3>画面の編集</h3><label class="row"><input type="checkbox" id="pLayoutEdit" ${document.body.classList.contains("layoutedit") ? "checked" : ""}><span class="grow">編集モード<div class="muted small">下のタブと「予定」の中の項目を、入れ替えたり消したりできます。メモの要素で新しい項目も作れます。下のタブを長押ししても入れます</div></span></label></div>
-    <div class="card"><h3>画面の色</h3><div class="seg" style="display:flex">${[["auto", "端末に合わせる"], ["light", "ライト"], ["dark", "ダーク"]].map(([k, l]) => `<button style="flex:1" data-theme-set="${k}" class="${themePref() === k ? "on" : ""}">${l}</button>`).join("")}</div></div>
-    ${NATIVE ? `    <div class="card"><h3>妨害アプリ</h3>
-      ${meta.apps.map(a => `<div class="row"><span class="grow">${esc(a.name)}${a.pkg ? "" : `<div class="muted small">端末のアプリと結びついていません。外して選び直してください</div>`}</span><button class="mini" data-delapp="${a.id}">外す</button></div>`).join("") || `<div class="muted small">まだ指定されていません</div>`}
-      ${NATIVE ? `<button class="btn block" data-pickapps="d" style="margin-top:10px">端末のアプリから選ぶ</button>
-        <label class="row"><input type="checkbox" id="pUsageOv" ${P.usageOv === true ? "checked" : ""}><span class="grow">妨害アプリの使用中、画面の隅に今日の使用時間を出す<div class="muted small">そのアプリの今日の合計を秒まで出します。タイマーを動かしていなくても出ます。動いている間は通知が一つ出ます${P.usageOv !== true ? "" : !meta.apps.some(a => a.pkg) ? `<div style="color:var(--danger)">「端末のアプリから選ぶ」で選んだアプリがないので、まだ出ません</div>` : !usageAccess() || !canOverlay() ? `<div style="color:var(--danger)">「端末の許可」の使用状況と重ね表示を許可するまで、出ません</div>` : ""}</div></span></label>` : `<p class="note">ブラウザ版からは端末のアプリを読めないので、Android アプリ版で選びます。</p>`}
-    </div>
-    ` : ""}
-    <div class="card"><h3>作業の種類</h3>
-      ${meta.workTypes.map((t, i) => `<div class="row"><button class="wtcol" data-wtcol="${t.id}" aria-label="「${esc(t.name)}」の色を変える"><span class="tdot" style="--tc:${typeColor(t.id)}"></span></button><input class="inp" style="padding:7px 10px" value="${esc(t.name)}" data-wtname="${t.id}" maxlength="20" aria-label="種類の名前">
-        <button class="mini" data-wtmv="${t.id}|-1" ${i ? "" : "disabled style=opacity:.35"}>↑</button><button class="mini" data-wtmv="${t.id}|1" ${i < meta.workTypes.length - 1 ? "" : "disabled style=opacity:.35"}>↓</button><button class="mini" data-wtdel="${t.id}">消す</button></div>`).join("") || `<div class="muted small">まだ登録されていません</div>`}
-      <div class="btns"><button class="btn primary" id="wtAdd">＋ 種類を足す</button></div>
-      <label class="field"><span>${NATIVE ? "このアプリ" : "このページ"}を開いていた時間の分類</span><select class="inp" id="pAppType">${typeOpts(appType())}</select></label>
-      <p class="note">記録の積み上げグラフは、この種類ごとに分かれます。タイマーからも選べます。${NATIVE ? "作業に数えるアプリを足すと、その名前の種類ができます。" : ""}色は並び順で決まり、名前の前の点を押すと変えられます。</p>
-    </div>
-    ${NATIVE ? `    <div class="card"><h3>作業に数えるアプリ</h3>
-      ${meta.workApps.map(a => `<div class="row"><span class="grow" style="min-width:0">🛠 ${esc(a.name)}${a.pkg ? "" : `<div class="muted small">端末のアプリと結びついていません。外して選び直してください</div>`}</span><select class="inp" style="flex:none;width:7.5em;padding:6px 6px;font-size:13px" data-wat="${a.id}" aria-label="分類">${typeOpts(a.type || "")}</select><button class="mini" style="flex:none" data-delwork="${a.id}">外す</button></div>`).join("") || `<div class="muted small">まだ指定されていません</div>`}
-      ${NATIVE ? `<button class="btn block" data-pickapps="w" style="margin-top:10px">端末のアプリから選ぶ</button><p class="note">選んだアプリは、使用時間を端末から読んで作業時間に足します。</p>` : `<p class="note">ブラウザ版からは端末のアプリを読めないので、Android アプリ版で選びます。</p>`}
-    </div>
-    ` : ""}
-    ${NATIVE ? `<div class="card"><h3>端末の許可</h3>
-      ${Object.keys(PERMS).map(permRow).join("")}
-      <p class="muted small" style="margin:6px 0 0">設定画面で「作業記録メモ帳」を選び、許可をオンにして戻ってきてください。</p>
-    </div>` : ""}
-    <div class="card"><h3>テンプレート</h3><p class="muted small" style="margin:0">1行目が親、行頭に空白を2つ入れた行がその子になります。</p>
-      ${Object.keys(P.templates).map(k => `<div class="tplbox">
-        <div style="display:flex;gap:6px;align-items:center"><input class="inp" style="font-weight:700" value="${esc(k)}" data-tplname="${esc(k)}" maxlength="20" aria-label="テンプレート名">
-          <button class="mini" style="flex:none;white-space:nowrap" data-tpldel="${esc(k)}">削除</button></div>
-        <textarea class="inp" rows="6" maxlength="2000" data-tplk="${esc(k)}" style="margin-top:6px" aria-label="${esc(k)}の中身">${esc(P.templates[k])}</textarea></div>`).join("") || `<div class="muted small" style="margin:10px 0">テンプレートがありません</div>`}
-      <div class="btns"><button class="btn primary" id="tplAdd">＋ テンプレートを追加</button></div>
-      <button class="mini" id="tplReset" style="margin-top:10px">初期の3つ(素材・アイテム・設定)を戻す</button>
-    </div>
-    <div class="card"><h3>ボードの色と整列</h3>
-      ${(() => { const C = boardColors(); const row = (k, t, d) => `<label class="row"><input type="checkbox" data-bc="${k}" ${C[k] ? "checked" : ""}><span class="grow">${t}<div class="muted small">${d}</div></span></label>`;
-        return row("auto", "グループごとに色を自動で付ける", "丸ごとに、ほかと重ならない色を付けます。自分で選んだ色が優先です") +
-          row("tint", "メモをグループの色で淡く塗る", "カードを、入っているグループの色でうっすら塗ります") +
-          row("arrange", "左のツリーで移したら、グループの中を整列する", "移した先と元のグループの中を、ツリーの順にそろえます"); })()}
-    </div>
-    <div class="card"><h3>ボードの矢印</h3>
-      ${(() => { const A = arrowPrefs(); const sw = (key, cur) => `<div style="margin-top:6px">${colorSwatches(cur, "通常", ` data-arc="${key}"`)}</div>`;
-        return `<div class="field"><span>別のグループのメモへの矢印</span>${sw("cross", A.cross)}</div>
-        <div class="field"><span>グループ同士の矢印</span>${sw("group", A.group)}</div>
-        <div class="field"><span>グループ同士の矢印の太さ</span><div class="seg">${[[1.8, "ふつう"], [2.8, "少し太い"], [4, "太い"]].map(([w, l]) => `<button data-agw="${w}" class="${A.groupW === w ? "on" : ""}">${l}</button>`).join("")}</div></div>
-        <p class="muted small" style="margin:0">「通常」を選ぶと、ほかの矢印と同じ色になります。<button class="mini" id="arrowReset">初期に戻す</button></p>`; })()}
-    </div>
-    <div class="card"><h3>保存</h3>
-      <div class="small">状態:<b>${esc(Store.status)}</b></div>
-      <div class="small" style="margin-top:4px">使っている容量:<b>${(storageUsed() / 1e6).toFixed(1)}MB</b> / 約5MB${storageUsed() > 4e6 ? `<span style="color:var(--danger)"> もうすぐいっぱいです。書き出して、使わないメモを消してください</span>` : ""}</div>
-      <p class="muted small" style="line-height:1.6">${ON_CLAUDE ? "入力はまずこの端末に保存し、claude.ai にサインインして開いている場合は、あなた専用の領域へ追って同期します。ほかの人からは見えません。" : NATIVE ? "入力はこの端末の中に保存します。書き出しや自動バックアップで選んだ保存先のほかへは送りません。" : "入力はこのブラウザの中にだけ保存します。外へは送らず、ほかの人からは見えません。"}</p>
-      <button class="mini" id="reGuide">チュートリアルのメモを開く</button>
-    </div>
-    ${syncCardHtml()}
-    <div class="card"><h3>データの引っ越し</h3>
-      <p class="muted small" style="line-height:1.6;margin:0">メモ・ボード・予定・収支・長期計画・設定・作業の記録を一つのファイルにして、ブラウザ版とアプリ版のあいだや、別の端末へ移せます。読み込みは今のデータに合わせるので、今のデータは消えません。</p>
-      <div class="btns"><button class="btn" id="bkExport">書き出す</button><button class="btn primary" id="bkImport">読み込む</button></div>
-      ${NATIVE ? autoBackupHtml() : ""}
-      <p class="muted small" style="margin:8px 0 0">最後に書き出した日:${LS.get("lastExport") ? fmtDate(LS.get("lastExport")) : "まだありません"}</p>
-      <label class="row"><input type="checkbox" id="pExport" ${P.exportRemind !== false ? "checked" : ""}><span class="grow">月に一度、書き出しを勧める<div class="muted small">データはこの端末の中だけにあるので、故障や紛失に備えます</div></span></label>
-    </div>
-    <div class="card"><h3>ゴミ箱</h3>
-      <p class="muted small" style="margin:0 0 8px">消したメモは30日間残り、ここから戻せます。</p>
-      <button class="btn block" id="trashOpen">ゴミ箱を開く(${trashList().length}件)</button>
-    </div>
-    <div class="card"><h3>このアプリについて</h3>
-      <div class="small">作業記録メモ帳${appVersion() ? ` · 版 ${esc(appVersion())}` : ""}</div>
-      <button class="btn block" id="policyOpen" style="margin-top:8px">プライバシーポリシー</button>
-      <button class="btn danger block" id="wipeOpen" style="margin-top:8px">すべてのデータを消す</button>
-    </div>
-    `;
+  // 一行:左に名前と説明、右に操作。sw = 入り切りのスイッチ
+  const line = (label, desc, ctl) => `<div class="prow"><div class="lbl">${label}${desc ? `<small>${desc}</small>` : ""}</div>${ctl || ""}</div>`;
+  const sw = (attr, on) => `<input type="checkbox" class="sw" ${attr} ${on ? "checked" : ""}>`;
+  const swLine = (attr, on, label, desc) => `<label class="prow"><div class="lbl">${label}${desc ? `<small>${desc}</small>` : ""}</div>${sw(attr, on)}</label>`;
+  const sec = (title, body) => `<section class="psec"><h2 class="psec-h">${title}</h2>${body}</section>`;
+  const card = (title, body, extra = "") => `<div class="card pcard"${extra}>${title ? `<h3>${title}</h3>` : ""}${body}</div>`;
+  const used = storageUsed();
+  $("#prefsScroll").innerHTML =
+    sec("表示", card("",
+      line("画面の色", "", `<div class="seg">${[["auto", "端末"], ["light", "ライト"], ["dark", "ダーク"]].map(([k, l]) => `<button data-theme-set="${k}" class="${themePref() === k ? "on" : ""}">${l}</button>`).join("")}</div>`) +
+      swLine(`id="pLayoutEdit"`, document.body.classList.contains("layoutedit"), "画面の編集", "下のタブと「予定」の中の項目を入れ替え・削除し、メモで新しい項目を作れます。下のタブの長押しでも入れます"))) +
+    sec("記録",
+      card("作業の種類",
+        (meta.workTypes.map((t, i) => `<div class="prow wtrow"><button class="wtcol" data-wtcol="${t.id}" aria-label="「${esc(t.name)}」の色を変える"><span class="tdot" style="--tc:${typeColor(t.id)}"></span></button><input class="inp" value="${esc(t.name)}" data-wtname="${t.id}" maxlength="20" aria-label="種類の名前">` +
+          `<button class="mini" data-wtmv="${t.id}|-1" ${i ? "" : "disabled"} aria-label="上へ">↑</button><button class="mini" data-wtmv="${t.id}|1" ${i < meta.workTypes.length - 1 ? "" : "disabled"} aria-label="下へ">↓</button><button class="mini" data-wtdel="${t.id}">消す</button></div>`).join("") || line("まだ登録されていません")) +
+        `<div class="prow"><button class="btn" id="wtAdd">＋ 種類を足す</button></div>` +
+        line(`${NATIVE ? "このアプリ" : "このページ"}を開いていた時間`, "どの種類に数えるか", `<select class="inp pselect" id="pAppType">${typeOpts(appType())}</select>`) +
+        `<p class="pnote">記録の積み上げグラフは、この種類ごとに分かれます。名前の前の点で色を変えられます。${NATIVE ? "作業に数えるアプリを足すと、その名前の種類ができます。" : ""}</p>`) +
+      (NATIVE ? card("作業に数えるアプリ",
+        (meta.workApps.map(a => `<div class="prow"><div class="lbl">${esc(a.name)}${a.pkg ? "" : `<small style="color:var(--danger)">端末のアプリと結びついていません。外して選び直してください</small>`}</div><select class="inp pselect" data-wat="${a.id}" aria-label="分類">${typeOpts(a.type || "")}</select><button class="mini" data-delwork="${a.id}">外す</button></div>`).join("") || line("まだ指定されていません")) +
+        `<div class="prow"><button class="btn" data-pickapps="w">端末のアプリから選ぶ</button></div><p class="pnote">選んだアプリの使用時間を端末から読んで、作業時間に足します。</p>`) +
+      card("妨害アプリ",
+        (meta.apps.map(a => line(esc(a.name), a.pkg ? "" : `<span style="color:var(--danger)">端末のアプリと結びついていません。外して選び直してください</span>`, `<button class="mini" data-delapp="${a.id}">外す</button>`)).join("") || line("まだ指定されていません")) +
+        `<div class="prow"><button class="btn" data-pickapps="d">端末のアプリから選ぶ</button></div>` +
+        swLine(`id="pUsageOv"`, P.usageOv === true, "使用中、画面の隅に今日の使用時間を出す", "タイマーを動かしていなくても出ます。動いている間は通知が一つ出ます" +
+          (P.usageOv !== true ? "" : !meta.apps.some(a => a.pkg) ? `<br><span style="color:var(--danger)">「端末のアプリから選ぶ」で選んだアプリがないので、まだ出ません</span>` : !usageAccess() || !canOverlay() ? `<br><span style="color:var(--danger)">下の「端末の許可」で、使用状況と重ね表示を許可するまで出ません</span>` : ""))) +
+      card("端末の許可", Object.keys(PERMS).map(permRow).join("") + `<p class="pnote">設定画面で「作業記録メモ帳」を選び、許可をオンにして戻ってきてください。</p>`) : "")) +
+    sec("メモ", card("テンプレート",
+      `<p class="pnote" style="margin-top:0">1行目が親、行頭に空白を2つ入れた行がその子になります。【…】の所は、入れたあと選ぶと丸ごと書き換えられます。</p>` +
+      (Object.keys(P.templates).map(k => `<details class="ptpl" data-tplopen="${esc(k)}" ${tplOpen.has(k) ? "open" : ""}><summary><span class="lbl">${esc(k)}</span><span class="pmuted">${P.templates[k].split("\n").filter(Boolean).length} 行</span></summary>
+        <div class="ptpl-ed"><div class="prow" style="padding:0 0 8px;border:0"><input class="inp" style="font-weight:700" value="${esc(k)}" data-tplname="${esc(k)}" maxlength="20" aria-label="テンプレート名"><button class="mini" data-tpldel="${esc(k)}">削除</button></div>
+        <textarea class="inp" rows="6" maxlength="2000" data-tplk="${esc(k)}" aria-label="${esc(k)}の中身">${esc(P.templates[k])}</textarea></div></details>`).join("") || line("テンプレートがありません")) +
+      `<div class="prow"><button class="btn" id="tplAdd">＋ テンプレートを足す</button><button class="mini" id="tplReset">初期の3つを戻す</button></div>`)) +
+    sec("ボード",
+      card("", (() => { const C = boardColors();
+        return swLine(`data-bc="auto"`, C.auto, "グループごとに色を自動で付ける", "丸ごとに、ほかと重ならない色を付けます。自分で選んだ色が優先です") +
+          swLine(`data-bc="tint"`, C.tint, "メモをグループの色で淡く塗る", "カードを、入っているグループの色でうっすら塗ります") +
+          swLine(`data-bc="arrange"`, C.arrange, "一覧で移したら、グループの中を整列する", "左の一覧で移した先と元のグループの中を、一覧の順にそろえます"); })()) +
+      card("矢印", (() => { const A = arrowPrefs();
+        return `<div class="prow pcol"><div class="lbl">別のグループのメモへの矢印</div>${colorSwatches(A.cross, "通常", ` data-arc="cross"`)}</div>` +
+          `<div class="prow pcol"><div class="lbl">グループ同士の矢印</div>${colorSwatches(A.group, "通常", ` data-arc="group"`)}</div>` +
+          line("グループ同士の矢印の太さ", "", `<div class="seg">${[[1.8, "ふつう"], [2.8, "少し太い"], [4, "太い"]].map(([w, l]) => `<button data-agw="${w}" class="${A.groupW === w ? "on" : ""}">${l}</button>`).join("")}</div>`) +
+          `<p class="pnote">「通常」は、ほかの矢印と同じ色です。<button class="mini" id="arrowReset">初期に戻す</button></p>`; })())) +
+    sec("データ",
+      syncCardHtml() +
+      card("保存",
+        line("保存の状態", "", `<b class="pval">${esc(Store.status)}</b>`) +
+        line("使っている容量", used > 4e6 ? `<span style="color:var(--danger)">もうすぐいっぱいです。書き出して、使わないメモを消してください</span>` : "", `<b class="pval">${(used / 1e6).toFixed(1)} MB <span class="pmuted">/ 約5 MB</span></b>`) +
+        `<p class="pnote">${ON_CLAUDE ? "入力はまずこの端末に保存し、claude.ai にサインインして開いている場合は、あなた専用の領域へ追って同期します。ほかの人からは見えません。" : NATIVE ? "入力はこの端末の中に保存します。書き出しや自動バックアップで選んだ保存先のほかへは送りません。" : "入力はこのブラウザの中にだけ保存します。外へは送らず、ほかの人からは見えません。"}</p>`) +
+      card("データの引っ越し",
+        `<p class="pnote" style="margin-top:0">メモ・ボード・予定・収支・長期計画・設定・作業の記録を一つのファイルにして、ブラウザ版とアプリ版のあいだや、別の端末へ移せます。読み込みは今のデータに合わせるので、今のデータは消えません。</p>` +
+        `<div class="prow"><button class="btn" id="bkExport">書き出す</button><button class="btn" id="bkImport">読み込む</button></div>` +
+        (NATIVE ? `<div class="prow pcol">${autoBackupHtml()}</div>` : "") +
+        line("最後に書き出した日", "", `<span class="pval">${LS.get("lastExport") ? fmtDate(LS.get("lastExport")) : "まだありません"}</span>`) +
+        swLine(`id="pExport"`, P.exportRemind !== false, "月に一度、書き出しを勧める", "データは端末の中だけにあるので、故障や紛失に備えます")) +
+      card("", line("ゴミ箱", "消したメモは30日間残り、ここから戻せます", `<button class="btn" id="trashOpen">開く(${trashList().length})</button>`))) +
+    sec("このアプリ", card("",
+      line("作業記録メモ帳", appVersion() ? `版 ${esc(appVersion())}` : "", "") +
+      line("チュートリアル", "使い方を、触りながら覚えるメモ", `<button class="btn" id="reGuide">開く</button>`) +
+      line("プライバシーポリシー", "", `<button class="btn" id="policyOpen">読む</button>`) +
+      line("すべてのデータを消す", "元に戻せません", `<button class="btn danger" id="wipeOpen">消す</button>`)));
 }
+$("#prefsScroll").addEventListener("toggle", e => { const d = e.target.closest?.("[data-tplopen]"); if (d) d.open ? tplOpen.add(d.dataset.tplopen) : tplOpen.delete(d.dataset.tplopen); }, true);
 $("#prefsScroll").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   if (b.dataset.themeSet) { LS.set("theme", b.dataset.themeSet); applyTheme(); renderPrefs(); return; }
