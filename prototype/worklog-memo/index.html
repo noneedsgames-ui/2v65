@@ -309,7 +309,17 @@ body.side-open .side{display:flex}
 .srow.drop{outline:2px solid var(--accent);outline-offset:-2px}
 .side-foot{display:flex;gap:6px;padding:0 4px}
 .side-foot .side-new{flex:1}
-.blist-h{display:flex;align-items:center;gap:10px;padding:2px 2px 10px}
+.bl-h{display:flex;align-items:center;gap:8px;padding:2px 2px 10px;position:sticky;top:-8px;background:var(--bg);z-index:1}
+.bl-path{font-size:13px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bl-row{display:flex;align-items:center;gap:10px;padding:11px 10px;margin-bottom:6px;background:var(--surface-1);border:1px solid var(--line);border-left:4px solid var(--gc,var(--line));border-radius:10px;cursor:pointer}
+.bl-row.cur{outline:1.5px solid var(--accent)}
+.bl-row .grow{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.bl-row b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bl-sub{font-size:12px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bl-ic{flex:none;width:22px;text-align:center;font-size:16px;color:var(--text-secondary)}
+.bl-go{flex:none;font-size:20px;color:var(--text-muted)}
+.bl-more{flex:none;padding:2px 8px;font-size:18px;color:var(--text-muted);background:none;border:0}
+#v-board.listmode.listboards .bbar{display:none}
 .side-new{margin:6px 10px 10px;padding:9px;border-radius:10px;border:1px dashed var(--text-muted);color:var(--text-secondary);font-size:13px}
 
 /* board list mode */
@@ -329,25 +339,6 @@ body.side-open .side{display:flex}
 .mtag.ft{background:none;border:1px dashed var(--line);color:var(--text-secondary)}
 .lchip.tagc.ft{border-style:dashed;background:var(--surface-1)}
 /* tag (venn) mode */
-.venn{display:none;flex:1;min-height:0;overflow:auto;padding:8px 10px 90px;background:var(--bg)}
-#v-board.tagmode .board,#v-board.tagmode .blist{display:none}
-#v-board.tagmode .venn{display:block}
-.vn-h{padding:2px 2px 4px}
-.vn-t{font-size:13px;padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--text-secondary);border:1.5px solid transparent}
-.vn-t .k,.vn-l .k{font-size:11px;opacity:.75;font-weight:500}
-.vn-t.on{font-weight:700;color:var(--text-primary);background:var(--surface-1)}
-.vn-t.on.c-blue,.vn-l.c-blue{border-color:#2a78d6}.vn-t.on.c-orange,.vn-l.c-orange{border-color:#eb6834}.vn-t.on.c-green,.vn-l.c-green{border-color:#1baf7a}
-.vn-wrap{position:relative;margin:4px auto 10px}
-.vn-svg{position:absolute;left:0;top:0;overflow:visible}
-.vn-c{stroke-width:2}
-.vn-c.c-blue{fill:#2a78d61c;stroke:#2a78d6}.vn-c.c-orange{fill:#eb68341c;stroke:#eb6834}.vn-c.c-green{fill:#1baf7a1c;stroke:#1baf7a}
-.vn-l{position:absolute;transform:translate(-50%,-50%);font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--surface-1);border:1.5px solid;white-space:nowrap;max-width:11em;overflow:hidden;text-overflow:ellipsis}
-.vn-r{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:3px}
-.vn-m{font-size:12px;font-weight:600;padding:3px 9px;border-radius:8px;background:var(--surface-1);border:1px solid var(--line);color:var(--text-primary);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:0 1px 2px #0001}
-.vn-m.cur{outline:1.5px solid var(--accent)}
-.vn-more{font-size:11.5px;color:var(--accent);padding:2px 6px}
-.vn-out{padding:6px 2px;border-top:1px solid var(--line)}
-.vn-out .vn-m{max-width:14em}
 .blist{display:none;flex:1;min-height:0;overflow:auto;padding:8px 10px 90px;background:var(--bg)}
 #v-board.listmode .board{display:none}
 #v-board.listmode .blist{display:block}
@@ -621,12 +612,11 @@ textarea.inp{line-height:1.6;resize:vertical}
   <!-- ボード(すべてのメモ) -->
   <section class="view" id="v-board">
     <div class="filebar"><button class="fb-open" id="boardBack" style="flex:none"><span class="fb-board">← メモ</span></button>
-      <div class="seg bmode" id="bmode"><button data-bm="map">図</button><button data-bm="list">リスト</button><button data-bm="tag">タグ</button></div>
+      <div class="seg bmode" id="bmode"><button data-bm="map">図</button><button data-bm="list">リスト</button></div>
       <span class="spacer"></span>
       <button class="fb-new" id="boardNew">＋ メモ</button></div>
     <div class="bbar" id="bbar"></div>
     <div class="blist" id="blist"></div>
-    <div class="venn" id="venn"></div>
     <div class="board" id="board">
       <div class="world" id="world"><svg class="edges" id="edges"></svg><div id="cards"></div><div id="glabels"></div></div>
       <div class="bhint" id="bhint">カードはドラッグで移動、タップで開く、長押しで色や削除。カードの右下の●を別のカードへ引くと矢印、空いた所で離すと新しいメモ。「◯ 囲む」で指で描いて囲むと、その形がファイルになります(丸ごと囲めば入れ子)。空いた所はドラッグで移動、二本指で拡大縮小。矢印は二回タップで消せます。カードや丸は下のゴミ箱へドラッグすると消せます。</div>
@@ -970,7 +960,6 @@ function show(v, push = true) {
   if (push && location.hash !== "#" + v) { try { history.replaceState(null, "", "#" + v); } catch { location.hash = v; } }
   if (v === "board") renderBoardBar();
   if (v === "board" && boardMode === "list") renderBoardList();
-  else if (v === "board" && boardMode === "tag") renderVenn();
   else if (v === "board") {
     renderBoard();
     if (!LS.get(bvKey())) fitView();
@@ -1627,7 +1616,7 @@ function updateLinkSug(ta) {
   if (!m) { sug.classList.remove("on"); return; }
   const q = m[1].trim().toLowerCase();
   const list = Object.values(files).filter(f => f.id !== curFile).map(f => fullTitle(f) || "").filter(t => t && (!q || t.toLowerCase().includes(q))).slice(0, 12);
-  sug.innerHTML = `<span class="sughint">${sugMode === "slash" ? "リンクするメモ" : "メモの名前"}</span>` + list.map(t => `<button data-sug="${esc(t)}">${esc(t)}</button>`).join("") + (m[1].trim() && !list.some(t => t.toLowerCase() === q) ? `<button class="new" data-sug="${esc(m[1].trim())}">＋「${esc(m[1].trim())}」</button>` : "");
+  sug.innerHTML = `<span class="sughint">${sugMode === "slash" ? "リンクするメモ" : "メモの名前"}</span>` + list.map(t => `<button data-sug="${esc(t)}">${esc(t)}</button>`).join("") + (m[1].trim() && !list.some(t => t.toLowerCase() === q) ? `<button class="new" data-sug="${esc(m[1].trim())}">＋「${esc(m[1].trim())}」を新しいメモに</button>` : "");
   sug.classList.toggle("on", sug.querySelectorAll("button").length > 0);
 }
 sug.addEventListener("pointerdown", e => { if (e.target.closest("button")) e.preventDefault(); });
@@ -1637,6 +1626,10 @@ sug.addEventListener("click", e => {
   const c = ta.selectionStart;
   const before = sugMode === "slash" ? ta.value.slice(0, c).replace(/[\/／]([^\s\/／\[\]\n]{0,24})$/, "") : ta.value.slice(0, c).replace(/\[\[([^\[\]\n]*)$/, "");
   const after = sugMode === "slash" ? ta.value.slice(c) : ta.value.slice(c).replace(/^[^\[\]\n]*\]\]/, "");
+  if (b.classList.contains("new") && !findMemo(b.dataset.sug)) { // まだないメモの名前 → その名前のメモを作ってから、リンクにする(書いている所はそのまま)
+    const cc = board.cards[curFile] || { x: 40, y: 40 };
+    createMemo(b.dataset.sug, { x: cc.x + 200, y: cc.y + 140 }); toast(`メモ「${b.dataset.sug}」を作りました。リンクを押すと開けます`);
+  }
   const ins = `[[${b.dataset.sug}]]`;
   ta.value = before + ins + after; const nc = before.length + ins.length; ta.setSelectionRange(nc, nc);
   const n = index[ta.dataset.t]?.n; if (n) { setT(n, ta.value, nc); saveOutline(); paintMirror(ta, n); }
@@ -2079,7 +2072,7 @@ function renderMemo() { renderFileBar(); renderOutline(); }
 function memoTitle(f) {
   if (f.name) return f.name;
   const first = l => { for (const n of l) { if (n.t && n.t.trim()) return plainT(n.t).trim(); const c = first(n.c || []); if (c) return c; } return ""; };
-  return (first(f.nodes) || "新しいメモ").slice(0, 30);
+  return (first(f.nodes).replace(/\[\[([^\[\]\n]+?)\]\]/g, "$1") || "新しいメモ").slice(0, 30); // 名前ではリンクの [[ ]] を外す
 }
 function renderFileBar() {
   $("#fbName").textContent = memoTitle(files[curFile]); // ファイルの所属は左のツリーで見る
@@ -2728,7 +2721,7 @@ function finishLasso() { // 描いた形をファイル(丸)にする。形の�
 function hintDone() { if (!LS.get("boardHintDone")) { LS.set("boardHintDone", true); $("#bhint").style.display = "none"; } }
 $("#boardBack").onclick = () => show("memo");
 $("#boardNew").onclick = () => {
-  if (boardMode !== "map") { const B = contentBounds(); quickMemoSheet({ x: Math.round(B.x0), y: Math.round(B.y1 + 40) }); return; }
+  if (boardMode !== "map") { newMemoInList(); return; }
   const r = boardEl.getBoundingClientRect(); const w = toWorld(r.left + r.width / 2, r.top + r.height / 3); quickMemoSheet({ x: Math.round(w.x - CARD_W / 2), y: Math.round(w.y) }); };
 
 function addEdge(a, b) {
@@ -3078,12 +3071,54 @@ function renderSide() {
     sideList.querySelector(".srow.cur")?.scrollIntoView({ block: "nearest" });
   }
   if (view === "board" && boardMode === "list") renderBoardList();
-  if (view === "board" && boardMode === "tag") renderVenn();
   const sb = $("#sideBoard"); if (sb) sb.textContent = (meta.boards || []).length ? "◧ " + boardName(curBoard) : "ファイルとメモ";
 }
-function renderBoardList() { const st = blistEl.scrollTop; blistEl.innerHTML = `<div class="blist-h"><button class="mini" data-newgroup>＋ ファイル</button><span class="muted small">長押しで並べ替え・ファイルへ出し入れ</span></div>` + treeHtml(true); blistEl.scrollTop = st; }
+/* ---- ボードの「リスト」:一段ずつ開く一覧。ボードがいくつもあれば、いちばん外はボード(大きなファイル)の一覧。
+   ファイルを押すとその中身の一覧に入れ替わり、「‹ 戻る」で外へ。メモを押すと開く ---- */
+let listPath = LS.get("listPath") || [], listAtBoards = !!LS.get("listAtBoards"); // listPath = いまのボードの中で、開いているファイル(外から順)
+const saveListPath = () => { LS.set("listPath", listPath); LS.set("listAtBoards", listAtBoards); };
+const listCount = gid => sideKids(gid).length;
+function renderBoardList() {
+  const st = blistEl.scrollTop, multi = (meta.boards || []).length > 0;
+  if (!multi) listAtBoards = false;
+  listPath = listPath.filter(id => groupById(id));
+  const more = key => `<button class="bl-more" data-blmore="${key}" aria-label="メニュー">⋯</button>`;
+  let h;
+  if (listAtBoards) {
+    h = `<div class="bl-h"><b class="bl-path">ボード</b><span class="spacer"></span><button class="mini" data-blnewb>＋ ボード</button></div>` +
+      boardList().map(b => { const n = Object.keys(boards[b.id]?.cards || {}).filter(id => files[id]).length;
+        return `<div class="bl-row bl-board" data-blb="${b.id}"><span class="bl-ic">◧</span><span class="grow"><b>${esc(b.name)}</b><span class="bl-sub">メモ ${n} 件</span></span>${more("b:" + b.id)}<span class="bl-go">›</span></div>`; }).join("");
+  } else {
+    const gid = listPath[listPath.length - 1] || null;
+    const path = [multi ? "◧ " + boardName(curBoard) : "", ...listPath.map(id => "📁 " + groupById(id).name)].filter(Boolean);
+    h = `<div class="bl-h">${listPath.length || multi ? `<button class="mini" data-blback>‹ 戻る</button>` : ""}<span class="bl-path">${esc(path.join(" › ") || "すべてのメモ")}</span><span class="spacer"></span><button class="mini" data-blnewg>＋ ファイル</button></div>` +
+      (sideKids(gid).map(it => {
+        if (it.t === "g") { const g = groupById(it.id); return `<div class="bl-row" data-blg="${g.id}" style="--gc:${colHex(groupColor(g))}"><span class="bl-ic">📁</span><span class="grow"><b>${esc(g.name)}</b><span class="bl-sub">${listCount(g.id)} 件</span></span>${more("g:" + g.id)}<span class="bl-go">›</span></div>`; }
+        const f = files[it.id], pv = previewLines(f)[0];
+        return `<div class="bl-row${it.id === curFile ? " cur" : ""}" data-blm="${it.id}"><span class="bl-ic">•</span><span class="grow"><b>${esc(memoTitle(f))}</b>${pv ? `<span class="bl-sub">${esc(pv.trim())}</span>` : ""}</span>${more("m:" + it.id)}</div>`;
+      }).join("") || `<div class="empty">${gid ? "このファイルはまだ空です。右上の「＋ メモ」で、この中にメモを作れます" : "メモがありません"}</div>`);
+  }
+  blistEl.innerHTML = h; blistEl.scrollTop = st;
+  $("#v-board").classList.toggle("listboards", multi); // ボードは一覧の中で選ぶので、上の切り替えは隠す
+}
+blistEl.addEventListener("click", e => {
+  const m = e.target.closest("[data-blmore]");
+  if (m) { const [t, id] = m.dataset.blmore.split(":"); if (t === "b") { switchBoard(id); boardMenu(); } else t === "g" ? groupMenu(id) : cardMenu(id); return; }
+  const r = e.target.closest("[data-blb],[data-blg],[data-blm],[data-blback],[data-blnewg],[data-blnewb]"); if (!r) return;
+  if (r.dataset.blb) { switchBoard(r.dataset.blb); listAtBoards = false; listPath = []; }
+  else if (r.dataset.blg) listPath.push(r.dataset.blg);
+  else if (r.dataset.blm) { openFile(r.dataset.blm); return; }
+  else if ("blback" in r.dataset) { if (listPath.length) listPath.pop(); else listAtBoards = true; }
+  else if ("blnewg" in r.dataset) { const p = listPath[listPath.length - 1]; const g = createEmptyGroup(p ? groupById(p) : null); renderBoard(); groupNameSheet(g.id, true); }
+  else if ("blnewb" in r.dataset) { newBoardSheet(); return; }
+  saveListPath(); blistEl.scrollTop = 0; renderBoardList();
+});
+function newMemoInList() { // リストで「＋ メモ」:開いているファイルの中にメモを作り、そのまま書く
+  const B = contentBounds(), f = createMemo("", { x: Math.round(B.x0), y: Math.round(B.y1 + 60) }), gid = listPath[listPath.length - 1];
+  if (gid && groupById(gid)) sideMove({ t: "m", id: f.id }, { t: "g", id: gid }, "into");
+  openFile(f.id); focusStart();
+}
 function newGroupFromTree() { const g = createEmptyGroup(null); renderBoard(); groupNameSheet(g.id, true); }
-blistEl.addEventListener("click", e => { if (e.target.closest("[data-newgroup]")) newGroupFromTree(); });
 function bindTree(list, rich) {
   list.addEventListener("click", e => {
     if (sJust) return;
@@ -3116,7 +3151,6 @@ function bindTree(list, rich) {
 }
 let sdrag = null, sJust = false;
 bindTree(sideList, false);
-bindTree(blistEl, true);
 $("#sideNew").onclick = () => { if (!isWide()) setSide(false); newMemo(); };
 $("#sideNewG").onclick = () => newGroupFromTree();
 function sCancel() { if (!sdrag) return; clearTimeout(sdrag.timer); sdrag.row.classList.remove("pressing"); sdrag = null; }
@@ -3168,17 +3202,15 @@ document.addEventListener("touchend", () => { if (sdrag && sdrag.on) sEnd(true);
 document.addEventListener("touchcancel", () => { if (sdrag && sdrag.on) sEnd(false); });
 
 // ---- ボードの表示の切り替え:図/リスト ----
-let boardMode = ["list", "tag"].includes(LS.get("boardMode")) ? LS.get("boardMode") : "map";
+let boardMode = LS.get("boardMode") === "list" ? "list" : "map"; // 以前の「タグ」(円の図)は廃止。ファイルで分ける
 function setBoardMode(m) {
   boardMode = m; LS.set("boardMode", m);
   $("#v-board").classList.toggle("listmode", m === "list");
-  $("#v-board").classList.toggle("tagmode", m === "tag");
   $("#bmode").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.bm === m));
-  if (m === "list") renderBoardList(); else if (m === "tag") renderVenn(); else { renderBoard(); if (!LS.get(bvKey())) fitView(); }
+  if (m === "list") renderBoardList(); else { renderBoard(); if (!LS.get(bvKey())) fitView(); }
 }
 $("#bmode").addEventListener("click", e => { const b = e.target.closest("[data-bm]"); if (b && b.dataset.bm !== boardMode) setBoardMode(b.dataset.bm); });
 $("#v-board").classList.toggle("listmode", boardMode === "list");
-$("#v-board").classList.toggle("tagmode", boardMode === "tag");
 $("#bmode").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.bm === boardMode));
 
 // ---- ボードの切り替え・作成・名前・削除と、メモやファイルを入れる ----
@@ -3198,7 +3230,6 @@ $("#bbar").addEventListener("click", e => {
 function renderBoardView() {
   renderBoardBar();
   if (boardMode === "list") renderBoardList();
-  else if (boardMode === "tag") renderVenn();
   else { renderBoard(); if (!LS.get(bvKey())) fitView(); }
 }
 function switchBoard(id) {
@@ -3352,80 +3383,6 @@ function removeFromBoard(id) { // このボードから外す(メモは消さな
   for (const g of board.groups) g.members = (g.members || []).filter(x => x !== id);
   saveBoard();
 }
-
-// ---- タグの表示(ベン図):選んだタグを円にして重ね、メモを当てはまる所に置く ----
-const VENN_C = ["blue", "orange", "green"];
-let vennSel = LS.get("vennTags"); // null = 多いタグから自動で選ぶ
-function vennTagsNow(counts) {
-  const all = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b, "ja", { numeric: true }));
-  return vennSel ? vennSel.filter(t => counts[t]).slice(0, 3) : all.slice(0, 3);
-}
-function renderVenn() {
-  const el = $("#venn"); if (!el) return;
-  const st = el.scrollTop;
-  const ids = Object.keys(board.cards).filter(id => files[id]);
-  const tagsOf = new Map(ids.map(id => [id, memoTags(files[id])]));
-  const counts = {}; for (const ts of tagsOf.values()) for (const t of ts) counts[t] = (counts[t] || 0) + 1;
-  const all = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b, "ja", { numeric: true }));
-  const sel = vennTagsNow(counts), n = sel.length;
-  const head = `<div class="vn-h"><div class="muted small">円にするタグ(3つまで)· ◧ ${esc(boardName(curBoard))} のメモ ${ids.length} 件</div>
-    <div class="metas">${all.map(t => { const i = sel.indexOf(t); return `<button class="vn-t${i >= 0 ? " on c-" + VENN_C[i] : ""}" data-vt="${esc(t)}">#${esc(t)} <span class="k">${counts[t]}</span></button>`; }).join("") || ""}</div></div>`;
-  if (!all.length) { el.innerHTML = head + `<div class="empty" style="margin:20px 10px">このボードのメモには、まだタグがありません。<br>メモの「🏷 タグ」か、ファイルの設定「このファイル内のメモにタグを追加する」で付けられます。</div>`; return; }
-  const W = Math.max(280, Math.min(el.clientWidth - 20 || 340, 620));
-  let R, C;
-  if (n <= 1) { R = W * 0.36; C = [[W / 2, R + 34]]; }
-  else if (n === 2) { R = W * 0.3; const d = R * 1.05; C = [[W / 2 - d / 2, R + 34], [W / 2 + d / 2, R + 34]]; }
-  else { R = W * 0.27; const d = R * 1.12; C = [[W / 2 - d / 2, R + 34], [W / 2 + d / 2, R + 34], [W / 2, R + 34 + d * 0.866]]; }
-  const H = n ? Math.max(...C.map(c => c[1])) + R + 34 : 0;
-  // メモを、どの円に入るか(ビットの組)で分ける
-  const groups = {}, outside = [];
-  for (const id of ids) { let m = 0; sel.forEach((t, i) => { if (tagsOf.get(id).includes(t)) m |= 1 << i; }); if (m) (groups[m] ||= []).push(id); else outside.push(id); }
-  const byTitle = (a, b) => memoTitle(files[a]).localeCompare(memoTitle(files[b]), "ja", { numeric: true });
-  // それぞれの組の、線からいちばん遠い所に中身を置く
-  const anchor = {};
-  for (let y = 0; y < H; y += 6) for (let x = 0; x < W; x += 6) {
-    let m = 0, mg = Infinity;
-    C.forEach(([cx, cy], i) => { const d = Math.hypot(x - cx, y - cy); if (d < R) m |= 1 << i; mg = Math.min(mg, Math.abs(d - R)); });
-    if (m && (!anchor[m] || mg > anchor[m].mg)) anchor[m] = { x, y, mg };
-  }
-  const svg = `<svg class="vn-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${C.map(([cx, cy], i) => `<circle cx="${cx}" cy="${cy}" r="${R}" class="vn-c c-${VENN_C[i]}"/>`).join("")}</svg>`;
-  const labels = C.map(([cx, cy], i) => { const below = n === 3 && i === 2; return `<div class="vn-l c-${VENN_C[i]}" style="left:${cx}px;top:${below ? cy + R + 16 : cy - R - 16}px">#${esc(sel[i])} <span class="k">${counts[sel[i]]}</span></div>`; }).join("");
-  const regions = Object.entries(groups).map(([m, list]) => {
-    const a = anchor[m]; if (!a) return "";
-    list.sort(byTitle);
-    const w = Math.max(70, Math.min(150, a.mg * 2.1)), cap = Math.max(2, Math.min(6, Math.floor(a.mg * 1.6 / 24)));
-    const shown = list.length > cap ? list.slice(0, cap - 1) : list;
-    return `<div class="vn-r" style="left:${a.x}px;top:${a.y}px;width:${w}px">${shown.map(id => `<button class="vn-m${id === curFile ? " cur" : ""}" data-vopen="${id}">${esc(memoTitle(files[id]))}</button>`).join("")}` +
-      (list.length > shown.length ? `<button class="vn-more" data-vmore="${m}">ほか ${list.length - shown.length} 件</button>` : "") + `</div>`;
-  }).join("");
-  el.innerHTML = head + (n ? `<div class="vn-wrap" style="width:${W}px;height:${H}px">${svg}${labels}${regions}</div>` : `<div class="empty" style="margin:16px 10px">上のタグを選ぶと、円になります</div>`) +
-    `<div class="vn-out"><div class="muted small">どの円にも入らないメモ(${outside.length})</div><div class="metas">${outside.sort(byTitle).map(id => `<button class="vn-m${id === curFile ? " cur" : ""}" data-vopen="${id}">${esc(memoTitle(files[id]))}</button>`).join("") || `<span class="muted small">なし</span>`}</div></div>`;
-  el.scrollTop = st;
-  renderVenn.groups = groups; renderVenn.sel = sel;
-}
-$("#venn").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b) return;
-  if (b.dataset.vopen) { openFile(b.dataset.vopen); return; }
-  if (b.dataset.vt) {
-    const t = b.dataset.vt, ids = Object.keys(board.cards).filter(id => files[id]), counts = {};
-    for (const id of ids) for (const x of memoTags(files[id])) counts[x] = (counts[x] || 0) + 1;
-    let sel = vennTagsNow(counts);
-    if (sel.includes(t)) sel = sel.filter(x => x !== t);
-    else if (sel.length >= 3) { toast("円にできるタグは3つまでです。先にどれかを外してください"); return; }
-    else sel = [...sel, t];
-    vennSel = sel; LS.set("vennTags", sel); renderVenn(); return;
-  }
-  if (b.dataset.vmore) {
-    const m = +b.dataset.vmore, sel = renderVenn.sel, list = renderVenn.groups[m] || [];
-    const inT = sel.filter((_, i) => m & (1 << i)), outT = sel.filter((_, i) => !(m & (1 << i)));
-    openSheet(`<h2>${inT.map(t => "#" + esc(t)).join(" かつ ")}</h2><p class="muted small" style="margin-top:-4px">${outT.length ? outT.map(t => "#" + esc(t)).join("・") + " は付いていない · " : ""}${list.length}件</p>
-      ${list.map(id => `<button class="row" style="width:100%;text-align:left" data-pick="${id}"><span class="grow"><b>${esc(memoTitle(files[id]))}</b><div class="muted small">${memoTags(files[id]).map(t => "#" + esc(t)).join(" ")}</div></span><span>›</span></button>`).join("")}
-      <div class="btns"><button class="btn" data-x>閉じる</button></div>`, s => {
-      s.addEventListener("click", ev => { const x = ev.target.closest("button"); if (!x) return; if (x.dataset.pick) { closeSheet(); openFile(x.dataset.pick); } else if ("x" in x.dataset) closeSheet(); });
-    });
-  }
-});
-addEventListener("resize", () => { if (view === "board" && boardMode === "tag") { clearTimeout(renderVenn._t); renderVenn._t = setTimeout(renderVenn, 150); } });
 
 // ---- 並べ替え・ファイルの移動と、ボードへの反映 ----
 function sideMove(src, tgt, zone) {
