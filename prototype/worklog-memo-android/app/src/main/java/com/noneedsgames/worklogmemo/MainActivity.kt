@@ -124,10 +124,10 @@ class MainActivity : Activity() {
 
     /** バーの帯と、そこに出る時計やアイコンの色を、画面の色に合わせる */
     private fun paintBars(dark: Boolean) {
-        topBar?.setBackgroundColor(Color.parseColor(if (dark) "#252523" else "#ECEBE6"))
-        bottomBar?.setBackgroundColor(Color.parseColor(if (dark) "#1A1A19" else "#FCFCFB"))
-        rootBar?.setBackgroundColor(Color.parseColor(if (dark) "#121211" else "#F4F3EF"))
-        web.setBackgroundColor(Color.parseColor(if (dark) "#121211" else "#F4F3EF"))
+        topBar?.setBackgroundColor(Color.parseColor(if (dark) "#242424" else "#EFEFEF"))
+        bottomBar?.setBackgroundColor(Color.parseColor(if (dark) "#191919" else "#FFFFFF"))
+        rootBar?.setBackgroundColor(Color.parseColor(if (dark) "#101010" else "#F6F6F6"))
+        web.setBackgroundColor(Color.parseColor(if (dark) "#101010" else "#F6F6F6"))
         if (Build.VERSION.SDK_INT >= 30) {
             val mask = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
             window.insetsController?.setSystemBarsAppearance(if (dark) 0 else mask, mask)

@@ -9,36 +9,36 @@
 <style>
 :root{
   color-scheme: light;
-  --bg:#f4f3ef; --surface-1:#fcfcfb; --surface-2:#ecebe6; --line:#d9d7cf;
-  --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#7a7873;
-  --accent:#2a78d6; --accent-ink:#fff; --danger:#c4302f;
-  --series-work:#2a78d6; --series-dist:#eb6834;
+  --bg:#f6f6f6; --surface-1:#ffffff; --surface-2:#efefef; --line:#e3e3e3;
+  --text-primary:#111111; --text-secondary:#555555; --text-muted:#8a8a8a;
+  --accent:#111111; --accent-ink:#ffffff; --danger:#c0392b;
+  --series-work:#444444; --series-dist:#c8643b;
   --tc0:#2a78d6; --tc1:#eb6834; --tc2:#1baf7a; --tc3:#eda100; --tc4:#e87ba4; --tc5:#008300; --tc6:#6250d6; --tc7:#e34948; --tcn:#a8a69f;
   --tca:#5f6b7a; --tcw:#9a7b4f;
-  --tab-sel:#0b0b0b; --tab-sel-ink:#fcfcfb; --board-bg:var(--bg); --board-dot:var(--line);
+  --tab-sel:#111111; --tab-sel-ink:#ffffff; --board-bg:var(--bg); --board-dot:#dadada;
   --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme: dark){
   :root:where(:not([data-theme="light"])){
     color-scheme: dark;
-    --bg:#121211; --surface-1:#1a1a19; --surface-2:#252523; --line:#3a3936;
-    --text-primary:#f0efec; --text-secondary:#c3c2b7; --text-muted:#8f8d86;
-    --accent:#3987e5; --danger:#e66767;
-    --series-work:#3987e5; --series-dist:#d95926;
+    --bg:#101010; --surface-1:#191919; --surface-2:#242424; --line:#333333;
+    --text-primary:#f2f2f2; --text-secondary:#bdbdbd; --text-muted:#8c8c8c;
+    --accent:#f2f2f2; --accent-ink:#111111; --danger:#e06666;
+    --series-work:#cfcfcf; --series-dist:#d0794f;
     --tc0:#3987e5; --tc1:#d95926; --tc2:#199e70; --tc3:#c98500; --tc4:#d55181; --tc5:#008300; --tc6:#9085e9; --tc7:#e66767; --tcn:#6b6a64;
     --tca:#9aa6b4; --tcw:#b99a6c;
-    --tab-sel:#f0efec; --tab-sel-ink:#121211; --board-bg:#33332f; --board-dot:#4d4d48;
+    --tab-sel:#f2f2f2; --tab-sel-ink:#111111; --board-bg:#1d1d1d; --board-dot:#333333;
   }
 }
 :root[data-theme="dark"]{
   color-scheme: dark;
-  --bg:#121211; --surface-1:#1a1a19; --surface-2:#252523; --line:#3a3936;
-  --text-primary:#f0efec; --text-secondary:#c3c2b7; --text-muted:#8f8d86;
-  --accent:#3987e5; --danger:#e66767;
-  --series-work:#3987e5; --series-dist:#d95926;
+  --bg:#101010; --surface-1:#191919; --surface-2:#242424; --line:#333333;
+  --text-primary:#f2f2f2; --text-secondary:#bdbdbd; --text-muted:#8c8c8c;
+  --accent:#f2f2f2; --accent-ink:#111111; --danger:#e06666;
+  --series-work:#cfcfcf; --series-dist:#d0794f;
   --tc0:#3987e5; --tc1:#d95926; --tc2:#199e70; --tc3:#c98500; --tc4:#d55181; --tc5:#008300; --tc6:#9085e9; --tc7:#e66767; --tcn:#6b6a64;
   --tca:#9aa6b4; --tcw:#b99a6c;
-  --tab-sel:#f0efec; --tab-sel-ink:#121211; --board-bg:#33332f; --board-dot:#4d4d48;
+  --tab-sel:#f2f2f2; --tab-sel-ink:#111111; --board-bg:#1d1d1d; --board-dot:#333333;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text-primary);
@@ -71,7 +71,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .gbar i{display:block;height:100%;background:var(--tc);border-radius:4px}
 .gms{display:flex;align-items:center;gap:8px;width:100%;padding:6px 0;text-align:left;font-size:13px}
 .gms .chkbox{flex:none}
-.gms .chkbox.on{background:var(--accent);border-color:var(--accent)}
+.gms .chkbox.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .gms.done .t{color:var(--text-muted);text-decoration:line-through}
 .gchart{overflow-x:auto;background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:8px 0}
 .gc-in{position:relative}
@@ -310,6 +310,9 @@ body.side-open .side{display:flex}
 .side-foot{display:flex;gap:6px;padding:0 4px}
 .side-foot .side-new{flex:1}
 .bl-h{display:flex;align-items:center;gap:8px;padding:2px 2px 10px;position:sticky;top:-8px;background:var(--bg);z-index:1}
+.bcard.alias{border-style:dashed}
+.bcard.alias .bc-m{color:var(--text-muted)}
+.srow.alias .s-name{color:var(--text-secondary)}
 .bl-path{font-size:13px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bl-row{display:flex;align-items:center;gap:10px;padding:11px 10px;margin-bottom:6px;background:var(--surface-1);border:1px solid var(--line);border-left:4px solid var(--gc,var(--line));border-radius:10px;cursor:pointer}
 .bl-row.cur{outline:1.5px solid var(--accent)}
@@ -380,7 +383,7 @@ body.side-open .side{display:flex}
 .oltools .ot-word{font-size:13px;font-weight:600}
 .oltools .ot-del,.selbar .ot-del{color:var(--danger)}
 .chkbox{display:block;width:18px;height:18px;border-radius:5px;border:2px solid var(--text-muted);background:var(--surface-1);color:#fff;font-size:12px;font-weight:800;line-height:14px;text-align:center}
-.chkbox.on{background:var(--accent);border-color:var(--accent)}
+.chkbox.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .ol-row.done .ol-v,.ol-row.done .ol-t{text-decoration:line-through;color:var(--text-muted)}
 .numk{font-size:14px;color:var(--text-secondary);font-variant-numeric:tabular-nums;white-space:nowrap}
 .ol-row .bul:has(.numk){justify-content:flex-end;padding-right:2px;overflow:visible}
@@ -478,7 +481,7 @@ details.appd[open]>summary{margin-bottom:8px}
 .bc-tags{margin-top:3px;line-height:1.2}
 
 /* generic */
-.card{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.card{background:var(--surface-1);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px}
 .card h3{margin:0 0 8px;font-size:14px;color:var(--text-secondary);font-weight:600}
 .seg{display:inline-flex;background:var(--surface-2);border-radius:10px;padding:3px}
 .seg button{padding:6px 14px;border-radius:8px;font-size:14px;color:var(--text-secondary)}
@@ -503,7 +506,7 @@ details.appd[open]>summary{margin-bottom:8px}
 .inp{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-1);outline:none}
 .inp:focus{border-color:var(--accent)}
 textarea.inp{line-height:1.6;resize:vertical}
-.btn{padding:10px 16px;border-radius:10px;background:var(--surface-2);font-weight:600;font-size:15px}
+.btn{padding:10px 16px;border-radius:10px;background:var(--surface-2);font-weight:600;font-size:15px;letter-spacing:.02em}
 .btn.primary{background:var(--accent);color:var(--accent-ink)}
 .btn.danger{color:var(--danger)}
 .btn.block{width:100%}
@@ -521,10 +524,10 @@ textarea.inp{line-height:1.6;resize:vertical}
 .note{font-size:12px;color:var(--text-secondary);background:var(--surface-2);border-radius:10px;padding:9px 11px;line-height:1.6}
 
 /* timer */
-.clock{font-size:64px;font-weight:300;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:1px;margin:18px 0 4px}
+.clock{font-size:68px;font-weight:200;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:1px;margin:18px 0 4px}
 .phase{text-align:center;font-size:14px;color:var(--text-secondary);min-height:20px}
 .ring{display:block;margin:6px auto 0}
-.bigbtn{display:block;margin:18px auto 6px;width:150px;padding:14px;border-radius:999px;font-size:18px;font-weight:700;background:var(--accent);color:var(--accent-ink)}
+.bigbtn{display:block;margin:18px auto 6px;width:150px;padding:14px;border-radius:999px;font-size:18px;font-weight:700;letter-spacing:.08em;background:var(--accent);color:var(--accent-ink)}
 .bigbtn.stop{background:var(--danger)}
 
 /* plan */
@@ -2108,6 +2111,7 @@ const saveFileQuiet = f => { delete f.auto; Store.put("file-" + f.id, f); };
 function removeMemo(id, quiet) {
   const gone = files[id]; if (gone && !gone.auto && !isEmptyMemo(gone)) Store.put("trash-" + id, { file: JSON.parse(JSON.stringify(gone)), at: Date.now() }); // 消したメモは、しばらくゴミ箱に残す
   delete files[id]; Store.remove("file-" + id);
+  for (const [bid, b] of Object.entries(boards)) for (const [aid, a] of Object.entries(b.alias || {})) if (a.m === id) { delete b.alias[aid]; saveBoardOf(bid); } // 分身もなくす
   for (const [bid, b] of Object.entries(boards)) { // どのボードからも消す
     if (!b.cards[id] && !b.edges.some(e => e.a === id || e.b === id)) continue;
     delete b.cards[id];
@@ -2191,7 +2195,7 @@ let boards = {}, curBoard = LS.get("curBoard") || "main";
 const boardDocId = id => id === "main" ? "board" : "board-" + id;
 const boardList = () => [{ id: "main", name: meta.prefs.mainBoardName || "メイン" }, ...(meta.boards || [])];
 const boardName = id => (boardList().find(b => b.id === id) || {}).name || "メイン";
-const normBoard = b => { b = b || {}; b.cards ||= {}; b.edges ||= []; b.groups ||= []; return b; };
+const normBoard = b => { b = b || {}; b.cards ||= {}; b.edges ||= []; b.groups ||= []; b.alias ||= {}; return b; };
 const boardIdOf = b => Object.keys(boards).find(k => boards[k] === b);
 function withBoard(id, fn) { const prev = board; board = boards[id]; try { return fn(); } finally { board = prev; } }
 function loadBoard(docs) {
@@ -2228,6 +2232,7 @@ function fileTagMap() {
     const stack = [g], seen = new Set();
     while (stack.length) { const x = stack.pop(); if (seen.has(x.id)) continue; seen.add(x.id);
       for (const id of x.members || []) (m[id] ||= new Set()).add(t);
+      for (const aid of x.amembers || []) { const a = (b.alias || {})[aid]; if (a) (m[a.m] ||= new Set()).add(t); }
       for (const h of b.groups) if (h.parent === x.id) stack.push(h); }
   }
   return ftCache = m;
@@ -2236,6 +2241,16 @@ const fileTags = id => [...(fileTagMap()[id] || [])].filter(t => !(files[id] && 
 const memoTags = f => [...new Set([...(f.tags || []), ...(fileTagMap()[f.id] || [])])];
 const groupById = id => board.groups.find(g => g.id === id);
 const groupOfCard = id => board.groups.find(g => (g.members || []).includes(id));
+// ---- 分身:一つのメモを、ほかのファイルにも入れる。board.alias = { 分身id: { m: メモid, x, y } }。入っている丸の g.amembers に分身id ----
+const aliasesOf = (b = board) => b.alias || (b.alias = {});
+const groupOfAlias = aid => board.groups.find(g => (g.amembers || []).includes(aid));
+const aliasGroupsOfMemo = id => Object.entries(aliasesOf()).filter(([, a]) => a.m === id).map(([aid]) => groupOfAlias(aid)).filter(Boolean);
+function aliasBox(aid) {
+  const a = aliasesOf()[aid]; if (!a || !files[a.m]) return null;
+  const el = cardsEl.querySelector(`[data-alias="${aid}"]`); let w, h;
+  if (el && el.offsetWidth) { w = el.offsetWidth; h = el.offsetHeight; sizeCache["a:" + aid] = { w, h }; } else ({ w, h } = sizeCache["a:" + aid] || { w: CARD_W, h: 56 });
+  return { x: a.x, y: a.y, w, h, cx: a.x + w / 2, cy: a.y + h / 2 };
+}
 const ancestorsOfGroup = g => { const a = []; let p = g && groupById(g.parent); let guard = 0; while (p && guard++ < 30) { a.unshift(p); p = groupById(p.parent); } return a; };
 const nameOf = id => files[id] ? memoTitle(files[id]) : (groupById(id) ? "📁 " + groupById(id).name : "");
 function freeSpot(x, y) { // ほかのカードに重ならない場所を、下へ・右へと探す
@@ -2390,6 +2405,13 @@ function recomputeTree() {
     for (const g of gs) if (insidePts(g.pts, p.x, p.y) && (!best || area.get(g) < area.get(best))) best = g;
     if (best) best.members.push(id);
   }
+  for (const g of gs) g.amembers = [];
+  for (const aid of Object.keys(aliasesOf())) { // 分身も、いちばん内側の丸に入る。どの丸にも入っていない分身はなくす(メモは残る)
+    const b = aliasBox(aid); if (!b) { delete board.alias[aid]; continue; }
+    let best = null;
+    for (const g of gs) if (insidePts(g.pts, b.cx, b.cy) && (!best || area.get(g) < area.get(best))) best = g;
+    if (best) best.amembers.push(aid); else delete board.alias[aid];
+  }
   saveBoard();
 }
 function descendantsOf(g) { // その丸の中の丸(何段でも)
@@ -2426,7 +2448,8 @@ function renderBoard() {
       ${memoTags(f).length ? `<div class="bc-tags">${tagChips(f)}</div>` : ""}
       <div class="bc-m">${countNodes(f.nodes)}行 · ${fmtWhen(f.updated)}</div>${f.comment ? `<div class="bc-cm">${esc(f.comment)}</div>` : ""}
       <div class="bc-h" data-handle="${id}" aria-label="引いて矢印をつなぐ"></div></div>`;
-  }).join("");
+  }).join("") + Object.entries(aliasesOf()).filter(([, a]) => files[a.m]).map(([aid, a]) => { const t = groupColor(groupOfAlias(aid));
+    return `<div class="bcard alias${t ? " t-" + ck(t) : ""}${a.m === curFile ? " cur" : ""}" data-alias="${aid}" style="left:${a.x}px;top:${a.y}px;width:${CARD_W}px"><div class="bc-t">📎 ${esc(memoTitle(files[a.m]))}</div><div class="bc-m">分身(中身は同じメモ)</div></div>`; }).join("");
   // 以前の版の丸(形を持たない)は、中のカードを囲む楕円の形にして引き継ぐ
   let migrated = false;
   for (const g of board.groups) if (!g.pts) {
@@ -2438,11 +2461,11 @@ function renderBoard() {
     migrated = true;
   }
   if (board.groups.some(g => g.drop)) { board.groups = board.groups.filter(g => !g.drop); migrated = true; }
-  if (migrated || board.groups.some(g => !g.members)) recomputeTree();
+  if (migrated || board.groups.some(g => !g.members || !g.amembers)) recomputeTree();
   ensureAutoColors();
   cardsEl.querySelectorAll("[data-card]").forEach(el => { const id = el.dataset.card; el.className = "bcard" + cardColorClass(id) + cardFrame(id) + (id === curFile ? " cur" : ""); });
   ensureAutoColors();
-  glabelsEl.innerHTML = board.groups.map(g => `<div class="glabel${groupColor(g) ? " c-" + ck(groupColor(g)) : ""}" data-group="${g.id}"><span class="gl-n">📁 ${esc(g.name)}</span><span class="gl-k">${(g.members || []).length + descendantsOf(g).length}</span>` +
+  glabelsEl.innerHTML = board.groups.map(g => `<div class="glabel${groupColor(g) ? " c-" + ck(groupColor(g)) : ""}" data-group="${g.id}"><span class="gl-n">📁 ${esc(g.name)}</span><span class="gl-k">${(g.members || []).length + (g.amembers || []).length + descendantsOf(g).length}</span>` +
     `<span class="gl-h" data-ghandle="${g.id}" aria-label="引いて矢印をつなぐ"></span></div>`).join("");
   drawEdges();
   applyView();
@@ -2571,11 +2594,15 @@ boardEl.addEventListener("pointerdown", e => {
   if (ptrs.size > 2) return;
   const base = { x0: e.clientX, y0: e.clientY, moved: false, pid: e.pointerId };
   if (lassoMode) { gest = { ...base, type: "lasso" }; lassoPts = [toWorld(e.clientX, e.clientY)]; return; }
-  const handle = e.target.closest("[data-handle]"), ghandle = e.target.closest("[data-ghandle]"), card = e.target.closest("[data-card]"),
+  const handle = e.target.closest("[data-handle]"), ghandle = e.target.closest("[data-ghandle]"), card = e.target.closest("[data-card]"), alias = e.target.closest("[data-alias]"),
     glabel = e.target.closest("[data-group]"), edge = e.target.closest("[data-edge]");
   if (handle || ghandle) {
     const id = handle ? handle.dataset.handle : ghandle.dataset.ghandle, G = endGeo(id), w = toWorld(e.clientX, e.clientY);
     gest = { ...base, type: "link", from: id }; tmpLine = { x1: G.cx, y1: G.cy, x2: w.x, y2: w.y };
+  } else if (alias) { // 分身:動かす/タップで元のメモを開く/長押しでメニュー
+    const aid = alias.dataset.alias, a = aliasesOf()[aid];
+    gest = { ...base, type: "alias", id: aid, el: alias, cx: a.x, cy: a.y };
+    gest.timer = setTimeout(() => { if (gest && gest.type === "alias" && !gest.moved) { gest.long = true; try { navigator.vibrate && navigator.vibrate(12); } catch {} aliasMenu(aid); } }, 500);
   } else if (card) {
     const id = card.dataset.card, c = board.cards[id];
     gest = { ...base, type: "card", id, el: card, cx: c.x, cy: c.y, from: groupOfCard(id)?.id || null };
@@ -2584,7 +2611,8 @@ boardEl.addEventListener("pointerdown", e => {
     const g = groupById(glabel.dataset.group), desc = descendantsOf(g);
     const cardIds = [g, ...desc].flatMap(x => x.members || []);
     gest = { ...base, type: "group", id: g.id, from: g.parent || null, skip: new Set([g.id, ...desc.map(x => x.id)]),
-      pts: [g, ...desc].map(x => [x, x.pts.map(p => p.slice())]), cards: cardIds.filter(m => board.cards[m]).map(m => [m, board.cards[m].x, board.cards[m].y]) };
+      pts: [g, ...desc].map(x => [x, x.pts.map(p => p.slice())]), cards: cardIds.filter(m => board.cards[m]).map(m => [m, board.cards[m].x, board.cards[m].y]),
+      aliases: [g, ...desc].flatMap(x => x.amembers || []).filter(aid => aliasesOf()[aid]).map(aid => [aid, aliasesOf()[aid].x, aliasesOf()[aid].y]) };
   } else if (edge) gest = { ...base, type: "edge", id: edge.dataset.edge, tx: BV.tx, ty: BV.ty };
   else gest = { ...base, type: "pan", tx: BV.tx, ty: BV.ty };
 });
@@ -2604,7 +2632,7 @@ boardEl.addEventListener("pointermove", e => {
   }
   if (e.pointerId !== gest.pid) return;
   const dx = e.clientX - gest.x0, dy = e.clientY - gest.y0;
-  if (!gest.moved && Math.hypot(dx, dy) > 6) { gest.moved = true; clearTimeout(gest.timer); if (gest.type === "edge") gest.type = "pan"; if (gest.type === "card") { gest.el.classList.add("moving"); showTrash(trashLabel("m")); } if (gest.type === "group") showTrash(trashLabel("g")); }
+  if (!gest.moved && Math.hypot(dx, dy) > 6) { gest.moved = true; clearTimeout(gest.timer); if (gest.type === "edge") gest.type = "pan"; if (gest.type === "card") { gest.el.classList.add("moving"); showTrash(trashLabel("m")); } if (gest.type === "alias") gest.el.classList.add("moving"); if (gest.type === "group") showTrash(trashLabel("g")); }
   if (!gest.moved) return;
   if (gest.type === "pan") { BV.tx = gest.tx + dx; BV.ty = gest.ty + dy; applyView(); }
   else if (gest.type === "lasso") { lassoPts.push(toWorld(e.clientX, e.clientY)); drawEdges(); }
@@ -2612,10 +2640,15 @@ boardEl.addEventListener("pointermove", e => {
     const c = board.cards[gest.id]; c.x = Math.round(gest.cx + dx / BV.k); c.y = Math.round(gest.cy + dy / BV.k);
     gest.el.style.left = c.x + "px"; gest.el.style.top = c.y + "px";
     gest.trash = overTrash(e.clientX, e.clientY); const p = cardCenter(gest.id); hotGroup = gest.trash ? null : groupAt(p)?.id || null; drawEdges();
+  } else if (gest.type === "alias" && !gest.long) {
+    const a = aliasesOf()[gest.id]; a.x = Math.round(gest.cx + dx / BV.k); a.y = Math.round(gest.cy + dy / BV.k);
+    gest.el.style.left = a.x + "px"; gest.el.style.top = a.y + "px";
+    const b = aliasBox(gest.id); hotGroup = groupAt({ x: b.cx, y: b.cy })?.id || null; drawEdges();
   } else if (gest.type === "group") {
     const ox = dx / BV.k, oy = dy / BV.k;
     for (const [g, pts] of gest.pts) g.pts = pts.map(p => [Math.round(p[0] + ox), Math.round(p[1] + oy)]);
     for (const [m, x, y] of gest.cards) { const c = board.cards[m]; c.x = Math.round(x + ox); c.y = Math.round(y + oy); const el = cardsEl.querySelector(`[data-card="${m}"]`); if (el) { el.style.left = c.x + "px"; el.style.top = c.y + "px"; } }
+    for (const [aid, x, y] of gest.aliases) { const a = aliasesOf()[aid]; if (!a) continue; a.x = Math.round(x + ox); a.y = Math.round(y + oy); const el = cardsEl.querySelector(`[data-alias="${aid}"]`); if (el) { el.style.left = a.x + "px"; el.style.top = a.y + "px"; } }
     gest.trash = overTrash(e.clientX, e.clientY); hotGroup = gest.trash ? null : groupAt(toWorld(e.clientX, e.clientY), gest.skip)?.id || null; // 指の下の丸が入れ先(大きさは問わず、入れたら丸がふくらむ)
     drawEdges();
   } else if (gest.type === "link") {
@@ -2661,8 +2694,16 @@ function endGesture(e, cancel) {
       renderBoard(); renderFileBar(); hintDone();
     } else if (!g.moved && !g.long) openFile(g.id);
     else drawEdges();
+  } else if (g.type === "alias") {
+    if (g.moved && !g.long) { // ほかの丸の中へ落とせば、そのファイルにも入る。どの丸にも入らない所へ出せば、分身はなくなる
+      const b = aliasBox(g.id), hit = b && groupAt({ x: b.cx, y: b.cy });
+      if (!hit) { delete board.alias[g.id]; toast("分身を外しました(メモは残っています)"); }
+      else { const intended = treeSnapshot(); ensureContains(hit, rectPts(b, 14)); recomputeTree(); reconcileTree(intended); toast(`「${hit.name}」にも入れました`); }
+      recomputeTree(); renderBoard(); renderFileBar();
+    } else if (!g.moved && !g.long) { const a = aliasesOf()[g.id]; if (a) openFile(a.m); }
+    else drawEdges();
   } else if (g.type === "group") {
-    if (g.moved && g.trash) { for (const [x, pts] of g.pts) x.pts = pts; for (const [m, x, y] of g.cards) { const c = board.cards[m]; c.x = x; c.y = y; } dropDelete({ t: "g", id: g.id }); }
+    if (g.moved && g.trash) { for (const [x, pts] of g.pts) x.pts = pts; for (const [m, x, y] of g.cards) { const c = board.cards[m]; c.x = x; c.y = y; } for (const [aid, x, y] of g.aliases) { const a = aliasesOf()[aid]; if (a) { a.x = x; a.y = y; } } dropDelete({ t: "g", id: g.id }); }
     else if (g.moved) {
       const intended = treeSnapshot();
       if (hotAtEnd && groupById(hotAtEnd)) ensureContains(groupById(hotAtEnd), pushOut(groupById(g.id).pts, 16)); // 指を離した所の丸を、この丸が収まる形に
@@ -2775,6 +2816,7 @@ function cardColorClass(id) { // 自分で選んだ色はそのまま、なけ�
 }
 // ---- ファイルの中を整列:ツリーと同じ順で、カードと中の丸を行と列にそろえ、丸を中身に合う形にする ----
 function layoutBox(it) {
+  if (it.t === "a") { const b = aliasBox(it.id); return b ? { x: b.x, y: b.y, w: b.w, h: b.h } : null; }
   if (it.t === "m") {
     const c = board.cards[it.id], el = cardsEl.querySelector(`[data-card="${it.id}"]`);
     let h = el && el.offsetWidth && !boardEl.classList.contains("compact") ? el.offsetHeight : 0;
@@ -2837,6 +2879,7 @@ function arrangeGroup(g, deep) {
   const ox = Math.round(G.cx - W / 2), oy = Math.round(G.cy - H / 2 + 8); // 元の丸の中心に、まとまりの中心を合わせる
   for (const [it, b, x, y2] of rel) {
     if (it.t === "m") { const c = board.cards[it.id]; c.x = ox + x; c.y = oy + y2; }
+    else if (it.t === "a") { const a = aliasesOf()[it.id]; a.x = ox + x; a.y = oy + y2; }
     else translateGroup(groupById(it.id), ox + x - b.x, oy + y2 - b.y);
   }
   g.pts = roundShape(ox - 18, oy - 26, ox + W + 18, oy + H + 18);
@@ -2900,6 +2943,51 @@ function evictStrangers(g) { // 整列した丸に、もともと中身でなか
   }
 }
 const groupChain = g => [...ancestorsOfGroup(g), g].map(x => "📁 " + x.name).join(" › ");
+function aliasPickSheet(id) { // カードのメニュー「ほかのファイルにも入れる」:入れる先のファイルを選ぶ
+  const own = groupOfCard(id)?.id, has = new Set(aliasGroupsOfMemo(id).map(g => g.id));
+  const gs = board.groups.filter(g => g.pts && g.id !== own && !has.has(g.id));
+  openSheet(`<h2>ほかのファイルにも入れる</h2><p class="muted small" style="margin-top:-4px">「${esc(memoTitle(files[id]))}」の分身(📎)を、選んだファイルの中に置きます。中身は同じメモなので、どちらで書いても同じです。</p>
+    ${gs.map(g => `<button class="row" style="width:100%;text-align:left" data-pg="${g.id}"><span class="grow"><b>📁 ${esc(g.name)}</b>${g.parent ? `<div class="muted small">${esc(groupChain(groupById(g.parent)))} の中</div>` : ""}</span><span>＋</span></button>`).join("") || `<div class="empty">入れられるファイルがありません</div>`}
+    <div class="btns"><button class="btn" data-x>閉じる</button></div>`, s => {
+    s.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.pg) { closeSheet(); createAlias(id, b.dataset.pg); renderBoardView(); renderFileBar(); toast(`「${groupById(b.dataset.pg)?.name}」にも入れました`); }
+      else if ("x" in b.dataset) closeSheet();
+    });
+  });
+}
+function createAlias(m, gid) { // ファイルの中の空いた所に分身を置く。空きがなければすぐ下に置き、丸をふくらませる
+  const g = groupById(gid); if (!g || !files[m]) return null;
+  const aid = uid(), G = groupGeo(g), W = CARD_W, H = 56, intended = treeSnapshot();
+  const boxes = [...Object.keys(files).map(cardBox), ...Object.keys(aliasesOf()).map(aliasBox)].filter(Boolean);
+  const allowed = new Set([g.id, ...ancestorsOfGroup(g).map(x => x.id)]);
+  const free = (x, y) => !boxes.some(o => x < o.x + o.w + 10 && x + W + 10 > o.x && y < o.y + o.h + 10 && y + H + 10 > o.y);
+  const ok = (x, y) => rectPts({ x, y, w: W, h: H }, 6).every(q => insidePts(g.pts, q[0], q[1])) && free(x, y) && !board.groups.some(h => !allowed.has(h.id) && h.pts && insidePts(h.pts, x + W / 2, y + H / 2));
+  const cand = []; for (let y = G.y0; y <= G.y1 - H; y += 20) for (let x = G.x0; x <= G.x1 - W; x += 20) cand.push([x, y]);
+  cand.sort((p, q) => Math.hypot(p[0] + W / 2 - G.cx, p[1] + H / 2 - G.cy) - Math.hypot(q[0] + W / 2 - G.cx, q[1] + H / 2 - G.cy));
+  let spot = cand.find(([x, y]) => ok(x, y));
+  for (let d = 24; d <= 2000 && !spot; d += 24) { const x = G.cx - W / 2, y = G.y1 + d; if (free(x, y) && !board.groups.some(h => { if (allowed.has(h.id) || !h.pts) return false; const Q = groupGeo(h); return x < Q.x1 + 24 && x + W + 24 > Q.x0 && y < Q.y1 + 24 && y + H + 24 > Q.y0; })) spot = [x, y]; }
+  spot ||= [G.cx - W / 2, G.y1 + 24];
+  aliasesOf()[aid] = { m, x: Math.round(spot[0]), y: Math.round(spot[1]) };
+  ensureContains(g, rectPts({ x: spot[0], y: spot[1], w: W, h: H }, 14));
+  recomputeTree(); reconcileTree(intended); recomputeTree(); saveBoard();
+  return aid;
+}
+function aliasMenu(aid) {
+  const a = aliasesOf()[aid]; if (!a || !files[a.m]) return;
+  const g = groupOfAlias(aid), home = groupOfCard(a.m);
+  openSheet(`<h2>📎 ${esc(memoTitle(files[a.m]))}</h2><p class="muted small" style="margin-top:-4px">${g ? `「${esc(g.name)}」に置いた分身です。` : ""}中身は${home ? `「${esc(home.name)}」にある` : ""}元のメモと同じです。外しても、メモは消えません。</p>
+    <button class="btn primary block" data-open>開いて書く</button>
+    <button class="btn block" data-un style="margin-top:8px">${g ? `「${esc(g.name)}」から外す` : "分身を外す"}</button>
+    <div class="btns"><button class="btn" data-x>閉じる</button></div>`, s => {
+    s.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if ("open" in b.dataset) { closeSheet(); openFile(a.m); }
+      else if ("un" in b.dataset) { delete board.alias[aid]; recomputeTree(); closeSheet(); renderBoardView(); renderFileBar(); toast("分身を外しました(メモは残っています)"); }
+      else if ("x" in b.dataset) closeSheet();
+    });
+  });
+}
 function cardMenu(id) {
   const f = files[id], c = board.cards[id], g = groupOfCard(id);
   const n = board.edges.filter(e => e.a === id || e.b === id).length;
@@ -2912,6 +3000,7 @@ function cardMenu(id) {
     ${g ? `<button class="btn block" data-out style="margin-top:4px">「${esc(g.name)}」の外へ出す</button>` : ""}
     ${fileTags(id).length ? `<p class="muted small" style="margin:6px 0 0">ファイルから付いたタグ:${fileTags(id).map(t => "📁#" + esc(t)).join(" ")}</p>` : ""}
     ${meta.boards.length ? `<p class="muted small" style="margin:6px 0 0">置いてあるボード:${boardsOfMemo(id).map(b => "◧ " + esc(b.name)).join("、")}</p>` : ""}
+    ${board.groups.length ? `<button class="btn block" data-addalias style="margin-top:6px">ほかのファイルにも入れる</button>` : ""}
     <button class="btn block" data-onb style="margin-top:6px">ほかのボードにも置く</button>${curBoard !== "main" ? `<button class="btn block" data-unb style="margin-top:6px">このボードから外す(メモは残す)</button>` : ""}
     <button class="btn danger block" data-del style="margin-top:8px">このメモを削除${meta.boards.length ? "(すべてのボードから)" : ""}</button>
     <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
@@ -2926,6 +3015,7 @@ function cardMenu(id) {
         c.x = p.x; c.y = p.y; closeSheet(); renderBoard(); recomputeTree(); renderBoard(); renderFileBar(); toast(`「${g.name}」から出しました`);
       }
       else if ("ok" in b.dataset) { apply(); closeSheet(); renderBoard(); }
+      else if ("addalias" in b.dataset) { apply(); closeSheet(); aliasPickSheet(id); }
       else if ("onb" in b.dataset) { apply(); closeSheet(); placeOnBoardSheet(id); }
       else if ("unb" in b.dataset) { apply(); closeSheet(); removeFromBoard(id); recomputeTree(); renderBoardView(); renderFileBar(); toast(`◧ ${boardName(curBoard)} から外しました(メモは残っています)`); }
       else if ("del" in b.dataset) confirmSheet("メモを削除しますか", `「${memoTitle(f)}」(${countNodes(f.nodes)}行)${n ? `と、つながっている矢印 ${n} 本` : ""}を削除します。メモは30日間、「設定 › ゴミ箱」から戻せます。`, "削除する", () => { removeMemo(id); renderBoard(); recomputeTree(); renderBoardView(); renderFileBar(); });
@@ -3029,13 +3119,14 @@ function setSide(open) {
 }
 $("#sideBtn").onclick = () => setSide(!document.body.classList.contains("side-open"));
 $("#sideScrim").onclick = () => setSide(false);
-const itemParent = it => it.t === "g" ? (groupById(it.id)?.parent || null) : (groupOfCard(it.id)?.id || null);
-const itemName = it => it.t === "g" ? groupById(it.id).name : memoTitle(files[it.id]);
+const itemParent = it => it.t === "g" ? (groupById(it.id)?.parent || null) : it.t === "a" ? (groupOfAlias(it.id)?.id || null) : (groupOfCard(it.id)?.id || null);
+const itemName = it => it.t === "g" ? groupById(it.id).name : memoTitle(files[it.t === "a" ? it.m : it.id]);
 function sideKids(pid) {
   const order = board.order || {};
   const gs = board.groups.filter(g => (g.parent || null) === pid).map(g => ({ t: "g", id: g.id }));
   const ms = Object.keys(files).filter(id => board.cards[id] && (groupOfCard(id)?.id || null) === pid).map(id => ({ t: "m", id }));
-  return [...gs, ...ms].sort((a, b) => (order[a.id] ?? Infinity) - (order[b.id] ?? Infinity) || (a.t === b.t ? 0 : a.t === "g" ? -1 : 1) || itemName(a).localeCompare(itemName(b), "ja", { numeric: true }));
+  const as = pid ? (groupById(pid)?.amembers || []).filter(aid => files[aliasesOf()[aid]?.m]).map(aid => ({ t: "a", id: aid, m: aliasesOf()[aid].m })) : []; // 分身
+  return [...gs, ...ms, ...as].sort((a, b) => (order[a.id] ?? Infinity) - (order[b.id] ?? Infinity) || (a.t === b.t ? 0 : a.t === "g" ? -1 : 1) || itemName(a).localeCompare(itemName(b), "ja", { numeric: true }));
 }
 // ツリーを描く。rich = ボードのリスト表示(1行目のひとことと、矢印のつながりも添える)
 function treeHtml(rich) {
@@ -3055,6 +3146,8 @@ function treeHtml(rich) {
         rows.push(`<div class="srow sg" data-sid="g:${g.id}" style="--d:${d};--gc:${colHex(groupColor(g))}"><button class="s-fold" data-sfold="${g.id}" aria-label="${folded ? "開く" : "畳む"}">${folded ? "▸" : "▾"}</button>` +
           `<div class="s-body"><div class="s-line"><span class="s-name">📁 ${esc(g.name)}</span><span class="s-k">${n}</span></div>${links(g.id)}</div>${more("g", g.id)}</div>`);
         if (!folded) walk(g.id, d + 1);
+      } else if (it.t === "a") {
+        rows.push(`<div class="srow sm alias${it.m === cur ? " cur" : ""}" data-sid="a:${it.id}" style="--d:${d}"><span class="s-dot">📎</span><div class="s-body"><div class="s-line"><span class="s-name">${esc(memoTitle(files[it.m]))}</span></div></div></div>`);
       } else {
         const f = files[it.id], pv = rich ? previewLines(f)[0] : "";
         rows.push(`<div class="srow sm${it.id === cur ? " cur" : ""}${rich ? cardColorClass(it.id) : ""}" data-sid="m:${it.id}" style="--d:${d}"><span class="s-dot">•</span>` +
@@ -3094,6 +3187,7 @@ function renderBoardList() {
     h = `<div class="bl-h">${listPath.length || multi ? `<button class="mini" data-blback>‹ 戻る</button>` : ""}<span class="bl-path">${esc(path.join(" › ") || "すべてのメモ")}</span><span class="spacer"></span><button class="mini" data-blnewg>＋ ファイル</button></div>` +
       (sideKids(gid).map(it => {
         if (it.t === "g") { const g = groupById(it.id); return `<div class="bl-row" data-blg="${g.id}" style="--gc:${colHex(groupColor(g))}"><span class="bl-ic">📁</span><span class="grow"><b>${esc(g.name)}</b><span class="bl-sub">${listCount(g.id)} 件</span></span>${more("g:" + g.id)}<span class="bl-go">›</span></div>`; }
+        if (it.t === "a") return `<div class="bl-row${it.m === curFile ? " cur" : ""}" data-blm="${it.m}"><span class="bl-ic">📎</span><span class="grow"><b>${esc(memoTitle(files[it.m]))}</b><span class="bl-sub">分身(中身は同じメモ)</span></span>${more("a:" + it.id)}</div>`;
         const f = files[it.id], pv = previewLines(f)[0];
         return `<div class="bl-row${it.id === curFile ? " cur" : ""}" data-blm="${it.id}"><span class="bl-ic">•</span><span class="grow"><b>${esc(memoTitle(f))}</b>${pv ? `<span class="bl-sub">${esc(pv.trim())}</span>` : ""}</span>${more("m:" + it.id)}</div>`;
       }).join("") || `<div class="empty">${gid ? "このファイルはまだ空です。右上の「＋ メモ」で、この中にメモを作れます" : "メモがありません"}</div>`);
@@ -3103,7 +3197,7 @@ function renderBoardList() {
 }
 blistEl.addEventListener("click", e => {
   const m = e.target.closest("[data-blmore]");
-  if (m) { const [t, id] = m.dataset.blmore.split(":"); if (t === "b") { switchBoard(id); boardMenu(); } else t === "g" ? groupMenu(id) : cardMenu(id); return; }
+  if (m) { const [t, id] = m.dataset.blmore.split(":"); if (t === "b") { switchBoard(id); boardMenu(); } else if (t === "a") aliasMenu(id); else t === "g" ? groupMenu(id) : cardMenu(id); return; }
   const r = e.target.closest("[data-blb],[data-blg],[data-blm],[data-blback],[data-blnewg],[data-blnewb]"); if (!r) return;
   if (r.dataset.blb) { switchBoard(r.dataset.blb); listAtBoards = false; listPath = []; }
   else if (r.dataset.blg) listPath.push(r.dataset.blg);
@@ -3127,6 +3221,7 @@ function bindTree(list, rich) {
     const f = e.target.closest("[data-sfold]");
     const row = e.target.closest(".srow"); if (!row) return;
     const [t, id] = row.dataset.sid.split(":");
+    if (t === "a") { const a = aliasesOf()[id]; if (a) openFile(a.m); if (!rich) { if (!isWide()) setSide(false); else renderSide(); } return; }
     if (t === "g" || f) { const gid = f ? f.dataset.sfold : id; sideFold.has(gid) ? sideFold.delete(gid) : sideFold.add(gid); LS.set("sideFold", [...sideFold]); rich ? renderBoardList() : renderSide(); return; }
     openFile(id); if (!rich) { if (!isWide()) setSide(false); else renderSide(); }
   });
@@ -3134,7 +3229,7 @@ function bindTree(list, rich) {
   list.addEventListener("pointerdown", e => {
     const row = e.target.closest(".srow"); if (!row || e.button > 0 || e.target.closest("[data-sfold],[data-smore]")) return;
     clearTimeout(sdrag?.timer);
-    const [t, id] = row.dataset.sid.split(":");
+    const [t, id] = row.dataset.sid.split(":"); if (t === "a") return; // 分身は一覧では動かさない(ボードで動かす)
     sdrag = { list, rich, it: { t, id }, row, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, pid: e.pointerId, on: false, target: null };
     row.classList.add("pressing");
     sdrag.timer = setTimeout(() => { if (sdrag && !sdrag.on) sStart(); }, LONGPRESS_MS);
@@ -3379,6 +3474,7 @@ function placeOnBoardSheet(id) { // カードのメニューから:ほかのボ�
 }
 function removeFromBoard(id) { // このボードから外す(メモは消さない)
   delete board.cards[id];
+  for (const [aid, a] of Object.entries(aliasesOf())) if (a.m === id) delete board.alias[aid];
   board.edges = board.edges.filter(e => e.a !== id && e.b !== id);
   for (const g of board.groups) g.members = (g.members || []).filter(x => x !== id);
   saveBoard();
@@ -3477,6 +3573,7 @@ function translateGroup(g, dx, dy) {
   const all = [g, ...descendantsOf(g)];
   for (const x of all) x.pts = x.pts.map(p => [Math.round(p[0] + dx), Math.round(p[1] + dy)]);
   for (const x of all) for (const m of x.members || []) { const c = board.cards[m]; if (c) { c.x = Math.round(c.x + dx); c.y = Math.round(c.y + dy); } }
+  for (const x of all) for (const aid of x.amembers || []) { const a = aliasesOf()[aid]; if (a) { a.x = Math.round(a.x + dx); a.y = Math.round(a.y + dy); } }
 }
 function placeGroupIn(g, P) { // 丸を、外側にする丸の右の縁に並べてから、外側の丸をふくらませて収める
   const G = groupGeo(g), Q = groupGeo(P); if (!G || !Q) return;
@@ -3503,8 +3600,8 @@ function memoLinks(id) {
     out.push({ other, arrow, label: e.label || "", kind: via ? "via" : (outward || e.dir === "both" ? "out" : "in"), via });
   };
   for (const e of board.edges) if (e.a === id || e.b === id) add(e, id, null);
-  const g = groupOfCard(id);
-  if (g) for (const x of [g, ...ancestorsOfGroup(g).reverse()]) for (const e of board.edges) if (e.a === x.id || e.b === x.id) add(e, x.id, x);
+  for (const g of [groupOfCard(id), ...aliasGroupsOfMemo(id)].filter(Boolean)) // 分身を置いたファイルの矢印もたどる
+    for (const x of [g, ...ancestorsOfGroup(g).reverse()]) for (const e of board.edges) if (e.a === x.id || e.b === x.id) add(e, x.id, x);
   // [[リンク]]:このメモから(↗)と、このメモへ(↙)
   const linksIn = f => { const s = new Set(); const w = l => l.forEach(n => { for (const m of (n.t || "").matchAll(LINK_RE)) s.add(m[1].trim().toLowerCase()); w(n.c || []); }); w(f.nodes); return s; };
   const me = files[id], myT = fullTitle(me).toLowerCase(), mine = linksIn(me);
@@ -3583,7 +3680,7 @@ $("#linkbar").addEventListener("click", e => {
   else if (groupById(to)) pickFromGroup(groupById(to));
 });
 function pickFromGroup(g) { // 矢印の先がファイルなら、中のメモから選ぶ
-  const ms = [g, ...descendantsOf(g)].flatMap(x => (x.members || []).map(m => [m, x]));
+  const ms = [g, ...descendantsOf(g)].flatMap(x => [...(x.members || []), ...(x.amembers || []).map(aid => aliasesOf()[aid]?.m).filter(m => files[m])].map(m => [m, x]));
   openSheet(`<h2>📁 ${esc(g.name)}</h2><p class="muted small" style="margin-top:-4px">開くメモを選んでください</p>
     ${ms.map(([m, x]) => `<button class="row" style="width:100%;text-align:left" data-pick="${m}"><span class="grow"><b>${esc(memoTitle(files[m]))}</b>${x !== g ? `<div class="muted small">📁 ${esc(x.name)}</div>` : ""}</span><span>›</span></button>`).join("") || `<div class="empty">このファイルにはまだメモがありません</div>`}
     <div class="btns"><button class="btn" data-x>閉じる</button><button class="btn" data-board>ボードで見る</button></div>`, s => {
@@ -3838,8 +3935,8 @@ function timerList(a, b) { // その日のタイマーの記録(タップで種�
   const tr = [];
   for (const k of monthKeysBetween(a, b)) for (const t of (logs[k]?.timers || [])) if (overlap(t.s, t.e, a, b)) tr.push([k, t]);
   const addBtn = `<button class="mini" data-tadd="${a}" style="margin-top:8px">＋ 記録を足す</button>`;
-  if (!tr.length) return `<div class="card"><h3>タイマーの記録</h3><div class="muted small">この日の記録はありません。計り忘れた分は、ここから足せます。</div>${addBtn}</div>`;
-  return `<div class="card"><h3>タイマーの記録 <span class="muted small" style="font-weight:400">タップで種類や時刻を直す</span></h3>${tr.sort((x, y) => y[1].s - x[1].s).map(([k, t]) => `<button class="row small" style="width:100%;text-align:left" data-trec="${k}|${t.id}"><span class="grow"><span class="tdot" style="--tc:${seriesColor(seriesKey(t.type))}"></span>${esc(typeName(t.type))}${t.label ? ` · ${esc(t.label)}` : ""} <span class="muted">${t.manual ? "手で足した記録" : t.mode === "pomodoro" ? "ポモドーロ" : "ストップウォッチ"}</span></span><span class="num">${hm(t.s)}〜${hm(t.e)} ${fmtDur(t.e - t.s)}</span></button>`).join("")}${addBtn}</div>`;
+  if (!tr.length) return `<div class="card"><h3>作業時間の訂正</h3><div class="muted small">この日の記録はありません。計り忘れた分は、ここから足せます。</div>${addBtn}</div>`;
+  return `<div class="card"><h3>作業時間の訂正 <span class="muted small" style="font-weight:400">タップで種類や時刻を直す</span></h3>${tr.sort((x, y) => y[1].s - x[1].s).map(([k, t]) => `<button class="row small" style="width:100%;text-align:left" data-trec="${k}|${t.id}"><span class="grow"><span class="tdot" style="--tc:${seriesColor(seriesKey(t.type))}"></span>${esc(typeName(t.type))}${t.label ? ` · ${esc(t.label)}` : ""} <span class="muted">${t.manual ? "手で足した記録" : t.mode === "pomodoro" ? "ポモドーロ" : "ストップウォッチ"}</span></span><span class="num">${hm(t.s)}〜${hm(t.e)} ${fmtDur(t.e - t.s)}</span></button>`).join("")}${addBtn}</div>`;
 }
 const dtLocal = t => `${ymd(new Date(t))}T${hm(t)}`; // 日時の入力欄の形
 function recOverlap(s, e, exceptId) { // タイマーの記録どうしが重なると、同じ時間を二度数えてしまう
@@ -4094,12 +4191,19 @@ function renderTimer() {
     <div class="field"><span>作業の種類</span><div class="typechips">${meta.workTypes.map(t => `<button class="tchip${s.type === t.id ? " on" : ""}" data-ttype="${t.id}" style="--tc:${typeColor(t.id)}"><i></i>${esc(t.name)}</button>`).join("")}<button class="tchip add" data-ttypeadd>＋ 種類</button></div></div>
     <label class="field"><span>作業内容のラベル(くわしく)</span><input class="inp" id="tLabel" value="${esc(s.label)}" placeholder="例:マップ制作、敵AI" maxlength="40"></label>
     ${labels.length ? `<div class="metas">${labels.map(l => `<button class="mini" data-lbl="${esc(l)}">${esc(l)}</button>`).join("")}</div>` : ""}
-    <div class="card"><h3>今日のタイマー合計 <span class="num" style="float:right;color:var(--text-primary)" id="tToday"></span></h3>
-      ${recent.filter(t => t.e > todayA).sort((a, b) => b.s - a.s).map(t => `<div class="row small"><span class="grow"><span class="tdot" style="--tc:${seriesColor(seriesKey(t.type))}"></span>${esc(typeName(t.type))}${t.label ? " · " + esc(t.label) : ""} <span class="muted">${t.manual ? "手で足した記録" : t.mode === "pomodoro" ? "ポモドーロ" : "ストップウォッチ"}</span></span><span class="num">${hm(t.s)}〜${hm(t.e)} ${fmtDur(t.e - t.s)}</span></div>`).join("") || `<div class="empty">まだ記録はありません</div>`}
+    <div class="card"><h3>タイマーの設定</h3>
+      <div style="display:flex;gap:8px">
+        <label class="field" style="flex:1"><span>集中(分)</span><input class="inp" type="number" inputmode="numeric" min="1" max="180" id="pF" value="${P.focus}"></label>
+        <label class="field" style="flex:1"><span>休憩(分)</span><input class="inp" type="number" inputmode="numeric" min="1" max="60" id="pB" value="${P.brk}"></label>
+        <label class="field" style="flex:1"><span>1日の目標(分)</span><input class="inp" type="number" inputmode="numeric" min="0" max="1440" id="pG" value="${P.goal || ""}" placeholder="なし"></label>
+      </div>
+      <label class="field"><span>タイマーの止め忘れを尋ねるまで</span><select class="inp" id="pWarn">${[[0, "尋ねない"], [1, "1時間"], [2, "2時間"], [3, "3時間"], [4, "4時間"], [6, "6時間"], [8, "8時間"]].map(([v, l]) => `<option value="${v}" ${(P.timerWarnH ?? 3) == v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+      ${NATIVE ? `<label class="row"><input type="checkbox" id="pBlock" ${P.block !== false ? "checked" : ""}><span class="grow">タイマー中に妨害アプリを使えなくする(試験運用)<div class="muted small">タイマーを始めると、妨害アプリを開いても画面で覆って使えなくします。いちどに最大5分まで</div></span></label>` : ""}
+      ${NATIVE ? `<label class="row"><input type="checkbox" id="pLockNote" ${P.lockNote !== false ? "checked" : ""}><span class="grow">ロック画面に通知を出す<div class="muted small">ロックを解かずにストップウォッチを始める・止める。出ないときは、端末の設定でこのアプリのロック画面の通知を許可してください</div></span></label>` : ""}
     </div>
     ${NATIVE && s.running && meta.apps.length ? `<div class="card focusnote"><h3>集中中</h3><div class="small">${meta.apps.map(a => esc(a.name)).join("・")} は開かないでください。</div>
       ${NATIVE && P.block !== false ? `<div class="small" id="blockLeft" style="margin-top:6px;font-weight:600"></div><button class="mini" id="blockAgain" style="margin-top:6px;display:none">もう一度ブロックする(最大5分)</button>` : ""}</div>` : ""}
-    <p class="note">タイマーの時間は、記録の「作業」に作業の種類ごとに入ります。${NATIVE ? "アプリを開いていた時間や作業アプリ" : "このページを開いていた時間"}と重なる分は、二重に数えません。ポモドーロは集中 ${P.focus} 分/休憩 ${P.brk} 分。長さは「設定」で変えられます。</p>`;
+    <p class="note">タイマーの時間は、記録の「作業」に作業の種類ごとに入ります。${NATIVE ? "アプリを開いていた時間や作業アプリ" : "このページを開いていた時間"}と重なる分は、二重に数えません。ポモドーロの長さと1日の目標は、上の「タイマーの設定」で変えられます。</p>`;
   updateClock();
 }
 $("#timerScroll").addEventListener("click", e => {
@@ -4112,6 +4216,17 @@ $("#timerScroll").addEventListener("click", e => {
   else if ("ttypeadd" in b.dataset) addTypeSheet(t => { Timer.st.type = t.id; Timer.save(); renderTimer(); });
 });
 $("#timerScroll").addEventListener("input", e => { if (e.target.id === "tLabel") { Timer.st.label = e.target.value; Timer.save(); } });
+$("#timerScroll").addEventListener("change", e => { // タイマーの設定(ポモドーロの長さ・目標・止め忘れ・集中ブロック・ロック画面の通知)
+  const P = meta.prefs, t = e.target;
+  if (t.id === "pF") P.focus = Math.max(1, Math.min(180, Math.round(+t.value) || 25));
+  else if (t.id === "pB") P.brk = Math.max(1, Math.min(60, Math.round(+t.value) || 5));
+  else if (t.id === "pG") P.goal = Math.max(0, Math.min(1440, Math.round(+t.value) || 0));
+  else if (t.id === "pWarn") { P.timerWarnH = +t.value; delete Timer.st.warnAt; LS.set("timer", Timer.st); }
+  else if (t.id === "pBlock") P.block = t.checked;
+  else if (t.id === "pLockNote") { P.lockNote = t.checked; try { Android.setTimerNotice(t.checked); if (t.checked) Android.requestNotifyPerm(); } catch {} }
+  else return;
+  saveMeta(); syncWidget(); updateClock(); toast("保存しました");
+});
 // 集中ブロック(Android アプリのみ・試験運用):タイマー中、妨害アプリを開いても画面で覆う。いちどに最大5分
 const BLOCK_MIN = 5;
 function startBlock() {
@@ -4318,16 +4433,6 @@ function renderPrefs() {
       ${Object.keys(PERMS).map(permRow).join("")}
       <p class="muted small" style="margin:6px 0 0">設定画面で「作業記録メモ帳」を選び、許可をオンにして戻ってきてください。</p>
     </div>` : ""}
-    <div class="card"><h3>ポモドーロと目標</h3>
-      <div style="display:flex;gap:8px">
-        <label class="field" style="flex:1"><span>集中(分)</span><input class="inp" type="number" inputmode="numeric" min="1" max="180" id="pF" value="${P.focus}"></label>
-        <label class="field" style="flex:1"><span>休憩(分)</span><input class="inp" type="number" inputmode="numeric" min="1" max="60" id="pB" value="${P.brk}"></label>
-        <label class="field" style="flex:1"><span>1日の目標(分)</span><input class="inp" type="number" inputmode="numeric" min="0" max="1440" id="pG" value="${P.goal || ""}" placeholder="なし"></label>
-      </div>
-      <label class="field"><span>タイマーの止め忘れを尋ねるまで</span><select class="inp" id="pWarn">${[[0, "尋ねない"], [1, "1時間"], [2, "2時間"], [3, "3時間"], [4, "4時間"], [6, "6時間"], [8, "8時間"]].map(([v, l]) => `<option value="${v}" ${(P.timerWarnH ?? 3) == v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
-      ${NATIVE ? `<label class="row"><input type="checkbox" id="pBlock" ${P.block !== false ? "checked" : ""}><span class="grow">タイマー中に妨害アプリを使えなくする(試験運用)<div class="muted small">タイマーを始めると、妨害アプリを開いても画面で覆って使えなくします。いちどに最大5分まで</div></span></label>` : ""}
-      ${NATIVE ? `<label class="row"><input type="checkbox" id="pLockNote" ${P.lockNote !== false ? "checked" : ""}><span class="grow">ロック画面に通知を出す<div class="muted small">ロックを解かずにストップウォッチを始める・止める。出ないときは、端末の設定でこのアプリのロック画面の通知を許可してください</div></span></label>` : ""}
-    </div>
     <div class="card"><h3>テンプレート</h3><p class="muted small" style="margin:0">1行目が親、行頭に空白を2つ入れた行がその子になります。</p>
       ${Object.keys(P.templates).map(k => `<div class="tplbox">
         <div style="display:flex;gap:6px;align-items:center"><input class="inp" style="font-weight:700" value="${esc(k)}" data-tplname="${esc(k)}" maxlength="20" aria-label="テンプレート名">
@@ -4917,7 +5022,7 @@ function applyTheme() {
   if (!t && NATIVE) try { t = Android.isNightMode() ? "dark" : "light"; } catch {} // WebView は端末の色に従わないことがある
   if (t) root.dataset.theme = t; else delete root.dataset.theme;
   const dark = t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-  $('meta[name="theme-color"]').content = dark ? "#1a1a19" : "#fcfcfb";
+  $('meta[name="theme-color"]').content = dark ? "#191919" : "#ffffff";
   if (NATIVE) try { Android.setBarsDark(dark); } catch {}
 }
 try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme); } catch {}
@@ -5500,6 +5605,7 @@ function tutorialLines() {
     "  ・カードの右下の●を、別のカードへ引くと矢印でつながります",
     "  ・指でぐるっと囲むと、ファイルにまとまります",
     "  ・左上の「☰」で、ファイルとメモの一覧が出ます",
+    "  ・カードを長押しして「ほかのファイルにも入れる」を選ぶと、一つのメモを二つのファイルに入れられます",
     "・時間を記録する",
     `  ・${NATIVE ? "このアプリ" : "このページ"}を開いているあいだは、自動で作業時間に入ります`,
     "  ・下の「タイマー」で作業の種類を選んで計ると、「記録」にグラフで積み上がります",
