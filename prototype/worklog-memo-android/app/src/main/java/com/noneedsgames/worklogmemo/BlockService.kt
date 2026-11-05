@@ -149,7 +149,7 @@ class BlockService : Service() {
             setOnClickListener { onClick() }
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52 * d).toInt()).apply { topMargin = (14 * d).toInt() }
         }
-        box.addView(button("作業記録メモ帳に戻る", true) {
+        box.addView(button("開発メモに戻る", true) {
             startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
             lastFg = packageName; hideOverlay()
         })

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#1a1a19">
-<title>作業記録メモ帳</title>
+<title>開発メモ</title>
 <script>try{var t=JSON.parse(localStorage.getItem("wm:theme"));if(t==="dark"||t==="light")document.documentElement.dataset.theme=t}catch(e){}</script>
 <style>
 :root{
@@ -423,6 +423,13 @@ body.side-open .side{display:flex}
 .oltools .ot-word{font-size:13px;font-weight:600}
 .oltools button[hidden],.toolbar .tb[hidden]{display:none}
 .kbmore{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 10px}
+.lgscroll{overflow-x:auto;margin:8px 0 4px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.mgprev pre{margin:8px 0 4px;padding:8px 0;font:inherit;font-size:13px;line-height:1.7;white-space:pre-wrap;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.lgscroll table{border-collapse:collapse;font-size:12px}
+.lgscroll th,.lgscroll td{padding:5px 8px;border-left:1px solid var(--line);white-space:nowrap;max-width:14em;overflow:hidden;text-overflow:ellipsis;text-align:left}
+.lgscroll th:first-child,.lgscroll td:first-child{border-left:0}
+.lgscroll th{font-weight:700;border-bottom:1px solid var(--text-primary)}
+.lgscroll tr+tr td{border-top:1px solid var(--line)}
 .kbmore .btn{padding:10px 4px;font-size:13px}
 .oltools .ot-del,.selbar .ot-del{color:var(--danger)}
 .chkbox{display:block;width:18px;height:18px;border-radius:0;border:2px solid var(--text-muted);background:var(--surface-1);color:#fff;font-size:12px;font-weight:800;line-height:14px;text-align:center}
@@ -891,10 +898,11 @@ const DEFAULT_TPL = {
 };
 const MONEY_DEF = { out: [["food", "食費"], ["daily", "日用品"], ["trans", "交通"], ["home", "住まい"], ["bills", "光熱・通信"], ["fun", "趣味・娯楽"], ["medical", "医療"], ["other", "その他"]], in: [["salary", "給料"], ["side", "副収入"], ["otherin", "その他"]] };
 let memos = {}, meta = null, logs = {}, moneyDocs = {}, plans = { goals: [] }, projects = { list: [] };
-// 作業の種類:時間を分ける箱。初めは「計画メモ」だけ。作業に数えるアプリを足すと、その名前の種類ができる。どれもタイマーから選べる
+// 作業の種類:時間を分ける箱。初めは「開発メモ」だけ。作業に数えるアプリを足すと、その名前の種類ができる。どれもタイマーから選べる
 function ensureWorkTypes() {
   const T = meta.workTypes; let ch = false;
-  if (!meta.prefs.planTypeMade) { if (!T.some(t => t.id === "plan")) T.unshift({ id: "plan", name: "計画メモ" }); meta.prefs.planTypeMade = true; ch = true; } // 消されたら作り直さない
+  if (!meta.prefs.planTypeMade) { if (!T.some(t => t.id === "plan")) T.unshift({ id: "plan", name: "開発メモ" }); meta.prefs.planTypeMade = true; ch = true; } // 消されたら作り直さない
+  { const pt = T.find(t => t.id === "plan"); if (pt && pt.name === "計画メモ") { pt.name = "開発メモ"; ch = true; } } // アプリの名前を「開発メモ」にしたので、初めに作った種類の名前もそろえる
   for (const a of meta.workApps) {
     if (a.type === "" || T.some(t => t.id === a.type)) continue; // 空は「種類なし」を選んだもの
     let t = T.find(x => x.name === a.name);
@@ -1536,6 +1544,47 @@ function nodesGrid(list) { // 字下げを列で表す表:深さ d の行は、�
 }
 const gridTsv = g => g.map(r => r.map(c => c.replace(/[\t\n]/g, " ")).join("\t")).join("\n");
 const gridCsv = g => "\ufeff" + g.map(r => r.map(c => /[",\n]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c).join(",")).join("\r\n") + "\r\n"; // 先頭の BOM で、Excel でも文字化けしない
+// ---- 列の名前(凡例)に沿って表にする:1列目は項目そのもの、「親」の列は一つ上の行、ほかの列はその項目の下の「列の名前:値」の行の値 ----
+const cellText = t => plainT(t || "").replace(COLOR_RE, "$2").replace(/\*\*/g, "").replace(LINK_RE, "$1").trim();
+const kvOf = t => { const m = cellText(t).match(/^([^:：]{1,24})[:：]\s*(.*)$/); return m ? [m[1].trim(), m[2].trim()] : null; };
+const PARENT_COLS = ["親", "見出し"];
+function legendKeys(list) { // メモの中に出てくる「名前:」を、出てきた順に
+  const ks = []; const w = l => l.forEach(n => { for (const c of n.c || []) { const p = kvOf(c.t); if (p && !ks.includes(p[0])) ks.push(p[0]); } w(n.c || []); }); w(list); return ks;
+}
+function legendTable(list, cols) {
+  const keys = cols.slice(1).filter(c => !PARENT_COLS.includes(c)), rows = [cols];
+  const w = (l, parent) => l.forEach(n => {
+    const kv = new Map(); for (const c of n.c || []) { const p = kvOf(c.t); if (p && !kv.has(p[0])) kv.set(p[0], p[1]); }
+    const own = kvOf(n.t), first = own && own[0] === cols[0] ? own[1] : cellText(n.t); // 「名前:レオン」の行は、列「名前」に「レオン」と入れる
+    if (keys.some(k => kv.has(k))) rows.push(cols.map((c, i) => i === 0 ? first : PARENT_COLS.includes(c) ? cellText(parent?.t) : kv.get(c) ?? ""));
+    w(n.c || [], n);
+  });
+  w(list, null); return rows;
+}
+function legendSheet(list, what) {
+  const f = files[curFile], keys = legendKeys(list);
+  const parseCols = v => v.split(/[,、，\t\n]/).map(s => s.trim()).filter(Boolean);
+  const start = f.legend || ["名前", ...keys].join(", ");
+  openSheet(`<h2>表にする</h2>
+    <p class="muted small" style="margin-top:-4px">列の名前を「,」か「、」で区切って並べます。1列目には項目そのもの(アイテムの名前など)が入り、ほかの列には、その項目のすぐ下の「列の名前:値」の行の値が入ります。「親」の列には、一つ上の行(見出しなど)が入ります。</p>
+    <label class="field"><span>列(凡例)</span><textarea class="inp" id="lgIn" rows="2" maxlength="400">${esc(start)}</textarea></label>
+    ${keys.length ? `<div class="metas"><span class="muted small" style="align-self:center">足す:</span>${["親", ...keys].map(k => `<button class="mini" data-lgk="${esc(k)}">${esc(k)}</button>`).join("")}</div>` : ""}
+    <div class="lgprev" id="lgPrev"></div>
+    <div class="btns"><button class="btn" data-lgcopy>表としてコピー</button><button class="btn primary" data-lgcsv>CSV で保存</button></div>`, s => {
+    const i = $("#lgIn", s), prev = $("#lgPrev", s);
+    const table = () => legendTable(list, parseCols(i.value));
+    const draw = () => { const t = table(), n = t.length - 1;
+      prev.innerHTML = n ? `<div class="lgscroll"><table>${t.slice(0, 7).map((r, k) => `<tr>${r.map(c => k ? `<td>${esc(c)}</td>` : `<th>${esc(c)}</th>`).join("")}</tr>`).join("")}</table></div><p class="muted small">${n} 行${n > 6 ? "(はじめの6行を表示)" : ""}</p>`
+        : `<p class="muted small">表になる項目がありません。項目のすぐ下に「${esc(parseCols(i.value)[1] || "列の名前")}:値」の行があるものが、1行になります。</p>`; };
+    const keep = () => { const v = parseCols(i.value).join(", "); if (v && v !== f.legend) { f.legend = v; saveFileQuiet(f); } }; // 凡例はメモごとに覚える
+    i.addEventListener("input", draw); draw();
+    s.addEventListener("click", e => {
+      const k = e.target.closest("[data-lgk]")?.dataset.lgk; if (k) { const cs = parseCols(i.value); if (!cs.includes(k)) { i.value = [...cs, k].join(", "); draw(); } return; }
+      if (e.target.closest("[data-lgcopy]")) { const t = table(); if (t.length < 2) return toast("表になる項目がありません"); keep(); closeSheet(); copyText(gridTsv(t), what + "(表)"); }
+      if (e.target.closest("[data-lgcsv]")) { const t = table(); if (t.length < 2) return toast("表になる項目がありません"); keep(); closeSheet(); saveTextAs(`${memoTitle(f).replace(/[\\/:*?"<>|]/g, "_")}.csv`, gridCsv(t), "text/csv"); }
+    });
+  });
+}
 async function saveTextAs(filename, text, mime) { // CSV などをファイルに保存する(アプリは保存先を選ぶ画面、ブラウザはダウンロード)
   if (NATIVE) { try { Android.saveTextAs(filename, text, mime); } catch { toast("この版では保存できません。アプリを更新してください"); } return; }
   const dl = window.claude && typeof window.claude.use === "function" ? await window.claude.use("downloads").catch(() => null) : null;
@@ -1549,9 +1598,11 @@ function copyChooser(list, what) { // 文章の形を選んでコピー
   openSheet(`<h2>${esc(what)}をコピー</h2>
     <button class="row" style="width:100%;text-align:left" data-cf="plain"><span class="grow"><b>文章(記号つき)</b><div class="muted small">・ ☐ ■ などの記号と字下げ。メモや LINE に貼るとき</div></span></button>
     <button class="row" style="width:100%;text-align:left" data-cf="md"><span class="grow"><b>Markdown</b><div class="muted small">- [ ] や # の記号。Markdown が使えるアプリに貼るとき</div></span></button>
+    <button class="row" style="width:100%;text-align:left" data-cf="legend"><span class="grow"><b>表にする(列を自分で決める)</b><div class="muted small">列の名前を並べると、その形の表にする。アイテム図鑑などをゲームのデータにするとき</div></span><span class="muted">›</span></button>
     <button class="row" style="width:100%;text-align:left" data-cf="tsv"><span class="grow"><b>表(字下げを列で)</b><div class="muted small">一段下がるごとに右の列へ。スプレッドシートや Excel に貼ると、そのまま表になる</div></span></button>
     <button class="row" style="width:100%;text-align:left" data-cf="csv"><span class="grow"><b>CSV ファイルに保存</b><div class="muted small">上と同じ表を .csv のファイルにする</div></span><span class="muted">↓</span></button>`, s => {
     s.addEventListener("click", e => { const b = e.target.closest("[data-cf]"); if (!b) return;
+      if (b.dataset.cf === "legend") { legendSheet(list, what); return; }
       if (b.dataset.cf === "tsv") { closeSheet(); copyText(gridTsv(nodesGrid(list)), what + "(表)"); return; }
       if (b.dataset.cf === "csv") { closeSheet(); saveTextAs(`${memoTitle(files[curFile]).replace(/[\\/:*?"<>|]/g, "_")}.csv`, gridCsv(nodesGrid(list)), "text/csv"); return; }
       closeSheet(); copyText(b.dataset.cf === "md" ? nodesMarkdown(list, 0).replace(COLOR_RE, "$2") : plainT(nodesText(list, 0)), what); }); // 色は持ち出せないので外す(Markdown の ** は残す)
@@ -3240,16 +3291,58 @@ function cardMenu(id) {
     });
   });
 }
+const cloneNodes = l => l.map(n => { const m = { ...JSON.parse(JSON.stringify(n)), id: uid(), c: cloneNodes(n.c || []) }; delete m.l; return m; }); // 行の id は新しくし、行どうしの関連付けは持ち越さない
 function duplicateMemo(id) { // メモを丸ごと複製し、元のすぐ右下に置く(同じグループに入るように少しだけずらす)
   const f = files[id], c = board.cards[id]; if (!f) return;
-  const clone = l => l.map(n => { const m = { ...JSON.parse(JSON.stringify(n)), id: uid(), c: clone(n.c || []) }; delete m.l; return m; }); // 行の id は新しくし、行どうしの関連付けは持ち越さない
   const g = newFileObj((f.name || memoTitle(f)) + " のコピー", null);
-  g.nodes = clone(f.nodes); if (f.comment) g.comment = f.comment;
+  g.nodes = cloneNodes(f.nodes); if (f.comment) g.comment = f.comment;
   files[g.id] = g; Store.put("file-" + g.id, g);
   board.cards[g.id] = { ...(c || { x: 40, y: 40 }), x: (c?.x ?? 40) + 28, y: (c?.y ?? 40) + 28 }; saveBoard();
   if (board !== boards.main) withBoard("main", placeMissing);
   recomputeTree(); renderBoardView(); renderSide();
   snack(`「${memoTitle(g)}」を作りました`); snack.undo = () => removeMemo(g.id, true);
+}
+// ---- グループの中のメモを一つのメモにまとめる:メモごとに、名前の行(冠を付けられる)の下へ中身を入れる ----
+function memoAsNode(f, pre) {
+  const lead = n => { n.t = pre + (n.t || ""); if (n.f) n.f = n.f.map(r => ({ ...r, s: r.s + pre.length, e: r.e + pre.length })); return n; }; // 太字や色の位置も冠の分ずらす
+  const nodes = cloneNodes(f.nodes).filter(n => n.t || n.c.length), title = memoTitle(f);
+  if (!f.name && nodes.length && plainT(nodes[0].t).trim() === title) { const h = lead(nodes[0]); h.c.push(...nodes.slice(1)); delete h.x; return h; } // 1行目が名前なら、その行に冠を付けて頭にする
+  const h = lead(N(title)); h.c = nodes; return h;
+}
+function mergeSheet(g) {
+  const plan = sub => { // まとめる中身:[{ id } | { g, items }](中のグループは見出しにする)
+    const seen = new Set(), walk = gid => sideKids(gid).flatMap(it => it.t === "m" ? (seen.has(it.id) ? [] : (seen.add(it.id), [{ id: it.id }])) : sub ? [{ g: groupById(it.id), items: walk(it.id) }] : []);
+    return walk(g.id);
+  };
+  const count = p => p.reduce((t, x) => t + (x.id ? 1 : count(x.items)), 0);
+  openSheet(`<h2>📁 ${esc(g.name)} をまとめる</h2>
+    <p class="muted small" style="margin-top:-4px">中のメモを、一つの新しいメモにまとめます。メモごとに名前の行ができ、その下に中身が入ります。元のメモはそのまま残ります。</p>
+    <label class="field"><span>名前の行の冠(なくてもよい)</span><input class="inp" id="mgP" maxlength="12" placeholder="例:名前:"></label>
+    <div class="metas"><span class="muted small" style="align-self:center">例:</span>${["名前:", "アイテム名:", "キャラ:", "■ "].map(p => `<button class="mini" data-mgp="${esc(p)}">${esc(p)}</button>`).join("")}</div>
+    <label class="row"><input type="checkbox" id="mgSub" checked><span class="grow">中のグループのメモも入れる(グループの名前を見出しにする)</span></label>
+    <div class="mgprev" id="mgPrev"></div>
+    <div class="btns"><button class="btn" data-x>やめる</button><button class="btn primary" data-ok>まとめる</button></div>`, s => {
+    const pIn = $("#mgP", s), sub = $("#mgSub", s), prev = $("#mgPrev", s);
+    const draw = () => { const p = plan(sub.checked), n = count(p), pre = pIn.value;
+      const lines = []; const w = (l, d) => l.forEach(x => { if (lines.length >= 8) return; if (x.id) lines.push("  ".repeat(d) + "・" + pre + memoTitle(files[x.id])); else { lines.push("  ".repeat(d) + "■ " + x.g.name); w(x.items, d + 1); } });
+      w(p, 0);
+      prev.innerHTML = n ? `<pre>${esc(lines.join("\n"))}${n > lines.length ? "\n  …" : ""}</pre><p class="muted small">メモ ${n} 件をまとめます</p>` : `<p class="muted small">まとめるメモがありません</p>`; };
+    pIn.addEventListener("input", draw); sub.addEventListener("change", draw); draw();
+    s.addEventListener("click", e => {
+      const pb = e.target.closest("[data-mgp]"); if (pb) { pIn.value = pb.dataset.mgp; draw(); return; }
+      if (e.target.closest("[data-x]")) { closeSheet(); return; }
+      if (!e.target.closest("[data-ok]")) return;
+      const p = plan(sub.checked), pre = pIn.value; if (!count(p)) { toast("まとめるメモがありません"); return; }
+      const build = l => l.map(x => x.id ? memoAsNode(files[x.id], pre) : { ...N(x.g.name), k: "head", c: build(x.items) });
+      const f = newFileObj(`${g.name}(まとめ)`, null); f.nodes = build(p);
+      files[f.id] = f; Store.put("file-" + f.id, f);
+      const G = groupGeo(g); board.cards[f.id] = freeSpot(Math.round(G.cx - CARD_W / 2), Math.round(G.y1 + 40)); saveBoard(); // 丸のすぐ下の外に置く
+      if (board !== boards.main) withBoard("main", placeMissing);
+      recomputeTree(); closeSheet(); renderBoardView(); renderSide();
+      openFile(f.id); show("memo");
+      snack(`メモ ${count(p)} 件を「${f.name}」にまとめました`); snack.undo = () => removeMemo(f.id, true);
+    });
+  });
 }
 function groupNameSheet(gid, fresh) { // 囲んだ直後に、グループの名前を付ける
   const g = groupById(gid);
@@ -3276,6 +3369,7 @@ function groupMenu(gid) {
     <div id="gmTagF"${g.tagOn ? "" : " hidden"}><label class="field"><span>付けるタグ</span><input class="inp" id="gmTagN" value="${esc(g.tagName || g.name)}" maxlength="20" placeholder="${esc(g.name)}"></label>
       <p class="muted small" style="margin-top:-2px">中の丸のメモにも付きます(メモには 📁 の印で出ます)。丸から出すと外れます。タグがグループと同じ名前のままなら、グループの名前を変えるとタグも変わります。</p></div>
     <div class="btns" style="margin-top:4px"><button class="btn" data-arrange>中を整列</button><button class="btn" data-redraw>形を描き直す</button></div>
+    <button class="btn block" data-merge style="margin-top:8px">中のメモを一つにまとめる</button>
     <button class="btn block" data-subgroup style="margin-top:8px">この中に新しいグループを作る</button>
     <button class="btn danger block" data-delall style="margin-top:8px">${curBoard === "main" ? "グループと中身を削除" : "グループをこのボードから外す"}</button>
     <button class="btn block" data-del style="margin-top:8px">丸だけ消す(中身は残す)</button>
@@ -3293,6 +3387,7 @@ function groupMenu(gid) {
       if ("col" in b.dataset) { g.c = b.dataset.col || undefined; if (!g.c) delete g.c; saveBoard(); s.querySelectorAll(".sw2").forEach(x => x.classList.toggle("on", x === b)); renderBoard(); }
       else if ("ok" in b.dataset) { applyG(); closeSheet(); renderBoard(); renderFileBar(); }
       else if ("redraw" in b.dataset) { applyG(); closeSheet(); if (boardMode !== "map") setBoardMode("map"); setLasso(true, gid); }
+      else if ("merge" in b.dataset) { applyG(); mergeSheet(g); }
       else if ("subgroup" in b.dataset) { applyG(); const k = createEmptyGroup(g); sideFold.delete(g.id); renderBoard(); groupNameSheet(k.id, true); }
       else if ("arrange" in b.dataset && sharesOutside(g)) { applyG(); closeSheet(); toast("ほかのグループと重なっているので、中は整列しません(重なりのメモが抜けないように)"); }
       else if ("arrange" in b.dataset) { applyG(); closeSheet(); arrangeGroup(g, true); recomputeTree(); renderBoard(); renderFileBar(); toast(`「${g.name}」の中を整列しました`); }
@@ -3901,11 +3996,20 @@ function renderLinkbar() {
   const ls = memoLinks(curFile);
   const tg = (files[curFile].tags || []).map(t => `<button class="lchip tagc" data-mtag="${esc(t)}">#${esc(t)}</button>`).join("") +
     fileTags(curFile).map(t => `<button class="lchip tagc ft" data-mtag="${esc(t)}" title="グループから付いたタグ">📁#${esc(t)}</button>`).join("");
-  // つながりは見せるだけで、押しても飛ばない(ほかのメモへは、本文のリンクかボード・一覧から移る)
-  bar.innerHTML = tg + ls.map(l => `<span class="lchip ${l.kind}" title="${l.via ? esc("📁 " + l.via.name + " から") : ""}">` +
-    `${l.via ? `<span class="lb">📁${esc(l.via.name)}</span>` : ""}<span>${l.arrow}</span><span class="n">${esc(nameOf(l.other))}</span>${l.label ? `<span class="lb">${esc(l.label)}</span>` : ""}</span>`).join("");
-  bar.classList.toggle("on", !!(tg || ls.length));
+  // ボードの矢印でつながったメモだけを並べ、押せばそこへ移る。本文のリンク([[名前]])だけのつながりは出さない(リンクは本文の中で押す)
+  const arrows = ls.filter(l => l.kind !== "wiki" && l.kind !== "wikiin");
+  const back = navBack.length && files[navBack[navBack.length - 1]] ? `<button class="lchip back" data-lback>‹ ${esc(memoTitle(files[navBack[navBack.length - 1]]))}</button>` : "";
+  bar.innerHTML = back + tg + arrows.map(l => `<button class="lchip ${l.kind}" data-lgo="${l.other}" title="${l.via ? esc("📁 " + l.via.name + " から") : ""}">` +
+    `${l.via ? `<span class="lb">📁${esc(l.via.name)}</span>` : ""}<span>${l.arrow}</span><span class="n">${esc(nameOf(l.other))}</span>${l.label ? `<span class="lb">${esc(l.label)}</span>` : ""}</button>`).join("");
+  bar.classList.toggle("on", !!(back || tg || arrows.length));
 }
+$("#linkbar").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if ("lback" in b.dataset) { const id = navBack.pop(); if (files[id]) openFile(id); return; }
+  const to = b.dataset.lgo; if (!to) return;
+  if (files[to]) { navBack.push(curFile); if (navBack.length > 30) navBack.shift(); openFile(to); }
+  else if (groupById(to)) pickFromGroup(groupById(to));
+});
 function pickFromGroup(g) { // 矢印の先がグループなら、中のメモから選ぶ
   const ms = [g, ...descendantsOf(g)].flatMap(x => (x.members || []).map(m => [m, x]));
   openSheet(`<h2>📁 ${esc(g.name)}</h2><p class="muted small" style="margin-top:-4px">開くメモを選んでください</p>
@@ -4240,7 +4344,7 @@ function dayDetail(r) {
   const bar = (ms, color) => `<div style="height:10px;border-radius:0;background:${color};width:${Math.max(ms ? 1.5 : 0, ms / max * 100)}%"></div>`;
   const inp = (a, ms) => `<span class="num small autov">${fmtDur(ms)}${isAuto(a) ? "<em>自動</em>" : ""}</span>`;
   let h = `<div class="card" style="box-shadow:none;border:0;padding:0;margin:0"><h3>作業時間と妨害アプリ</h3>
-    <div class="row"><span style="width:7em" class="small">計画メモ</span><span class="grow">${bar(r.auto, "var(--series-work)")}</span><span class="num small" style="width:7.5em;text-align:right" id="rowWork">${fmtSec(r.auto)}</span></div>`;
+    <div class="row"><span style="width:7em" class="small">開発メモ</span><span class="grow">${bar(r.auto, "var(--series-work)")}</span><span class="num small" style="width:7.5em;text-align:right" id="rowWork">${fmtSec(r.auto)}</span></div>`;
   for (const a of meta.workApps) { // 作業に数えるアプリ(作業時間に足す)
     const ms = workAppMs(r.k, a.id);
     h += `<div class="row"><span style="width:7em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" class="small">🛠 ${esc(a.name)}</span><span class="grow">${bar(ms, "var(--series-work)")}</span>${inp(a, ms)}</div>`;
@@ -4666,7 +4770,7 @@ function renderPrefs() {
         `<div class="prow"><button class="btn" data-pickapps="d">端末のアプリから選ぶ</button></div>` +
         swLine(`id="pUsageOv"`, P.usageOv === true, "使用中、画面の隅に今日の使用時間を出す", "タイマーを動かしていなくても出ます。動いている間は通知が一つ出ます" +
           (P.usageOv !== true ? "" : !meta.apps.some(a => a.pkg) ? `<br><span style="color:var(--danger)">「端末のアプリから選ぶ」で選んだアプリがないので、まだ出ません</span>` : !usageAccess() || !canOverlay() ? `<br><span style="color:var(--danger)">下の「端末の許可」で、使用状況と重ね表示を許可するまで出ません</span>` : ""))) +
-      card("端末の許可", Object.keys(PERMS).map(permRow).join("") + `<p class="pnote">設定画面で「作業記録メモ帳」を選び、許可をオンにして戻ってきてください。</p>`) : "")) +
+      card("端末の許可", Object.keys(PERMS).map(permRow).join("") + `<p class="pnote">設定画面で「開発メモ」を選び、許可をオンにして戻ってきてください。</p>`) : "")) +
     sec("メモ", card("テンプレート",
       `<p class="pnote" style="margin-top:0">1行目が親、行頭に空白を2つ入れた行がその子になります。【…】の所は、入れたあと選ぶと丸ごと書き換えられます。</p>` +
       (Object.keys(P.templates).map(k => `<details class="ptpl" data-tplopen="${esc(k)}" ${tplOpen.has(k) ? "open" : ""}><summary><span class="lbl">${esc(k)}</span><span class="pmuted">${P.templates[k].split("\n").filter(Boolean).length} 行</span></summary>
@@ -4697,7 +4801,7 @@ function renderPrefs() {
         swLine(`id="pExport"`, P.exportRemind !== false, "月に一度、書き出しを勧める", "データは端末の中だけにあるので、故障や紛失に備えます")) +
       card("", line("ゴミ箱", "消したメモは30日間残り、ここから戻せます", `<button class="btn" id="trashOpen">開く(${trashList().length})</button>`))) +
     sec("このアプリ", card("",
-      line("作業記録メモ帳", appVersion() ? `版 ${esc(appVersion())}` : "", "") +
+      line("開発メモ", appVersion() ? `版 ${esc(appVersion())}` : "", "") +
       line("プライバシーポリシー", "", `<button class="btn" id="policyOpen">読む</button>`) +
       line("すべてのデータを消す", "元に戻せません", `<button class="btn danger" id="wipeOpen">消す</button>`)));
 }
@@ -5136,7 +5240,7 @@ const PERMS = {
 const permRow = k => { const p = PERMS[k], ok = p.ok(); return `<div class="row"><span class="grow">${p.name}<div class="muted small">${p.why}</div></span><b class="small" style="flex:none;color:${ok ? "var(--accent)" : p.optional ? "var(--text-secondary)" : "var(--danger)"}">${ok ? "許可済み" : "未許可"}</b><button class="mini" style="flex:none" data-perm="${k}">設定を開く</button></div>`; };
 function permSheet(kinds, intro) {
   permSheet.last = [kinds, intro];
-  openSheet(`<div id="permS"><h2>許可のお願い</h2><p class="muted small" style="margin-top:-4px">${esc(intro)}設定の画面で「作業記録メモ帳」を選び、オンにして戻ってきてください。</p>
+  openSheet(`<div id="permS"><h2>許可のお願い</h2><p class="muted small" style="margin-top:-4px">${esc(intro)}設定の画面で「開発メモ」を選び、オンにして戻ってきてください。</p>
     ${kinds.map(permRow).join("")}
     <div class="btns"><button class="btn" data-x>閉じる</button></div></div>`, s => {
     s.addEventListener("click", e => {
@@ -5739,7 +5843,7 @@ const appVersion = () => { try { return NATIVE ? Android.versionName() : ""; } c
 function storageUsed() { let n = 0; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.startsWith("wm:")) n += k.length + (localStorage.getItem(k) || "").length; } } catch {} return n; }
 function policySheet() {
   openSheet(`<h2>プライバシーポリシー</h2><div class="small" style="line-height:1.8">
-    <p>作業記録メモ帳(以下「本アプリ」)は、利用者の作業時間の記録とメモのためのアプリです。</p>
+    <p>開発メモ(以下「本アプリ」)は、利用者の作業時間の記録とメモのためのアプリです。</p>
     <p><b>1. 扱う情報</b><br>利用者が書いたメモ、ボードの配置、予定、収支、長期計画、タイマーの記録 / 本アプリを開いていた時間 / 利用者が選んだアプリの使用時間(「使用状況へのアクセス」を許可した場合のみ) / 端末に入っているアプリの名前の一覧(利用者がアプリを選ぶときのみ)</p>
     <p><b>2. 情報の保存と送信</b><br>${NATIVE ? "上の情報は、利用者の端末の中に保存します。本アプリは、これらの情報を開発者やほかの第三者に送信しません。本アプリは、「ドライブで同期」をオンにしたときだけ、利用者の Google ドライブ(このアプリ専用の隠しフォルダ)と通信して、上の情報を読み書きします。それ以外にはネットワークに接続せず、端末のクラウドバックアップの対象にもしません。利用者が書き出しや自動バックアップで選んだ保存先(Google ドライブなど)へは、その内容を書き込みます。その保存先での扱いは、保存先のサービスと利用者に委ねられます。" : `上の情報はこのブラウザの中に保存します。${ON_CLAUDE ? "claude.ai で開いたときは、利用者本人専用の領域へも同期します。" : ""}${canSync() ? "「ドライブで同期」をオンにしたときは、利用者の Google ドライブ(このアプリ専用の隠しフォルダ)へも保存します。" : ""}開発者やほかの第三者には送信しません。`}</p>
     ${NATIVE ? `<p><b>3. 権限</b><br>通知:タイマーのボタンと経過時間を出し、予定やタイマーを知らせるために使います。<br>アラームとリマインダー:その知らせを遅れずに届けるために使います。<br>再起動の知らせの受信:再起動のあと、通知と知らせを預け直すために使います。<br>使用状況へのアクセス:選んだアプリの使用時間を表示し、集中タイマー中に選んだアプリが前面に出たかを判断するために使います。<br>他のアプリの上に重ねて表示:集中タイマー中(最大5分)に選んだアプリの上を覆う画面を出し、設定でオンにした場合は、選んだアプリの使用中に今日の使用時間を画面の隅に出すために使います。<br>どの権限も、利用者が端末の設定でいつでも外せます。</p>` : ""}

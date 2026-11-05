@@ -349,7 +349,7 @@ class MainActivity : Activity() {
 
         /** WebView では文字のコピーが断られることがあるので、端末の機能で写す。大きすぎて写せなければ false */
         @JavascriptInterface fun copyText(text: String): Boolean = try {
-            getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("作業記録メモ帳", text)); true
+            getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("開発メモ", text)); true
         } catch (_: Exception) { false }
 
         @JavascriptInterface fun versionName(): String =

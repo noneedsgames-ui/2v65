@@ -1,7 +1,7 @@
-# 作業記録メモ帳(試作)の Android アプリを作る
+# 開発メモ(試作)の Android アプリを作る
 # - APK(試作用の鍵):Releases に置き、スマホに直接入れて試す
 # - AAB(アップロード鍵):Google Play の内部テストに出す。Secrets に鍵が入っているときだけ署名する
-name: 作業記録メモ帳 APK
+name: 開発メモ APK
 
 # アプリ化はいったん保留中。HTML 版を磨いている間は push では動かさず、
 # 必要なときだけ Actions の「Run workflow」で手で動かす
@@ -57,11 +57,11 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: worklog-memo-v${{ github.run_number }}
-          name: 作業記録メモ帳 試作 ${{ github.run_number }}
+          name: 開発メモ 試作 ${{ github.run_number }}
           target_commitish: ${{ github.sha }}
           prerelease: true
           body: |
-            作業記録メモ帳(試作)の Android 版です。
+            開発メモ(試作)の Android 版です。
             - worklog-memo-${{ github.run_number }}.apk:スマホに直接入れて試す版(試作用の鍵)。初めて入れるときは「提供元不明のアプリ」の許可が要ります
             - worklog-memo-${{ github.run_number }}-play.aab:Google Play Console の内部テストに上げる版(アップロード鍵で署名。鍵が設定されているときだけ置かれます)
           files: |

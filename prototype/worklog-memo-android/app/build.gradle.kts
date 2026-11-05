@@ -14,7 +14,7 @@ android {
         // GitHub Actions の実行番号を版の番号にする(新しい版を上書きで入れられるように)
         versionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
         versionName = "0.1.$versionCode"
-        resValue("string", "app_name", "作業記録メモ帳")
+        resValue("string", "app_name", "開発メモ")
     }
     buildFeatures { resValues = true }
 
@@ -43,7 +43,7 @@ android {
             signingConfig = signingConfigs.getByName("debug")
             // 直接入れて試す版は別のアプリとして入る(Play から入れる版と並べて置ける)
             applicationIdSuffix = ".dev"
-            resValue("string", "app_name", "作業記録メモ帳(試作)")
+            resValue("string", "app_name", "開発メモ(試作)")
         }
         getByName("release") {
             // WebView と JavascriptInterface を使うので、名前の縮めは行わない
