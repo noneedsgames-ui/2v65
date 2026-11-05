@@ -40,6 +40,7 @@ class MainActivity : Activity() {
     private var rootBar: View? = null
     private var pendingWidget: String? = null // ウィジェットから頼まれた操作(画面の読み込みが済んだら渡す)
     private var pendingSave: String? = null // 書き出す文章(保存先を選び終えたら書く)
+    private var pendingSaveCb = "onBackupSaved" // 保存し終えたときに呼ぶ画面の関数(書き出しは onBackupSaved、そのほかのファイルは onFileSaved)
     private var pendingPick: ValueCallback<Array<Uri>>? = null // 読み込むファイルの選択を待っている画面側の受け口
     private var pendingDrive = 0 // ドライブの許可の画面から戻るのを待っている、画面側の呼び出しの番号
 
@@ -203,9 +204,10 @@ class MainActivity : Activity() {
             REQ_PICK -> { pendingPick?.onReceiveValue(uri?.let { arrayOf(it) }); pendingPick = null }
             REQ_SAVE -> {
                 val text = pendingSave; pendingSave = null
+                val cb = pendingSaveCb; pendingSaveCb = "onBackupSaved"
                 if (uri == null || text == null) return // 保存先を選ばずに戻ったときは何も言わない
                 val ok = try { writeUri(uri, text); true } catch (_: Exception) { false }
-                web.evaluateJavascript("window.onBackupSaved && window.onBackupSaved($ok)", null)
+                web.evaluateJavascript("window.$cb && window.$cb($ok)", null)
             }
             REQ_AUTO -> {
                 if (uri == null) return
@@ -413,6 +415,16 @@ class MainActivity : Activity() {
         }
 
         /** データの書き出し:保存先を選んでもらい、そこへ文章を書く */
+        // 書き出し以外の文章(CSV など)を、種類を指定してファイルに保存する。終わったら window.onFileSaved(ok)
+        @JavascriptInterface fun saveTextAs(name: String, text: String, mime: String) = runOnUiThread {
+            pendingSave = text; pendingSaveCb = "onFileSaved"
+            val i = Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                .setType(mime).putExtra(Intent.EXTRA_TITLE, name)
+            try { startActivityForResult(i, REQ_SAVE) } catch (_: Exception) {
+                pendingSave = null; pendingSaveCb = "onBackupSaved"
+                web.evaluateJavascript("window.onFileSaved && window.onFileSaved(false)", null)
+            }
+        }
         @JavascriptInterface fun saveTextFile(name: String, text: String) = runOnUiThread {
             pendingSave = text
             val i = Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)

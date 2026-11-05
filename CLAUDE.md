@@ -62,7 +62,7 @@ prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は ind
 - コミットや画面の文言は日本語。「〜する」で終わる短い要約を一行目に書く。
 - 頼まれていないプルリクエストは作らない。push は `ccr-a6f51c3a-jl9xh6` へ。
 - 機能を足したり変えたりしたら、`prototype/worklog-memo/README.md` の表も直す。
-- アプリ化(Play への公開)はいったん保留中で、いまは HTML 版の中身を磨いている。
+- アプリ化(Play への公開):2026-11-05 に利用者が「そろそろアプリにする」と決めた。まず Run workflow で `-play.aab` ができるかを確かめ、Play Console の内部テストへ上げる(手順は PLAY_RELEASE.md)。
 
 ## 残っていること・提案中のこと
 
