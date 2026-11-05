@@ -430,7 +430,6 @@ body.side-open .side{display:flex}
 .lgscroll th:first-child,.lgscroll td:first-child{border-left:0}
 .lgscroll th{font-weight:700;border-bottom:1px solid var(--text-primary)}
 .lgscroll tr+tr td{border-top:1px solid var(--line)}
-.lgscroll td.rep{color:var(--text-muted)}
 .kbmore .btn{padding:10px 4px;font-size:13px}
 .oltools .ot-del,.selbar .ot-del{color:var(--danger)}
 .chkbox{display:block;width:18px;height:18px;border-radius:0;border:2px solid var(--text-muted);background:var(--surface-1);color:#fff;font-size:12px;font-weight:800;line-height:14px;text-align:center}
@@ -1552,20 +1551,12 @@ const PARENT_COLS = ["親", "見出し"];
 function legendKeys(list) { // メモの中に出てくる「名前:」を、出てきた順に
   const ks = []; const w = l => l.forEach(n => { for (const c of n.c || []) { const p = kvOf(c.t); if (p && !ks.includes(p[0])) ks.push(p[0]); } w(n.c || []); }); w(list); return ks;
 }
-// 「効果:攻撃」の下に子の行があれば、その列だけ下の行へ続ける(1行目に「攻撃」、続く行に子を一つずつ)。
-// プログラムに読ませても崩れないよう、どの行もそれだけで意味が通る形にする:一つしかない値(名前・分類・価格など)は続きの行にもくり返し、
-// 子を持つ列が二つ以上あっても同じ行には並べない(効果の続きの行では、素材の列は空ける。逆も同じ)
 function legendTable(list, cols) {
   const keys = cols.slice(1).filter(c => !PARENT_COLS.includes(c)), rows = [cols];
-  const flat = l => l.flatMap(n => [cellText(n.t), ...flat(n.c || [])]).filter(Boolean);
   const w = (l, parent) => l.forEach(n => {
-    const kv = new Map(); for (const c of n.c || []) { const p = kvOf(c.t); if (p && !kv.has(p[0])) kv.set(p[0], [p[1], ...flat(c.c || [])].filter(Boolean)); }
+    const kv = new Map(); for (const c of n.c || []) { const p = kvOf(c.t); if (p && !kv.has(p[0])) kv.set(p[0], p[1]); }
     const own = kvOf(n.t), first = own && own[0] === cols[0] ? own[1] : cellText(n.t); // 「名前:レオン」の行は、列「名前」に「レオン」と入れる
-    if (keys.some(k => kv.has(k))) {
-      const vals = cols.map((c, i) => i === 0 ? [first] : PARENT_COLS.includes(c) ? [cellText(parent?.t)] : kv.get(c) || [""]);
-      rows.push(vals.map(v => v[0] ?? ""));
-      vals.forEach((v, j) => { for (let r = 1; r < v.length; r++) rows.push(vals.map((u, k) => k === j ? v[r] : u.length > 1 ? "" : u[0] ?? "")); });
-    }
+    if (keys.some(k => kv.has(k))) rows.push(cols.map((c, i) => i === 0 ? first : PARENT_COLS.includes(c) ? cellText(parent?.t) : kv.get(c) ?? ""));
     w(n.c || [], n);
   });
   w(list, null); return rows;
@@ -1574,18 +1565,16 @@ function legendSheet(list, what) {
   const f = files[curFile], keys = legendKeys(list);
   const parseCols = v => v.split(/[,、，\t\n]/).map(s => s.trim()).filter(Boolean);
   const start = f.legend || ["名前", ...keys].join(", ");
-
   openSheet(`<h2>表にする</h2>
     <p class="muted small" style="margin-top:-4px">列の名前を「,」か「、」で区切って並べます。1列目には項目そのもの(アイテムの名前など)が入り、ほかの列には、その項目のすぐ下の「列の名前:値」の行の値が入ります。「親」の列には、一つ上の行(見出しなど)が入ります。</p>
     <label class="field"><span>列(凡例)</span><textarea class="inp" id="lgIn" rows="2" maxlength="400">${esc(start)}</textarea></label>
     ${keys.length ? `<div class="metas"><span class="muted small" style="align-self:center">足す:</span>${["親", ...keys].map(k => `<button class="mini" data-lgk="${esc(k)}">${esc(k)}</button>`).join("")}</div>` : ""}
-    <p class="muted small">「効果:」の下に子の行があれば、子を一つずつ下の行に続けます。続きの行にも名前などをくり返すので、どの行もそれだけで読めます(下見では、くり返した所を淡く出します)。</p>
     <div class="lgprev" id="lgPrev"></div>
     <div class="btns"><button class="btn" data-lgcopy>表としてコピー</button><button class="btn primary" data-lgcsv>CSV で保存</button></div>`, s => {
     const i = $("#lgIn", s), prev = $("#lgPrev", s);
     const table = () => legendTable(list, parseCols(i.value));
     const draw = () => { const t = table(), n = t.length - 1;
-      prev.innerHTML = n ? `<div class="lgscroll"><table>${t.slice(0, 7).map((r, k) => `<tr>${r.map((c, j) => k ? `<td${k > 1 && c && c === t[k - 1][j] && r[0] === t[k - 1][0] ? ' class="rep"' : ""}>${esc(c)}</td>` : `<th>${esc(c)}</th>`).join("")}</tr>`).join("")}</table></div><p class="muted small">${n} 行${n > 6 ? "(はじめの6行を表示)" : ""}</p>`
+      prev.innerHTML = n ? `<div class="lgscroll"><table>${t.slice(0, 7).map((r, k) => `<tr>${r.map(c => k ? `<td>${esc(c)}</td>` : `<th>${esc(c)}</th>`).join("")}</tr>`).join("")}</table></div><p class="muted small">${n} 行${n > 6 ? "(はじめの6行を表示)" : ""}</p>`
         : `<p class="muted small">表になる項目がありません。項目のすぐ下に「${esc(parseCols(i.value)[1] || "列の名前")}:値」の行があるものが、1行になります。</p>`; };
     const keep = () => { const v = parseCols(i.value).join(", "); if (v && v !== f.legend) { f.legend = v; saveFileQuiet(f); } }; // 凡例はメモごとに覚える
     i.addEventListener("input", draw); draw();
