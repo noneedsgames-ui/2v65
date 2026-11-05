@@ -1,0 +1,1 @@
+{"version":"0.0.1","configurations":[{"name":"worklog-memo","runtimeExecutable":"powershell","runtimeArgs":["-NoProfile","-ExecutionPolicy","Bypass","-File","C:\\Users\\遠藤晴香\\AppData\\Local\\Temp\\claude\\C--dev-2v65\\4fc8df68-d87b-4f49-89cd-a15dafd0e2dd\\scratchpad\\serve.ps1"],"port":8765}]}
