@@ -83,4 +83,4 @@ prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は ind
 - **データの書き出し/読み込み**:設定の「データの引っ越し」として実装した。Android の保存・ファイル選択(`MainActivity.kt`)と claude.ai 上の `downloads` は実機で未確認。
 - **実機で未確認**:Google ドライブのファイルからの読み込み、翌日以降の自動の上書き、書き出しの保存先の選択、再起動のあとの通知、新しい画面を指で触った使い心地。ロック画面の通知、閉じているときの知らせ、妨害アプリの使用時間の隅の表示は、利用者の実機で確認済み。
 - **Norton 360**:直接入れた試作版を入れるたびに「疑わしいアプリ」と出る。Play の版でどうなるかは未確認。
-- **Google Play の内部テスト**:2026-11-03 に Play Console の本人確認が済み、利用者が Secrets にアップロード鍵を入れた(入れた先が `2v65` か `worklog-memo` かは要確認。Run workflow で `-play.aab` ができるかは未確認)。Actions で「Releases に置く」が 403(権限)で失敗するが、APK は実行結果の Artifacts から落とせる(失敗扱いにはしないよう直してある)。
+- **Google Play の内部テスト**:2026-11-03 に Play Console の本人確認が済み、利用者が `2v65` の Secrets にアップロード鍵を入れ、同日の Run workflow(#8)で `worklog-memo-8-play.aab` ができた(Releases にも置かれる)。同日、利用者が Play Console でアプリ「開発メモ」(com.noneedsgames.worklogmemo)を作り、#8 の AAB を内部テストとしてリリースした。難読化はしていない(isMinifyEnabled = false。JS から Android.* を名前で呼ぶため)。Actions で「Releases に置く」が 403(権限)で失敗するが、APK は実行結果の Artifacts から落とせる(失敗扱いにはしないよう直してある)。
