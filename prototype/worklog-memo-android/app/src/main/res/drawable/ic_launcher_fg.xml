@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- メモの紙と、作業時間の時計 -->
+<!-- 入れ子の箇条書きと、下の二行を囲むグループの線(Play のアイコン store/icon-512.png と同じ形) -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FFFFFF" android:pathData="M34,28h30l10,10v42a4,4 0,0 1,-4 4H34a4,4 0,0 1,-4 -4V32a4,4 0,0 1,4 -4z"/>
-    <path android:fillColor="#2A78D6" android:pathData="M38,46h26v4H38zM38,56h20v4H38zM38,66h14v4H38z"/>
-    <path android:fillColor="#FFFFFF" android:strokeColor="#2A78D6" android:strokeWidth="4" android:pathData="M72,74m-12,0a12,12 0,1 1,24 0a12,12 0,1 1,-24 0"/>
-    <path android:fillColor="#00000000" android:strokeColor="#2A78D6" android:strokeWidth="3" android:strokeLineCap="round" android:pathData="M72,67v7l5,3"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M33.8,37.2m-3.4,0a3.4,3.4 0,1 1,6.8 0a3.4,3.4 0,1 1,-6.8 0"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M44.8,52.2m-3.4,0a3.4,3.4 0,1 1,6.8 0a3.4,3.4 0,1 1,-6.8 0"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M44.8,66.2m-3.4,0a3.4,3.4 0,1 1,6.8 0a3.4,3.4 0,1 1,-6.8 0"/>
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="4.4" android:strokeLineCap="round"
+        android:pathData="M42.3,37.2H71.8M53.3,52.2H71.8M53.3,66.2H64.8"/>
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="2.2"
+        android:pathData="M49.8,43.7H64.8A14,14 0,0 1,78.8 57.7V61.2A14,14 0,0 1,64.8 75.2H49.8A14,14 0,0 1,35.8 61.2V57.7A14,14 0,0 1,49.8 43.7Z"/>
 </vector>

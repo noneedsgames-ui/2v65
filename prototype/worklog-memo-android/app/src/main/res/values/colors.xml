@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="bg">#F4F3EF</color>
-    <color name="ic_bg">#2A78D6</color>
+    <color name="ic_bg">#161615</color>
     <color name="bg_night">#121211</color>
     <!-- ウィジェットの色(夜は values-night で替える) -->
     <color name="widget_bg">#FCFCFB</color>
