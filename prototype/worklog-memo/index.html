@@ -4751,7 +4751,7 @@ function renderPrefs() {
   $("#prefsScroll").innerHTML =
     sec("はじめに", card("",
       line("チュートリアル", "使い方を、触りながら覚えるメモ", `<button class="btn" id="reGuide">開く</button>`) +
-      line("活用例(ゲーム開発)", "架空の RPG の相関図ボード、アイテム図鑑、年表", `<button class="btn" id="sampleOpen">${meta.prefs.sampleBoard && boards[meta.prefs.sampleBoard] ? "開く" : "入れる"}</button>`))) +
+      line("活用例", "仕事の計画とゲーム開発の、メモとボードの例", `<button class="btn" id="sampleOpen">選ぶ</button>`))) +
     sec("表示", card("",
       line("画面の色", "", `<div class="seg">${[["auto", "端末"], ["light", "ライト"], ["dark", "ダーク"]].map(([k, l]) => `<button data-theme-set="${k}" class="${themePref() === k ? "on" : ""}">${l}</button>`).join("")}</div>`) +
       swLine(`id="pLayoutEdit"`, document.body.classList.contains("layoutedit"), "画面の編集", "下のタブ・「予定」の中・メモの上の段に出すものを選び、入れ替え、メモで新しい項目を作れます。初めは隠している機能(タグ・コメント・収支・長期計画など)も、ここの「項目の一覧」から出せます。下のタブの長押しでも入れます"))) +
@@ -4840,7 +4840,7 @@ $("#prefsScroll").addEventListener("click", e => {
     confirmSheet("テンプレートを削除しますか", `「${k}」を削除します。メモに入れ済みの行はそのまま残ります。`, "削除する", () => { delete meta.prefs.templates[k]; saveMeta(); renderPrefs(); toast("削除しました"); });
   }
   else if (b.id === "reGuide") openTutorial();
-  else if (b.id === "sampleOpen") installSamples();
+  else if (b.id === "sampleOpen") samplesSheet();
   else if (b.dataset.wtcol) typeColorSheet(b.dataset.wtcol);
   else if (b.id === "syncOn" || b.id === "syncLogin") Sync.start();
   else if (b.id === "syncNow") Sync.run("manual");
@@ -5923,7 +5923,7 @@ function focusStart() { // 起動直後にすぐ書けるよう、前回の行(�
 }
 // ---- チュートリアルのメモ:初めて開いたときに置く(「設定」からも開ける)。触りながら覚えられるよう、ふつうのメモとして書いてある ----
 // 1行 = 「字下げ(空白2つで1段)+ 印 + 文」。印は ・ふつう ☐チェック ☑済み ■見出し。**太字** と {赤:色} はメモを開くときに範囲へ直る
-const TUTORIAL_ID = "tutorial", TUTORIAL2_ID = "tutorial2", TUTORIAL_V = 3; // 版を上げると、設定から開いたときに新しい文に置き直す
+const TUTORIAL_ID = "tutorial", TUTORIAL2_ID = "tutorial2", TUTORIAL_V = 4; // 版を上げると、設定から開いたときに新しい文に置き直す
 function tutorial2Lines() { // 発展:初めは出していない機能など
   return [
     "・チュートリアル(発展)",
@@ -5949,7 +5949,7 @@ function tutorial2Lines() { // 発展:初めは出していない機能など
     "  ・カードを長押しして「ほかのボードにも置く」で、同じメモをいくつものボードに置けます",
     "  ・「＋ ボード」で、ボードをいくつも作れます",
     "・活用例",
-    "  ・「設定 › 活用例(ゲーム開発)」で、架空の RPG の相関図ボード、テンプレートで作ったアイテム図鑑、年表を入れられます",
+    "  ・「設定 › 活用例」で、仕事の計画(サイト リニューアル)とゲーム開発(相関図・アイテム図鑑・年表)の例を入れられます",
     "・例",
     "  ・好きな果物",
     "    ・りんご",
@@ -6016,6 +6016,106 @@ function openTutorial() { // チュートリアルのメモ(基本・発展)を�
   closeSheet(); openFile(TUTORIAL_ID);
 }
 // ---- 活用例(ゲーム開発):架空の RPG「灰冠のレガリア」の相関図ボード、アイテム図鑑、年表を置く。設定から何度でも開ける ----
+// ---- 活用例(仕事の計画):サイトのリニューアルを題材に、メモとボードの機能をひととおり使った例 ----
+function installWorkSample() {
+  const done = meta.prefs.sampleWork;
+  if (done && boards[done] && meta.boards.some(b => b.id === done)) { closeSheet(); show("board"); setBoardMode("map"); switchBoard(done); fitView(); toast("活用例のボードを開きました"); return; }
+  const memo = (text, extra = {}) => { const f = newFileObj("", null); f.nodes = parseIndented(text); convertTree(f.nodes); Object.assign(f, extra); files[f.id] = f; Store.put("file-" + f.id, f); return f.id; };
+  const C = (name, lines, extra) => memo([name, ...lines.map(l => "  " + l)].join("\n"), extra);
+  // カードにするメモ(1行目が名前)
+  const P = {
+    goal: C("目的", ["**問い合わせを月20件に**", "スマホで見やすくする", "> いまは月8件ほど"], { tags: ["方針"] }),
+    user: C("想定する人", ["30〜40代の店主", "昼休みにスマホで探す"]),
+    comp: C("競合サイト", ["A社:写真が多く明るい", "B社:料金が一目で分かる"]),
+    top: C("トップページ", ["写真を大きく", "料金を先に見せる", "[[問い合わせフォーム]]への入口を上に"]),
+    color: C("配色", ["{緑:濃い緑}と白", "文字は黒、リンクは緑"]),
+    photo: C("写真", ["[] 店内", "[] 商品", "11/15 撮影の予定"], { comment: "撮影の日は、雨なら次の週にずらす" }),
+    btn: C("ボタン", ["角を少し丸く", "押せる所を大きく"]),
+    form: C("問い合わせフォーム", ["項目は3つまで", "[x] 項目を決める", "[] 確認メールの文"]),
+    check: C("表示の確認", ["[] iPhone", "[] Android", "[] パソコン"]),
+    pub: C("公開", ["@12/1 公開する"]),
+  };
+  const plan = memo(`サイト リニューアル(例)
+  # 目的
+    **問い合わせを月20件にふやす**(いまは月8件)
+    > 「スマホで料金が分からない」という声が多い
+  # やること
+    [x] 今のサイトの課題を洗い出す
+    [x] 参考サイトを集める([[競合サイト]])
+    [] [[トップページ]]の構成案
+    [] [[写真]]の撮り直し
+    [] [[問い合わせフォーム]]を短くする
+  # 進め方
+    1. 構成を決める
+    2. デザインを作る
+    3. つくって確かめる
+    4. 公開する
+  # 予定
+    @11/12 構成案を共有
+    @11/20 デザインを決める
+    @12/1 公開
+  # 決まっていないこと
+    {赤:料金表を載せるか}
+    ドメインの更新の時期`, { tags: ["仕事", "計画"], comment: "週に一度、金曜にこのメモを見直す" });
+  const mtg = memo(`打ち合わせ 11/12(例)
+  # 出た人
+    店長、デザイン担当、自分
+  # 決まったこと
+    トップの写真は店内の一枚を大きく
+    料金は「目安」として載せる
+  # 宿題
+    [] 写真の候補を3枚選ぶ(店長)
+    [] 構成案を直す(自分)
+    [x] 次回の日程を決める
+  > 次回は 11/20、デザインを見ながら`, { tags: ["仕事"] });
+  const pages = memo(`ページ一覧(例)
+  トップ
+    担当:自分
+    状態:作業中
+    締め切り:11/20
+  料金
+    担当:店長
+    状態:まだ
+    締め切り:11/25
+  問い合わせ
+    担当:自分
+    状態:作業中
+    締め切り:11/25
+  会社の紹介
+    担当:デザイン担当
+    状態:済み
+    締め切り:11/18
+  ・コピーの「表にする」で、ページ・担当・状態・締め切りの表にできます`, { legend: "ページ, 担当, 状態, 締め切り" });
+  // ボード:企画・デザイン・つくるの三つのグループ。デザインとつくるを重ね、つくるの中に「公開前」を入れ子に
+  const bid = uid(); meta.boards.push({ id: bid, name: "例:サイト リニューアル" });
+  const B = boards[bid] = normBoard();
+  const at = { goal: [0, 0], user: [0, 170], comp: [0, 340], top: [300, 20], photo: [520, 20], color: [300, 190], btn: [500, 250], form: [720, 250], check: [610, 470], pub: [810, 470] };
+  for (const [k, [x, y]] of Object.entries(at)) B.cards[P[k]] = { x, y };
+  Object.assign(B.cards[P.goal], { c: "yellow", bs: "round" });
+  Object.assign(B.cards[P.photo], { bd: "dash" });
+  Object.assign(B.cards[P.pub], { c: "green", bs: "diamond" });
+  B.cards[plan] = { x: 1100, y: 0 }; B.cards[mtg] = { x: 1100, y: 230 }; B.cards[pages] = { x: 1100, y: 440 };
+  const G = (name, x0, y0, x1, y1, extra) => { const g = { id: uid(), name, pts: roundShape(x0, y0, x1, y1), ...extra }; B.groups.push(g); return g.id; };
+  const g1 = G("企画", -20, -20, 190, 470), g2 = G("デザイン", 280, -10, 700, 380), g3 = G("つくる", 480, 230, 1000, 600);
+  G("公開前", 600, 450, 990, 590);
+  const E = (a, b, label, dir = "to") => B.edges.push({ id: uid(), a, b, dir, label });
+  E(P.goal, P.top, "もとに"); E(P.comp, P.top, "参考"); E(P.user, P.top, "読む人", "none"); E(P.color, P.btn, "そろえる");
+  E(P.top, P.form, "入口"); E(P.form, P.check, "できたら"); E(P.check, P.pub, "OKなら");
+  E(g1, g2, "決めてから"); E(g2, g3, "行き来する", "both");
+  withBoard(bid, () => recomputeTree());
+  meta.prefs.sampleWork = bid; saveMeta(); saveBoardOf(bid);
+  withBoard("main", placeMissing);
+  closeSheet(); show("board"); setBoardMode("map"); switchBoard(bid); fitView();
+  toast("活用例を入れました。カードを押すと中身、右の三つは計画・打ち合わせ・ページ一覧のメモです");
+}
+function samplesSheet() { // 設定の「活用例」:どちらの例を入れる(開く)か選ぶ
+  const has = id => id && boards[id] && meta.boards.some(b => b.id === id);
+  openSheet(`<h2>活用例</h2><p class="muted small" style="margin-top:-4px">メモとボードの使い方の例を入れます。入れたあとは、ふつうのメモとして書き換えたり消したりできます。</p>
+    <button class="row" style="width:100%;text-align:left" data-smp="work"><span class="grow"><b>仕事の計画(サイト リニューアル)</b><div class="muted small">グループの重なりと入れ子、矢印、チェック・番号・タイムライン、打ち合わせのメモ、表にできるページ一覧</div></span><span class="muted">${has(meta.prefs.sampleWork) ? "開く" : "入れる"}</span></button>
+    <button class="row" style="width:100%;text-align:left" data-smp="game"><span class="grow"><b>ゲーム開発(灰冠のレガリア)</b><div class="muted small">人物の相関図、アイテム図鑑、年表</div></span><span class="muted">${has(meta.prefs.sampleBoard) ? "開く" : "入れる"}</span></button>`, s => {
+    s.addEventListener("click", e => { const b = e.target.closest("[data-smp]"); if (!b) return; b.dataset.smp === "work" ? installWorkSample() : installSamples(); });
+  });
+}
 function installSamples() {
   const done = meta.prefs.sampleBoard;
   if (done && boards[done] && meta.boards.some(b => b.id === done)) { closeSheet(); show("board"); setBoardMode("map"); switchBoard(done); fitView(); toast("活用例のボードを開きました"); return; }
