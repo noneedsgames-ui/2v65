@@ -42,7 +42,7 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text-primary);
-  font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP","Yu Gothic UI",sans-serif;font-size:16px;
+  font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP","Yu Gothic UI",sans-serif;font-size:18px;
   font-feature-settings:"palt";letter-spacing:.02em;-webkit-font-smoothing:antialiased}
 /* 書く所(メモの本文・入力欄)は字詰めをせず、重ねて描く書式の層と字の位置をそろえる */
 textarea,input,.outline,.memobody{font-feature-settings:normal;letter-spacing:normal}
@@ -57,29 +57,29 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 @media (min-width:900px){#timerScroll,#logScroll,#planScroll,#prefsScroll{padding-left:max(14px,calc((100% - 860px) / 2));padding-right:max(14px,calc((100% - 860px) / 2))}}
 @media (min-width:1200px){#prefsScroll{display:grid;grid-template-columns:1fr 1fr;column-gap:16px;align-content:start;align-items:start;padding-left:max(14px,calc((100% - 1180px) / 2));padding-right:max(14px,calc((100% - 1180px) / 2))}}
 /* 設定:区切りの見出し、左に名前と説明・右に操作の行、入り切りのスイッチ */
-.psec-h{margin:32px 0 4px;font-size:20px;font-weight:700;letter-spacing:.04em;color:var(--text-primary)}
+.psec-h{margin:32px 0 4px;font-size:22px;font-weight:700;letter-spacing:.04em;color:var(--text-primary)}
 .psec:first-child .psec-h{margin-top:4px}
 .card.pcard{padding:0;margin-bottom:18px}
-.pcard>h3{margin:0;padding:14px 0 4px;font-size:12px;font-weight:600;letter-spacing:.12em;color:var(--text-muted)}
+.pcard>h3{margin:0;padding:14px 0 4px;font-size:13px;font-weight:600;letter-spacing:.12em;color:var(--text-muted)}
 .prow,.pcard .row{display:flex;align-items:center;gap:12px;padding:12px 0;min-height:52px;border:0;border-top:1px solid var(--line)}
 .pcard>.prow:first-child,.pcard>h3+.prow,.pcard>h3+.row,.pcard>h3+p.pnote{border-top:0}
-.prow .lbl{flex:1;min-width:0;font-size:15px}
-.prow .lbl small{display:block;margin-top:3px;font-size:12px;line-height:1.55;color:var(--text-muted)}
+.prow .lbl{flex:1;min-width:0;font-size:17px}
+.prow .lbl small{display:block;margin-top:3px;font-size:13px;line-height:1.55;color:var(--text-muted)}
 .prow.pcol{flex-direction:column;align-items:stretch;gap:8px}
-.prow .btn{flex:none;padding:8px 14px;font-size:14px}
+.prow .btn{flex:none;padding:8px 14px;font-size:16px}
 .prow .seg{flex:none}
-.pval{font-weight:600;font-size:14px;text-align:right}
-.pmuted{color:var(--text-muted);font-weight:400;font-size:12px}
-.pselect{flex:none;width:auto;max-width:10em;padding:7px 8px;font-size:13px}
-.pnote{margin:0;padding:10px 0 4px;font-size:12px;line-height:1.65;color:var(--text-muted);border-top:1px solid var(--line)}
+.pval{font-weight:600;font-size:16px;text-align:right}
+.pmuted{color:var(--text-muted);font-weight:400;font-size:13px}
+.pselect{flex:none;width:auto;max-width:10em;padding:7px 8px;font-size:15px}
+.pnote{margin:0;padding:10px 0 4px;font-size:13px;line-height:1.65;color:var(--text-muted);border-top:1px solid var(--line)}
 .wtrow .inp{flex:1;min-width:0;padding:7px 10px}
 .wtrow .mini{flex:none}
 .wtrow .mini:disabled{opacity:.3}
 .ptpl{border-top:1px solid var(--line)}
 .ptpl>summary{display:flex;align-items:center;gap:12px;padding:12px 0;min-height:52px;cursor:pointer;list-style:none}
 .ptpl>summary::-webkit-details-marker{display:none}
-.ptpl>summary .lbl{flex:1;font-size:15px}
-.ptpl>summary::after{content:"›";font-size:18px;color:var(--text-muted);transition:transform .15s}
+.ptpl>summary .lbl{flex:1;font-size:17px}
+.ptpl>summary::after{content:"›";font-size:20px;color:var(--text-muted);transition:transform .15s}
 .ptpl[open]>summary::after{transform:rotate(90deg)}
 .ptpl-ed{padding:0 0 14px}
 input.sw{appearance:none;-webkit-appearance:none;flex:none;width:46px;height:26px;margin:0;border-radius:13px;background:var(--line);border:0;position:relative;cursor:pointer;transition:background .2s}
@@ -92,17 +92,17 @@ input.sw:checked::after{transform:translateX(20px);background:var(--accent-ink)}
 /* 予定のページ:予定・収支・長期計画 */
 .seg.plantabs{display:flex;margin-bottom:10px}
 .plantabs button{flex:1}
-.money-tiles .v{font-size:16px}
-.mrow{display:flex;align-items:center;gap:8px;width:100%;padding:9px 0;border-bottom:1px solid var(--line);text-align:left;font-size:14px}
+.money-tiles .v{font-size:18px}
+.mrow{display:flex;align-items:center;gap:8px;width:100%;padding:9px 0;border-bottom:1px solid var(--line);text-align:left;font-size:16px}
 .mrow .grow{flex:1;min-width:0}
 .mrow .amt{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
 .mrow .amt.in{color:var(--accent)}
 .goal{background:none;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:14px 0;margin:0;cursor:pointer}
-.goal h4{margin:0;font-size:15px}
+.goal h4{margin:0;font-size:17px}
 .goal.done h4{color:var(--text-muted);text-decoration:line-through}
 .gbar{height:8px;border-radius:0;background:var(--surface-2);overflow:hidden;margin:8px 0 6px}
 .gbar i{display:block;height:100%;background:var(--tc);border-radius:0}
-.gms{display:flex;align-items:center;gap:8px;width:100%;padding:6px 0;text-align:left;font-size:13px}
+.gms{display:flex;align-items:center;gap:8px;width:100%;padding:6px 0;text-align:left;font-size:15px}
 .gms .chkbox{flex:none}
 .gms .chkbox.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .gms.done .t{color:var(--text-muted);text-decoration:line-through}
@@ -124,8 +124,8 @@ input.sw:checked::after{transform:translateX(20px);background:var(--accent-ink)}
 .bcard.bcard.bs-sq{border-radius:0}
 .bcard.bcard.bs-round{border-radius:24px}
 .cmt{padding:9px 0;border-bottom:1px solid var(--line)}
-.cmt .tx{white-space:pre-wrap;word-break:break-word;font-size:14px;line-height:1.6}
-.bctl button[data-z="arrange"]{font-size:13px;font-weight:600}
+.cmt .tx{white-space:pre-wrap;word-break:break-word;font-size:16px;line-height:1.6}
+.bctl button[data-z="arrange"]{font-size:15px;font-weight:600}
 
 .bcard.bcard.bs-diamond{background:none;border-color:transparent;box-shadow:none;padding:30px 46px;text-align:center;isolation:isolate}
 .bcard.bs-diamond::before,.bcard.bs-diamond::after{content:"";position:absolute;z-index:-1;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
@@ -139,18 +139,18 @@ input.sw:checked::after{transform:translateX(20px);background:var(--accent-ink)}
 /* 編集モード */
 nav.bottom{overflow-x:auto;scrollbar-width:none}
 nav.bottom button{min-width:58px;position:relative}
-nav.bottom .nav-ic{font-size:19px;line-height:22px;height:22px}
-.editbar{display:none;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 10px;background:color-mix(in srgb,var(--accent) 14%,var(--surface-1));border-top:1px solid var(--accent);font-size:12px}
+nav.bottom .nav-ic{font-size:21px;line-height:22px;height:22px}
+.editbar{display:none;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 10px;background:color-mix(in srgb,var(--accent) 14%,var(--surface-1));border-top:1px solid var(--accent);font-size:13px}
 body.layoutedit .editbar{display:flex}
 body.layoutedit nav.bottom button,body.layoutedit #planTabs button{touch-action:none;cursor:grab}
 body.layoutedit nav.bottom{outline:2px dashed var(--accent);outline-offset:-2px}
-.nav-x{position:absolute;top:1px;right:3px;width:19px;height:19px;border-radius:0;background:var(--danger);color:#fff;font-size:12px;line-height:19px;text-align:center;font-weight:700}
+.nav-x{position:absolute;top:1px;right:3px;width:19px;height:19px;border-radius:0;background:var(--danger);color:#fff;font-size:13px;line-height:19px;text-align:center;font-weight:700}
 #planTabs button{position:relative}
 .tab-dragging{opacity:.55}
 body.custompage .fb-title{padding-left:14px}
 body.custompage #sideBtn,body.custompage #fileBar,body.custompage #newMemo,body.custompage #linkbar,body.custompage .side,body.custompage .side-scrim{display:none!important}
 
-.droptrash{position:fixed;left:50%;transform:translateX(-50%);width:min(78vw,340px);height:56px;display:none;align-items:center;justify-content:center;gap:6px;border-radius:0;border:2px dashed var(--danger);background:color-mix(in srgb,var(--danger) 12%,var(--surface-1));color:var(--danger);font-size:14px;font-weight:700;z-index:18;pointer-events:none}
+.droptrash{position:fixed;left:50%;transform:translateX(-50%);width:min(78vw,340px);height:56px;display:none;align-items:center;justify-content:center;gap:6px;border-radius:0;border:2px dashed var(--danger);background:color-mix(in srgb,var(--danger) 12%,var(--surface-1));color:var(--danger);font-size:16px;font-weight:700;z-index:18;pointer-events:none}
 .droptrash.on{display:flex}
 .droptrash.hot{background:var(--danger);color:#fff;border-style:solid}
 .droptrash.warn{border-color:#c98500;background:color-mix(in srgb,#eda100 22%,var(--surface-1));color:var(--text-primary)}
@@ -158,12 +158,13 @@ body.custompage #sideBtn,body.custompage #fileBar,body.custompage #newMemo,body.
 
 /* nav */
 nav.bottom{display:flex;border-top:1px solid var(--line);background:var(--bg);padding-bottom:var(--safe-b)}
-nav.bottom button{flex:1;padding:8px 0 7px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--text-muted)}
+nav.bottom button{flex:1;padding:8px 0 7px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--text-muted)}
 nav.bottom button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 nav.bottom button.on{color:var(--text-primary);font-weight:700;box-shadow:inset 0 2px 0 var(--accent)}
-.livebar{font-size:11px;color:var(--text-muted);text-align:center;padding:4px 0;background:var(--bg);border-bottom:1px solid var(--line);letter-spacing:.06em}
+.livebar{display:none;font-size:12px;color:var(--text-muted);text-align:center;padding:4px 0;background:var(--bg);border-bottom:1px solid var(--line);letter-spacing:.06em}
+.livebar.need{display:block}
 .livebar b{color:var(--text-primary);font-variant-numeric:tabular-nums}
-.syncchip{margin-left:8px;font:inherit;font-size:11px;font-weight:700;color:var(--accent);background:none;border:1px solid var(--accent);border-radius:0;padding:0 8px;cursor:pointer}
+.syncchip{margin-left:8px;font:inherit;font-size:12px;font-weight:700;color:var(--accent);background:none;border:1px solid var(--accent);border-radius:0;padding:0 8px;cursor:pointer}
 
 /* memo */
 .tabs{background:var(--surface-1);border-bottom:1px solid var(--line)}
@@ -171,55 +172,55 @@ nav.bottom button.on{color:var(--text-primary);font-weight:700;box-shadow:inset 
 .tabs.closed{display:none}
 .node{display:flex;align-items:center;min-height:38px;padding-right:8px}
 .node.sel{background:var(--surface-2)}
-.node .tw{flex:none;width:30px;height:34px;font-size:14px;color:var(--text-secondary)}
-.node .tw.leaf{color:var(--text-muted);font-size:10px}
-.node .nm{flex:1;min-width:0;text-align:left;padding:7px 4px;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.node .tw{flex:none;width:30px;height:34px;font-size:16px;color:var(--text-secondary)}
+.node .tw.leaf{color:var(--text-muted);font-size:11px}
+.node .nm{flex:1;min-width:0;text-align:left;padding:7px 4px;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .node.sel .nm{font-weight:700}
-.node .cnt{font-size:11px;color:var(--text-muted);margin-right:6px}
-.node .addc{flex:none;font-size:12px;padding:5px 9px;border-radius:0;border:1px dashed var(--text-muted);color:var(--text-secondary)}
-.addroot{display:block;margin:4px 0 0 12px;font-size:13px;color:var(--text-secondary);padding:6px 4px}
+.node .cnt{font-size:12px;color:var(--text-muted);margin-right:6px}
+.node .addc{flex:none;font-size:13px;padding:5px 9px;border-radius:0;border:1px dashed var(--text-muted);color:var(--text-secondary)}
+.addroot{display:block;margin:4px 0 0 12px;font-size:15px;color:var(--text-secondary);padding:6px 4px}
 .toolbar{display:flex;gap:4px;padding:6px 8px;border-bottom:1px solid var(--line);background:var(--surface-1);align-items:center}
-.tb{white-space:nowrap;flex:none;padding:7px 9px;border-radius:0;font-size:13px;color:var(--text-secondary);display:flex;gap:4px;align-items:center}
+.tb{white-space:nowrap;flex:none;padding:7px 9px;border-radius:0;font-size:15px;color:var(--text-secondary);display:flex;gap:4px;align-items:center}
 .tb:active{background:var(--surface-2)}
 .tb.primary{background:var(--accent);color:var(--accent-ink);font-weight:600}
 .tb.tb-ic{padding:5px 8px;color:var(--text-primary)}
 .tb.tb-ic svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 .tb.tb-ic:disabled{color:var(--text-muted);opacity:.4;cursor:default}
 .spacer{flex:1}
-.saved{white-space:nowrap;font-size:11px;color:var(--text-muted);padding:0 6px}
+.saved{white-space:nowrap;font-size:12px;color:var(--text-muted);padding:0 6px}
 .memohead{padding:8px 14px 0;background:var(--surface-1)}
-.memotitle{width:100%;border:0;background:none;font-size:20px;font-weight:700;padding:4px 0;outline:none}
-.crumb{font-size:11px;color:var(--text-muted);min-height:14px}
+.memotitle{width:100%;border:0;background:none;font-size:22px;font-weight:700;padding:4px 0;outline:none}
+.crumb{font-size:12px;color:var(--text-muted);min-height:14px}
 .metas{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 8px}
-.mini{font-size:12px;padding:4px 10px;border-radius:0;background:none;border:1px solid var(--line);color:var(--text-secondary)}
+.mini{font-size:13px;padding:4px 10px;border-radius:0;background:none;border:1px solid var(--line);color:var(--text-secondary)}
 .mini.tag::before{content:"#"}
 .mini.link::before{content:"↔ "}
 .memobody{flex:1;min-height:0;width:100%;border:0;resize:none;outline:none;background:var(--surface-1);
-  padding:10px 14px 40px;line-height:1.75;font-size:16px}
+  padding:10px 14px 40px;line-height:1.75;font-size:18px}
 
 /* outline */
 .outline{flex:1;min-height:0;overflow:auto;background:var(--surface-1);padding:8px 8px 120px 16px}
 .ol-row{position:relative;display:flex;align-items:flex-start;padding-left:calc(var(--d) * 22px);border-radius:0}
 .ol-row.cur .ol-t{background:var(--surface-2)}
-.bul{flex:none;width:22px;height:34px;font-size:13px;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;padding:0}
-.bul.leaf{font-size:9px;color:var(--text-muted)}
+.bul{flex:none;width:22px;height:34px;font-size:15px;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;padding:0}
+.bul.leaf{font-size:10px;color:var(--text-muted)}
 .ol-main{flex:1;min-width:0}
 .ol-t{display:block;width:100%;border:0;outline:none;resize:none;background:none;padding:6px 6px;border-radius:0;
-  font-size:16px;line-height:1.45;overflow:hidden;field-sizing:content;min-height:34px}
-.ol-v{display:block;width:100%;padding:6px 6px;border-radius:0;font-size:16px;line-height:1.45;min-height:34px;
+  font-size:18px;line-height:1.45;overflow:hidden;field-sizing:content;min-height:34px}
+.ol-v{display:block;width:100%;padding:6px 6px;border-radius:0;font-size:18px;line-height:1.45;min-height:34px;
   white-space:pre-wrap;overflow-wrap:anywhere;cursor:text;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .ol-v:empty::before{content:attr(data-ph);color:var(--text-muted)}
 .ol-row.cur .ol-v{background:var(--surface-2)}
 .ol-row.pressing .ol-v{background:var(--surface-2);transition:background .35s}
-.foldcnt{font-size:11px;color:var(--text-muted);padding:0 6px 4px}
+.foldcnt{font-size:12px;color:var(--text-muted);padding:0 6px 4px}
 .ol-rel{display:flex;flex-wrap:wrap;gap:4px;padding:0 6px 6px}
-.ol-crumb{font-size:12px;color:var(--text-muted);padding:2px 6px}
-.ol-crumb button{color:var(--accent);font-size:12px;padding:2px 0}
-.ol-zoomtitle{font-size:19px;font-weight:700;padding:2px 6px 8px}
+.ol-crumb{font-size:13px;color:var(--text-muted);padding:2px 6px}
+.ol-crumb button{color:var(--accent);font-size:13px;padding:2px 0}
+.ol-zoomtitle{font-size:21px;font-weight:700;padding:2px 6px 8px}
 .oltools{display:none;gap:2px;padding:4px 6px calc(4px + var(--safe-b));border-top:1px solid var(--line);background:var(--surface-1)}
-.oltools button{flex:1;padding:10px 0;font-size:16px;border-radius:0;color:var(--text-primary)}
+.oltools button{flex:1;padding:10px 0;font-size:18px;border-radius:0;color:var(--text-primary)}
 .oltools button:active{background:var(--surface-2)}
-.oltools .ot-tpl{flex:1.7;font-size:13px;font-weight:600;color:var(--accent)}
+.oltools .ot-tpl{flex:1.7;font-size:15px;font-weight:600;color:var(--accent)}
 body.editing .oltools{display:flex}
 body.editing.kb nav.bottom{display:none}
 
@@ -231,22 +232,22 @@ body.editing.kb nav.bottom{display:none}
 .ol-row.moved .ol-t{background:color-mix(in srgb,var(--accent) 18%,transparent);transition:background .6s}
 .dropline{position:fixed;height:3px;background:var(--accent);border-radius:0;pointer-events:none;z-index:40;display:none}
 .dragghost{position:fixed;display:none;pointer-events:none;z-index:41;background:var(--surface-1);border:1px solid var(--line);
-  box-shadow:0 4px 14px #0003;border-radius:0;padding:6px 10px;font-size:14px;max-width:60vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  box-shadow:0 4px 14px #0003;border-radius:0;padding:6px 10px;font-size:16px;max-width:60vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 
 .tplbox{border-top:1px solid var(--line);padding:12px 0 4px;margin-top:10px}
 
 /* files */
 .filebar{display:flex;align-items:center;gap:6px;background:var(--surface-1);border-bottom:1px solid var(--line);padding-right:8px}
-.fb-open{flex:1;min-width:0;display:flex;align-items:center;gap:6px;padding:9px 6px 9px 10px;text-align:left;font-size:15px}
+.fb-open{flex:1;min-width:0;display:flex;align-items:center;gap:6px;padding:9px 6px 9px 10px;text-align:left;font-size:17px}
 .fb-open b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fb-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px;font-weight:700;padding:12px 4px}
-.fb-boardbtn{flex:none;font-size:13px;font-weight:600;padding:7px 12px;border-radius:0;border:1px solid var(--line);color:var(--text-primary);background:none;white-space:nowrap}
-.fb-new{flex:none;font-size:13px;font-weight:600;padding:8px 12px;border-radius:0;background:var(--accent);color:var(--accent-ink);white-space:nowrap}
-.fb-ic{color:var(--text-secondary);font-size:17px}
-.fb-board{color:var(--accent);font-weight:600;font-size:14px;white-space:nowrap}
+.fb-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:18px;font-weight:700;padding:12px 4px}
+.fb-boardbtn{flex:none;font-size:15px;font-weight:600;padding:7px 12px;border-radius:0;border:1px solid var(--line);color:var(--text-primary);background:none;white-space:nowrap}
+.fb-new{flex:none;font-size:15px;font-weight:600;padding:8px 12px;border-radius:0;background:var(--accent);color:var(--accent-ink);white-space:nowrap}
+.fb-ic{color:var(--text-secondary);font-size:19px}
+.fb-board{color:var(--accent);font-weight:600;font-size:16px;white-space:nowrap}
 .fb-sep{color:var(--text-muted)}
-.fb-cv{color:var(--text-muted);font-size:12px;margin-left:auto}
+.fb-cv{color:var(--text-muted);font-size:13px;margin-left:auto}
 
 /* board */
 .board{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;
@@ -256,7 +257,7 @@ body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 .edge{stroke:var(--text-secondary);stroke-width:1.8;fill:none}
 .edge.tmp{stroke:var(--accent);stroke-dasharray:5 4}
 .edge-hit{stroke:transparent;stroke-width:24;fill:none;pointer-events:stroke}
-.edge-label{font-size:12px;fill:var(--text-secondary);paint-order:stroke;stroke:var(--bg);stroke-width:4px;pointer-events:all}
+.edge-label{font-size:13px;fill:var(--text-secondary);paint-order:stroke;stroke:var(--bg);stroke-width:4px;pointer-events:all}
 .bcard{position:absolute;background:var(--surface-1);border:1px solid var(--line);border-radius:0;padding:9px 14px 8px 12px;box-shadow:0 1px 3px #0001}
 .bcard.cur{border-color:var(--accent);border-width:1.5px}
 .bcard.moving{box-shadow:0 8px 20px #0003;z-index:2}
@@ -281,7 +282,7 @@ body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 .c-blue{background:color-mix(in srgb,#2a78d6 15%,var(--surface-1));border-color:color-mix(in srgb,#2a78d6 45%,var(--line));--cf:color-mix(in srgb,#2a78d6 15%,var(--surface-1));--cb:color-mix(in srgb,#2a78d6 45%,var(--line))}
 .c-purple{background:color-mix(in srgb,#6250d6 15%,var(--surface-1));border-color:color-mix(in srgb,#6250d6 45%,var(--line));--cf:color-mix(in srgb,#6250d6 15%,var(--surface-1));--cb:color-mix(in srgb,#6250d6 45%,var(--line))}
 .bctl{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:stretch;gap:6px} /* 右の端に縦に並べる */
-.bctl .lasso-btn{font-size:13px;font-weight:700;color:var(--accent)}
+.bctl .lasso-btn{font-size:15px;font-weight:700;color:var(--accent)}
 .bctl .lasso-btn.on{background:var(--accent);color:var(--accent-ink)}
 .board.lassoing{cursor:crosshair}
 .lasso{fill:color-mix(in srgb,var(--accent) 8%,transparent);stroke:var(--accent);stroke-width:2.5;stroke-dasharray:6 5;stroke-linejoin:round}
@@ -299,12 +300,25 @@ body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 .gl-h{position:absolute;right:4px;top:50%;margin-top:-8px;width:16px;height:16px;border-radius:0;border:2px solid var(--accent);background:var(--surface-1)}
 .gl-h::before{content:"";position:absolute;inset:-10px}
 .gl-h::after{content:"";position:absolute;left:3px;top:3px;width:6px;height:6px;border-radius:0;background:var(--accent)}
-.bctl button{min-width:42px;height:42px;padding:0 10px;border-radius:0;background:var(--surface-1);border:1px solid var(--line);font-size:18px;box-shadow:0 1px 3px #0002}
-.bctl button[data-z="fit"]{font-size:13px;font-weight:600}
-.bhint{position:absolute;left:12px;right:96px;bottom:12px;font-size:11.5px;line-height:1.55;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--line);border-radius:0;padding:8px 10px;pointer-events:none}
+.bctl button{min-width:42px;height:42px;padding:0 10px;border-radius:0;background:var(--surface-1);border:1px solid var(--line);font-size:20px;box-shadow:0 1px 3px #0002}
+.bctl button[data-z="fit"]{font-size:15px;font-weight:600}
+.bctl button[data-z="mind"]{font-size:15px;font-weight:600}
+.bctl button[data-z="mind"].on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+/* マインドマップ:カードの右に、つながったメモを足す＋ */
+.bc-add{display:none;position:absolute;right:-16px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:20px;line-height:28px;text-align:center;padding:0;z-index:2;box-shadow:0 1px 4px #0003}
+.board.mindmap .bc-add{display:block}
+.mindnote{font-size:13px;line-height:1.6;padding:6px 14px;background:var(--surface-2);border-bottom:1px solid var(--line);color:var(--text-secondary)}
+.stylebar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 12px;background:var(--surface-1);border-bottom:1px solid var(--line);font-size:13px}
+.stylebar .sb-l{color:var(--text-muted);font-size:12px}
+.stylebar .sw2{width:24px;height:24px}
+.stylebar .sb-b{padding:4px 8px;border:1px solid var(--line);font-size:13px;background:none}
+.stylebar .sb-b.on{border-color:var(--text-primary);font-weight:700}
+.bc-edit{width:100%;border:0;border-bottom:2px solid var(--accent);background:none;font:inherit;font-weight:700;padding:2px 0;outline:none;color:var(--text-primary)}
+.board.mindmap .bcard .bc-h{bottom:-11px}
+.bhint{position:absolute;left:12px;right:96px;bottom:12px;font-size:12px;line-height:1.7;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--line);border-radius:0;padding:8px 10px;pointer-events:none}
 @media (max-width:420px){.bhint{right:88px}.bctl button{min-width:38px;padding:0 8px}}
 .swatches{display:flex;gap:8px;flex-wrap:wrap}
-.sw2{width:38px;height:38px;border-radius:0;border:1.5px solid var(--line);background:var(--surface-1);font-size:10px;color:var(--text-muted)}
+.sw2{width:38px;height:38px;border-radius:0;border:1.5px solid var(--line);background:var(--surface-1);font-size:11px;color:var(--text-muted)}
 .sw2.on{outline:2.5px solid var(--accent);outline-offset:2px}
 .sw2.c-red{background:#e34948}.sw2.c-orange{background:#eb6834}.sw2.c-yellow{background:#d99400}.sw2.c-green{background:#1baf7a}.sw2.c-blue{background:#2a78d6}.sw2.c-purple{background:#6250d6}
 .sw2[class*=" c-"]{border-color:transparent}
@@ -321,7 +335,7 @@ body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 .cc-prev{flex:none;width:32px;height:32px;border-radius:0;border:1px solid var(--line)}
 
 /* side tree */
-.fb-side{flex:none;padding:8px 2px 8px 12px;font-size:18px;color:var(--text-secondary)}
+.fb-side{flex:none;padding:8px 2px 8px 12px;font-size:20px;color:var(--text-secondary)}
 .memo-body{flex:1;min-height:0;display:flex;position:relative}
 .memo-main{flex:1;min-width:0;display:flex;flex-direction:column}
 .side{display:none;flex-direction:column;background:var(--surface-1);border-right:1px solid var(--line);width:min(78vw,300px)}
@@ -329,15 +343,15 @@ body.side-open .side{display:flex}
 .side-scrim{display:none;position:absolute;inset:0;background:#0004;z-index:11}
 @media (max-width:719px){.side{position:absolute;left:0;top:0;bottom:0;z-index:12;box-shadow:4px 0 16px #0003}body.side-open .side-scrim{display:block}}
 @media (min-width:720px){.side{width:260px;flex:none}}
-.side-h{display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px 6px;font-weight:700;font-size:13px;color:var(--text-secondary)}
+.side-h{display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px 6px;font-weight:700;font-size:15px;color:var(--text-secondary)}
 .side-list{flex:1;min-height:0;overflow:auto;padding:0 6px 10px}
-.srow{display:flex;align-items:center;gap:4px;padding:8px 6px 8px calc(4px + var(--d) * 16px);border-radius:0;font-size:14px;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.srow{display:flex;align-items:center;gap:4px;padding:8px 6px 8px calc(4px + var(--d) * 16px);border-radius:0;font-size:16px;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .srow.sg{font-weight:700;box-shadow:inset 3px 0 0 var(--gc)}
 .srow.sm.cur{background:var(--surface-2);font-weight:700}
-.s-fold{width:20px;flex:none;color:var(--text-secondary);font-size:12px;padding:0}
-.s-dot{width:20px;flex:none;text-align:center;color:var(--text-muted);font-size:10px}
+.s-fold{width:20px;flex:none;color:var(--text-secondary);font-size:13px;padding:0}
+.s-dot{width:20px;flex:none;text-align:center;color:var(--text-muted);font-size:11px}
 .s-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.s-k{font-size:11px;color:var(--text-muted);font-weight:600}
+.s-k{font-size:12px;color:var(--text-muted);font-weight:600}
 .srow.pressing{background:var(--surface-2);transition:background .35s}
 .srow.dragging{opacity:.3}
 .srow.drop{outline:2px solid var(--accent);outline-offset:-2px}
@@ -346,31 +360,31 @@ body.side-open .side{display:flex}
 .bl-top{position:sticky;top:-8px;background:var(--bg);z-index:1;padding-top:2px;margin-bottom:10px}
 .bl-h{display:flex;align-items:center;gap:8px;padding:2px 2px 8px}
 .bl-tabs{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line)}
-.bl-tab{flex:none;padding:9px 14px 8px;font-size:14px;color:var(--text-secondary);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.bl-tab{flex:none;padding:9px 14px 8px;font-size:16px;color:var(--text-secondary);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
 .bl-tab.on{color:var(--text-primary);font-weight:700;border-bottom-color:var(--accent)}
-.bl-n{font-size:11px;color:var(--text-muted);margin-left:6px;font-weight:400}
+.bl-n{font-size:12px;color:var(--text-muted);margin-left:6px;font-weight:400}
 .bl-gh{display:flex;align-items:center;gap:8px;padding:0 2px 6px}
 .bl-sec{margin:10px 0 4px 10px}
-.bl-sh{display:flex;align-items:center;gap:8px;padding:4px 0 4px 10px;margin-bottom:6px;font-size:13px;font-weight:700;color:var(--text-secondary);border-left:3px solid var(--gc,var(--line))}
-.bl-none{font-size:12px;color:var(--text-muted);padding:2px 10px 6px}
-.bl-path{font-size:13px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bl-sh{display:flex;align-items:center;gap:8px;padding:4px 0 4px 10px;margin-bottom:6px;font-size:15px;font-weight:700;color:var(--text-secondary);border-left:3px solid var(--gc,var(--line))}
+.bl-none{font-size:13px;color:var(--text-muted);padding:2px 10px 6px}
+.bl-path{font-size:15px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bl-row{display:flex;align-items:center;gap:10px;padding:12px 2px;margin:0;background:none;border:0;border-bottom:1px solid var(--line);border-radius:0;cursor:pointer}
 .bl-row.cur{box-shadow:inset 3px 0 0 var(--accent);padding-left:12px}
 .bl-row .grow{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.bl-row b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bl-sub{font-size:12px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bl-ic{flex:none;width:22px;text-align:center;font-size:16px;color:var(--text-secondary)}
-.bl-go{flex:none;font-size:20px;color:var(--text-muted)}
-.bl-more{flex:none;padding:2px 8px;font-size:18px;color:var(--text-muted);background:none;border:0}
+.bl-row b{font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bl-sub{font-size:13px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bl-ic{flex:none;width:22px;text-align:center;font-size:18px;color:var(--text-secondary)}
+.bl-go{flex:none;font-size:22px;color:var(--text-muted)}
+.bl-more{flex:none;padding:2px 8px;font-size:20px;color:var(--text-muted);background:none;border:0}
 #v-board.listmode.listboards .bbar{display:none}
-.side-new{margin:6px 10px 10px;padding:9px;border-radius:0;border:1px dashed var(--text-muted);color:var(--text-secondary);font-size:13px}
+.side-new{margin:6px 10px 10px;padding:9px;border-radius:0;border:1px dashed var(--text-muted);color:var(--text-secondary);font-size:15px}
 
 /* board list mode */
 .bmode{margin-left:4px}
-.bmode button{padding:6px 14px;font-size:14px}
+.bmode button{padding:6px 14px;font-size:16px}
 .bbar{display:flex;align-items:center;gap:6px;padding:6px 10px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line);background:var(--surface-1)}
 .bbar::-webkit-scrollbar{display:none}
-.bchip{flex:none;padding:5px 12px;border-radius:0;font-size:13px;color:var(--text-secondary);background:var(--surface-2);white-space:nowrap;max-width:12em;overflow:hidden;text-overflow:ellipsis}
+.bchip{flex:none;padding:5px 12px;border-radius:0;font-size:15px;color:var(--text-secondary);background:var(--surface-2);white-space:nowrap;max-width:12em;overflow:hidden;text-overflow:ellipsis}
 .bchip.on{background:var(--text-primary);color:var(--surface-1);font-weight:700}
 .bchip .bc-dd{font-size:10px;opacity:.8}
 .bchip.add{background:none;border:1px dashed var(--text-muted)}
@@ -387,9 +401,9 @@ body.side-open .side{display:flex}
 #v-board.listmode .blist{display:block}
 .s-body{flex:1;min-width:0}
 .s-line{display:flex;align-items:center;gap:6px}
-.s-pv{font-size:12px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:400;margin-top:1px}
-.s-links{font-size:11.5px;color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;margin-top:2px}
-.s-more{flex:none;padding:4px 10px;border-radius:0;color:var(--text-secondary);font-size:16px}
+.s-pv{font-size:13px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:400;margin-top:1px}
+.s-links{font-size:13px;color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;margin-top:2px}
+.s-more{flex:none;padding:4px 10px;border-radius:0;color:var(--text-secondary);font-size:18px}
 .blist .srow{padding-top:10px;padding-bottom:10px;border:1px solid transparent;margin-bottom:2px;background:var(--surface-1);border-color:var(--line)}
 .blist .srow.sg{background:transparent;border-color:transparent}
 .blist .srow.sm.cur{outline:1.5px solid var(--accent)}
@@ -402,10 +416,10 @@ body.side-open .side{display:flex}
 .linkbar{display:none;gap:6px;overflow-x:auto;padding:6px 10px;border-bottom:1px solid var(--line);background:var(--surface-1);scrollbar-width:none}
 .linkbar::-webkit-scrollbar{display:none}
 .linkbar.on{display:flex}
-.lchip{flex:none;display:flex;align-items:center;gap:4px;padding:5px 11px;border-radius:0;font-size:13px;font-weight:600;white-space:nowrap;max-width:15em;
+.lchip{flex:none;display:flex;align-items:center;gap:4px;padding:5px 11px;border-radius:0;font-size:15px;font-weight:600;white-space:nowrap;max-width:15em;
   background:color-mix(in srgb,var(--accent) 10%,var(--surface-1));color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line))}
 .lchip span.n{overflow:hidden;text-overflow:ellipsis}
-.lchip .lb{font-weight:400;color:var(--text-secondary);font-size:11px}
+.lchip .lb{font-weight:400;color:var(--text-secondary);font-size:12px}
 .lchip.in{background:var(--surface-2);color:var(--text-primary);border-color:var(--line)}
 .lchip.via{background:transparent;color:var(--text-secondary);border-style:dashed;font-weight:500}
 .lchip.back{background:var(--text-primary);color:var(--surface-1);border-color:var(--text-primary)}
@@ -415,29 +429,29 @@ body.side-open .side{display:flex}
 .focusnote{border:1.5px solid color-mix(in srgb,var(--danger) 45%,var(--line));background:color-mix(in srgb,var(--danger) 6%,var(--surface-1))}
 
 .autov{width:7.5em;text-align:right;display:flex;justify-content:flex-end;align-items:center;gap:6px}
-.autov em{font-style:normal;font-size:10px;color:var(--accent);border:1px solid var(--accent);border-radius:0;padding:0 5px}
+.autov em{font-style:normal;font-size:11px;color:var(--accent);border:1px solid var(--accent);border-radius:0;padding:0 5px}
 
 /* item kinds:チェック・番号・タイムライン・見出し・補足・コード */
 .toolbar{overflow-x:auto;scrollbar-width:none}
 .toolbar::-webkit-scrollbar{display:none}
-.oltools .ot-word{font-size:13px;font-weight:600}
+.oltools .ot-word{font-size:15px;font-weight:600}
 .oltools button[hidden],.toolbar .tb[hidden]{display:none}
 .kbmore{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 10px}
 .lgscroll{overflow-x:auto;margin:8px 0 4px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.mgprev pre{margin:8px 0 4px;padding:8px 0;font:inherit;font-size:13px;line-height:1.7;white-space:pre-wrap;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.lgscroll table{border-collapse:collapse;font-size:12px}
+.mgprev pre{margin:8px 0 4px;padding:8px 0;font:inherit;font-size:15px;line-height:1.7;white-space:pre-wrap;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.lgscroll table{border-collapse:collapse;font-size:13px}
 .lgscroll th,.lgscroll td{padding:5px 8px;border-left:1px solid var(--line);white-space:nowrap;max-width:14em;overflow:hidden;text-overflow:ellipsis;text-align:left}
 .lgscroll th:first-child,.lgscroll td:first-child{border-left:0}
 .lgscroll th{font-weight:700;border-bottom:1px solid var(--text-primary)}
 .lgscroll tr+tr td{border-top:1px solid var(--line)}
-.kbmore .btn{padding:10px 4px;font-size:13px}
+.kbmore .btn{padding:10px 4px;font-size:15px}
 .oltools .ot-del,.selbar .ot-del{color:var(--danger)}
-.chkbox{display:block;width:18px;height:18px;border-radius:0;border:2px solid var(--text-muted);background:var(--surface-1);color:#fff;font-size:12px;font-weight:800;line-height:14px;text-align:center}
+.chkbox{display:block;width:18px;height:18px;border-radius:0;border:2px solid var(--text-muted);background:var(--surface-1);color:#fff;font-size:13px;font-weight:800;line-height:14px;text-align:center}
 .chkbox.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .ol-row.done .ol-v,.ol-row.done .ol-t{text-decoration:line-through;color:var(--text-muted)}
-.numk{font-size:14px;color:var(--text-secondary);font-variant-numeric:tabular-nums;white-space:nowrap}
+.numk{font-size:16px;color:var(--text-secondary);font-variant-numeric:tabular-nums;white-space:nowrap}
 .ol-row .bul:has(.numk){justify-content:flex-end;padding-right:2px;overflow:visible}
-.gfold{position:absolute;top:9px;left:calc(var(--d) * 22px - 15px);width:15px;height:18px;padding:0;font-size:10px;color:var(--text-muted)}
+.gfold{position:absolute;top:9px;left:calc(var(--d) * 22px - 15px);width:15px;height:18px;padding:0;font-size:11px;color:var(--text-muted)}
 /* タイムライン:点と線は「•」の場所に。続く行どうしは一本の線でつなぎ、端は丸く止める */
 .ol-row.k-time .bul{position:relative;align-self:stretch;height:auto;min-height:34px}
 .ol-row.k-time .bul::before{content:"";position:absolute;left:10px;top:0;bottom:0;width:2.5px;border-radius:0;background:color-mix(in srgb,var(--accent) 40%,var(--line))}
@@ -446,23 +460,23 @@ body.side-open .side{display:flex}
 .ol-row.k-time.tl-first.tl-last .bul::before{display:none}
 .ol-row.k-time .bul::after{content:"";position:absolute;left:5px;top:7px;width:12px;height:12px;border-radius:0;background:var(--surface-1);border:2.5px solid var(--accent);box-sizing:border-box}
 .ol-row.tlv::after{content:"";position:absolute;left:calc(var(--tld) * 22px + 10px);top:0;bottom:0;width:2.5px;background:color-mix(in srgb,var(--accent) 40%,var(--line))}
-.tl-at{display:inline-block;white-space:nowrap;line-height:1.6;margin:5px 6px 0;padding:1px 8px;border-radius:0;font-size:11.5px;font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface-1));border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line))}
+.tl-at{display:inline-block;white-space:nowrap;line-height:1.6;margin:5px 6px 0;padding:1px 8px;border-radius:0;font-size:13px;font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface-1));border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line))}
 .tl-at.empty{color:var(--text-muted);border-style:dashed;background:none}
-.ol-row.k-head .ol-v,.ol-row.k-head .ol-t{font-size:20px;font-weight:800;line-height:1.35;padding-top:10px}
+.ol-row.k-head .ol-v,.ol-row.k-head .ol-t{font-size:22px;font-weight:800;line-height:1.35;padding-top:10px}
 .ol-row.k-quote .bul{position:relative;align-self:stretch;height:auto;min-height:34px}
 .ol-row.k-quote .bul::before{content:"";position:absolute;left:9px;top:5px;bottom:5px;width:3px;border-radius:0;background:color-mix(in srgb,var(--text-muted) 65%,transparent)}
-.ol-row.k-quote .ol-v,.ol-row.k-quote .ol-t{color:var(--text-secondary);font-size:15px}
-.ol-row.k-code .ol-v,.ol-row.k-code .ol-t{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;background:var(--surface-2);border-radius:0}
+.ol-row.k-quote .ol-v,.ol-row.k-quote .ol-t{color:var(--text-secondary);font-size:17px}
+.ol-row.k-code .ol-v,.ol-row.k-code .ol-t{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:15px;background:var(--surface-2);border-radius:0}
 /* ホイール:真ん中の帯に来た値を選ぶ */
 .wheels{position:relative;display:flex;gap:2px;height:180px;margin:6px 0 14px}
 .wheels::before{content:"";position:absolute;left:0;right:0;top:72px;height:36px;border-top:1px solid var(--text-primary);border-bottom:1px solid var(--text-primary);pointer-events:none}
 .wheel{flex:1;min-width:0;height:180px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;padding:72px 0;overscroll-behavior:contain;
   -webkit-mask-image:linear-gradient(transparent,#000 35%,#000 65%,transparent);mask-image:linear-gradient(transparent,#000 35%,#000 65%,transparent)}
 .wheel::-webkit-scrollbar{display:none}
-.wheel>div{height:36px;line-height:36px;text-align:center;scroll-snap-align:center;font-size:16px;color:var(--text-muted);font-variant-numeric:tabular-nums;cursor:pointer;user-select:none}
-.wheel>div.on{color:var(--text-primary);font-weight:700;font-size:18px}
+.wheel>div{height:36px;line-height:36px;text-align:center;scroll-snap-align:center;font-size:18px;color:var(--text-muted);font-variant-numeric:tabular-nums;cursor:pointer;user-select:none}
+.wheel>div.on{color:var(--text-primary);font-weight:700;font-size:20px}
 .kindgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.kindgrid button{display:flex;align-items:center;gap:8px;padding:12px;border-radius:0;background:var(--surface-2);font-size:15px;text-align:left}
+.kindgrid button{display:flex;align-items:center;gap:8px;padding:12px;border-radius:0;background:var(--surface-2);font-size:17px;text-align:left}
 .kindgrid button.on{outline:2px solid var(--accent)}
 .kindgrid .ki{width:26px;text-align:center;font-weight:800;color:var(--accent)}
 /* 選択モード */
@@ -477,28 +491,28 @@ body.sweeping .outline{touch-action:none;user-select:none;-webkit-user-select:no
 body.selecting .selbar{display:flex}
 .sel-row{display:flex;align-items:center;gap:2px}
 .sel-row+.sel-row{border-top:1px solid var(--line)}
-.selbar [data-sel="out"],.selbar [data-sel="in"],.selbar [data-sel="up"],.selbar [data-sel="down"]{font-size:17px;font-weight:400}
+.selbar [data-sel="out"],.selbar [data-sel="in"],.selbar [data-sel="up"],.selbar [data-sel="down"]{font-size:19px;font-weight:400}
 body.selecting .oltools{display:none!important}
-.selbar button{flex:1;padding:10px 0;font-size:14px;font-weight:600;border-radius:0}
-.selbar .sel-n{flex:none;padding:0 8px;font-size:13px;color:var(--text-secondary);font-variant-numeric:tabular-nums}
+.selbar button{flex:1;padding:10px 0;font-size:16px;font-weight:600;border-radius:0}
+.selbar .sel-n{flex:none;padding:0 8px;font-size:15px;color:var(--text-secondary);font-variant-numeric:tabular-nums}
 .selbar .sel-done{color:var(--accent)}
 .snack{position:fixed;left:50%;bottom:calc(132px + var(--safe-b));transform:translateX(-50%);display:none;align-items:center;gap:14px;background:var(--text-primary);color:var(--surface-1);
-  padding:8px 8px 8px 16px;border-radius:0;font-size:14px;z-index:32;box-shadow:0 4px 14px #0004;white-space:nowrap}
+  padding:8px 8px 8px 16px;border-radius:0;font-size:16px;z-index:32;box-shadow:0 4px 14px #0004;white-space:nowrap}
 .snack.on{display:flex}
 .snack button{color:color-mix(in srgb,var(--accent) 70%,#fff);font-weight:700;padding:6px 10px}
 
 /* 作業の種類 */
 .typechips{display:flex;flex-wrap:wrap;gap:6px}
-.tchip{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:0;background:none;font-size:14px;border:1px solid var(--line)}
+.tchip{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:0;background:none;font-size:16px;border:1px solid var(--line)}
 .tchip i{width:10px;height:10px;border-radius:0;background:var(--tc)}
 .tchip.on{border-color:var(--text-primary);background:none;font-weight:700}
 .tchip.add{background:none;border:1px dashed var(--line);color:var(--text-muted)}
 .tdot{display:inline-block;width:10px;height:10px;border-radius:0;margin-right:6px;vertical-align:middle;background:var(--tc)}
-.tshare{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+.tshare{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:15px}
 .tshare:last-child{border-bottom:0}
 .tshare .bar{flex:1;height:8px;border-radius:0;background:var(--surface-2);overflow:hidden}
 .tshare .bar i{display:block;height:100%;background:var(--tc);border-radius:0}
-details.appd>summary{cursor:pointer;font-weight:600;color:var(--text-secondary);font-size:14px;padding:4px 0}
+details.appd>summary{cursor:pointer;font-weight:600;color:var(--text-secondary);font-size:16px;padding:4px 0}
 details.appd[open]>summary{margin-bottom:8px}
 /* メモのリンク [[名前]] */
 .mlink{color:var(--accent);text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;cursor:pointer;-webkit-user-select:none;user-select:none}
@@ -517,9 +531,9 @@ details.appd[open]>summary{margin-bottom:8px}
 .lchip.wiki,.lchip.wikiin{background:var(--surface-1);border-style:solid}
 .linksug{display:none;gap:6px;overflow-x:auto;padding:6px 8px;border-top:1px solid var(--line);background:var(--surface-2);scrollbar-width:none}
 .linksug.on{display:flex}
-.linksug button{flex:none;padding:6px 12px;border-radius:0;background:var(--surface-1);border:1px solid var(--line);font-size:13.5px;white-space:nowrap;max-width:14em;overflow:hidden;text-overflow:ellipsis}
+.linksug button{flex:none;padding:6px 12px;border-radius:0;background:var(--surface-1);border:1px solid var(--line);font-size:15px;white-space:nowrap;max-width:14em;overflow:hidden;text-overflow:ellipsis}
 .linksug button.new{border-style:dashed;color:var(--text-secondary)}
-.linksug .sughint{flex:none;align-self:center;font-size:11px;color:var(--text-muted);padding:0 2px}
+.linksug .sughint{flex:none;align-self:center;font-size:12px;color:var(--text-muted);padding:0 2px}
 
 /* マスコット「ミモザ」 */
 .mimoza-box{display:flex;align-items:flex-end;gap:4px;margin:4px 0 12px}
@@ -528,93 +542,93 @@ details.appd[open]>summary{margin-bottom:8px}
 .mimoza-img.talk{animation:mimoza-talk .32s steps(2) infinite}
 @keyframes mimoza-talk{0%{transform:translateY(0) rotate(0)}50%{transform:translateY(-4px) rotate(-3deg)}}
 .mimoza-bubble{position:relative;flex:1;min-width:0;margin-bottom:46px;background:var(--surface-1);border:2px solid var(--text-primary);border-radius:0;padding:10px 12px 22px;
-  font-size:14.5px;line-height:1.6;font-weight:600;min-height:56px;cursor:pointer;-webkit-user-select:none;user-select:none}
+  font-size:16px;line-height:1.6;font-weight:600;min-height:56px;cursor:pointer;-webkit-user-select:none;user-select:none}
 .mimoza-bubble::before{content:"";position:absolute;left:-11px;bottom:12px;border:7px solid transparent;border-right:11px solid var(--text-primary);border-left:0}
 .mimoza-bubble::after{content:"";position:absolute;left:-7px;bottom:14px;border:5px solid transparent;border-right:8px solid var(--surface-1);border-left:0}
-.mimoza-bubble .who{display:block;font-size:10.5px;font-weight:800;color:var(--accent);letter-spacing:.08em;margin-bottom:2px}
-.mimoza-bubble .next{position:absolute;right:10px;bottom:4px;font-size:11px;color:var(--text-muted);animation:mimoza-next 1s steps(2) infinite}
+.mimoza-bubble .who{display:block;font-size:12px;font-weight:800;color:var(--accent);letter-spacing:.08em;margin-bottom:2px}
+.mimoza-bubble .next{position:absolute;right:10px;bottom:4px;font-size:12px;color:var(--text-muted);animation:mimoza-next 1s steps(2) infinite}
 @keyframes mimoza-next{50%{transform:translateY(2px)}}
 
 /* メモのタグ */
-.mtag{display:inline-block;font-size:10.5px;font-weight:700;color:var(--text-secondary);background:var(--surface-2);border-radius:0;padding:1px 7px;margin:2px 4px 0 0}
-.mtag.big{font-size:13px;padding:5px 11px;color:var(--text-primary)}
+.mtag{display:inline-block;font-size:12px;font-weight:700;color:var(--text-secondary);background:var(--surface-2);border-radius:0;padding:1px 7px;margin:2px 4px 0 0}
+.mtag.big{font-size:15px;padding:5px 11px;color:var(--text-primary)}
 .lchip.tagc{background:var(--surface-2);color:var(--text-primary);border-color:var(--line)}
 .bc-tags{margin-top:3px;line-height:1.2}
 
 /* generic */
 .card{background:none;border:0;border-radius:0;padding:0;margin:0 0 28px}
-.card h3{margin:0 0 10px;font-size:12px;letter-spacing:.12em;color:var(--text-muted);font-weight:600}
+.card h3{margin:0 0 10px;font-size:13px;letter-spacing:.12em;color:var(--text-muted);font-weight:600}
 /* 切り替えは箱をやめ、選んでいるものの下に線を引くだけ */
 .seg{display:inline-flex;gap:20px;background:none;border-radius:0;padding:0;border-bottom:1px solid var(--line)}
-.seg button{padding:8px 0;border-radius:0;font-size:14px;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.seg button{padding:8px 0;border-radius:0;font-size:16px;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-1px}
 .seg button.on{background:none;color:var(--text-primary);font-weight:700;border-bottom-color:var(--accent);box-shadow:none}
 .periodnav{display:flex;align-items:center;justify-content:space-between;margin:10px 0}
-.periodnav .lbl{font-weight:700;font-size:17px;font-variant-numeric:tabular-nums}
-.periodnav button{padding:6px 12px;font-size:18px;color:var(--text-secondary)}
+.periodnav .lbl{font-weight:700;font-size:19px;font-variant-numeric:tabular-nums}
+.periodnav button{padding:6px 12px;font-size:20px;color:var(--text-secondary)}
 .tiles{display:grid;grid-template-columns:1.55fr 1fr 1fr;gap:0;margin-bottom:24px}
 .tile{background:none;border:0;border-left:1px solid var(--line);padding:2px 12px}
 .tile:first-child{border-left:0;padding-left:0}
-.tile .k{font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:5px;letter-spacing:.08em}
-.tile .v{font-size:20px;white-space:nowrap;font-weight:600;margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:0}
-.tile .s{font-size:11px;color:var(--text-muted);margin-top:2px}
+.tile .k{font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px;letter-spacing:.08em}
+.tile .v{font-size:22px;white-space:nowrap;font-weight:600;margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:0}
+.tile .s{font-size:12px;color:var(--text-muted);margin-top:2px}
 .sw{display:inline-block;width:10px;height:10px;border-radius:0}
 .row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line)}
 .row:last-child{border-bottom:0}
 .row .grow{flex:1;min-width:0}
-.muted{color:var(--text-muted);font-size:13px}
-.small{font-size:12px}
+.muted{color:var(--text-muted);font-size:15px}
+.small{font-size:13px}
 .num{font-variant-numeric:tabular-nums}
 .field{display:block;margin:10px 0}
-.field>span{display:block;font-size:12px;color:var(--text-muted);margin-bottom:6px;letter-spacing:.06em}
+.field>span{display:block;font-size:13px;color:var(--text-muted);margin-bottom:6px;letter-spacing:.06em}
 /* 入力欄は枠で囲まず、淡い地と下の線で示す。書いているあいだは線を濃く */
 .inp{width:100%;padding:10px 12px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:var(--surface-2);outline:none}
 .inp:focus{border-bottom-color:var(--accent);box-shadow:inset 0 -1px 0 var(--accent)}
 textarea.inp{line-height:1.6;resize:vertical}
-.btn{padding:10px 16px;border-radius:0;background:none;border:1px solid var(--line);font-weight:600;font-size:14px;letter-spacing:.04em}
+.btn{padding:10px 16px;border-radius:0;background:none;border:1px solid var(--line);font-weight:600;font-size:16px;letter-spacing:.04em}
 .btn:active{background:var(--surface-2)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.danger{color:var(--danger)}
 .btn.block{width:100%}
 .btns{display:flex;gap:8px;margin-top:14px}
 .btns .btn{flex:1}
-.empty{color:var(--text-muted);font-size:14px;text-align:center;padding:24px 0}
-.legend{display:flex;gap:14px;font-size:12px;color:var(--text-secondary);margin:2px 0 8px;flex-wrap:wrap}
+.empty{color:var(--text-muted);font-size:16px;text-align:center;padding:24px 0}
+.legend{display:flex;gap:14px;font-size:13px;color:var(--text-secondary);margin:2px 0 8px;flex-wrap:wrap}
 .legend span{display:flex;align-items:center;gap:5px}
 .chart{position:relative}
 .chart svg{display:block;width:100%;overflow:visible}
 .chart .grid{stroke:var(--line);stroke-width:1}
-.chart .axis{fill:var(--text-muted);font-size:10px}
-.tip{position:absolute;pointer-events:none;background:var(--text-primary);color:var(--surface-1);font-size:12px;
+.chart .axis{fill:var(--text-muted);font-size:11px}
+.tip{position:absolute;pointer-events:none;background:var(--text-primary);color:var(--surface-1);font-size:13px;
   padding:6px 9px;border-radius:0;white-space:nowrap;transform:translate(-50%,-100%);display:none;line-height:1.5}
-.note{font-size:12px;color:var(--text-muted);background:none;border-radius:0;padding:4px 0;line-height:1.75}
+.note{font-size:13px;color:var(--text-muted);background:none;border-radius:0;padding:4px 0;line-height:1.75}
 
 /* timer */
-.clock{font-size:76px;font-weight:200;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:-.01em;margin:28px 0 4px;font-feature-settings:"tnum"}
-.phase{text-align:center;font-size:14px;color:var(--text-secondary);min-height:20px}
+.clock{font-size:85px;font-weight:200;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:-.01em;margin:28px 0 4px;font-feature-settings:"tnum"}
+.phase{text-align:center;font-size:16px;color:var(--text-secondary);min-height:20px}
 .ring{display:block;margin:6px auto 0}
-.bigbtn{display:block;margin:22px auto 10px;width:min(100%,320px);padding:15px;border-radius:0;font-size:16px;font-weight:700;letter-spacing:.3em;background:var(--accent);color:var(--accent-ink)}
+.bigbtn{display:block;margin:22px auto 10px;width:min(100%,320px);padding:15px;border-radius:0;font-size:18px;font-weight:700;letter-spacing:.3em;background:var(--accent);color:var(--accent-ink)}
 .bigbtn.stop{background:var(--danger)}
 
 /* plan */
-.daygroup{font-size:12px;font-weight:600;color:var(--text-muted);letter-spacing:.08em;margin:20px 0 2px}
+.daygroup{font-size:13px;font-weight:600;color:var(--text-muted);letter-spacing:.08em;margin:20px 0 2px}
 .daygroup.today{color:var(--accent)}
 .ev{display:flex;gap:10px;padding:11px 0;background:none;border:0;border-bottom:1px solid var(--line);border-radius:0;margin:0;text-align:left;width:100%}
-.ev .t{font-size:13px;color:var(--text-secondary);width:88px;flex:none;font-variant-numeric:tabular-nums}
+.ev .t{font-size:15px;color:var(--text-secondary);width:88px;flex:none;font-variant-numeric:tabular-nums}
 .ev .ti{font-weight:600}
-.fab{position:absolute;right:18px;bottom:18px;width:52px;height:52px;border-radius:0;background:var(--accent);color:var(--accent-ink);font-size:26px;font-weight:300;box-shadow:none}
+.fab{position:absolute;right:18px;bottom:18px;width:52px;height:52px;border-radius:0;background:var(--accent);color:var(--accent-ink);font-size:29px;font-weight:300;box-shadow:none}
 
 /* sheet */
 .veil{position:fixed;inset:0;background:#0007;display:none;z-index:20;align-items:flex-end;justify-content:center}
 .veil.on{display:flex}
 .sheet{background:var(--surface-1);width:100%;max-width:560px;max-height:88dvh;overflow:auto;border-radius:0;
   padding:14px 16px calc(18px + var(--safe-b))}
-.sheet h2{font-size:19px;margin:6px 0 14px;letter-spacing:.04em}
+.sheet h2{font-size:21px;margin:6px 0 14px;letter-spacing:.04em}
 .grab{width:40px;height:4px;border-radius:0;background:var(--line);margin:0 auto 8px}
 .banner{position:fixed;left:10px;right:10px;top:calc(8px + var(--safe-t));z-index:30;background:var(--text-primary);color:var(--surface-1);
-  border-radius:0;padding:12px 14px;display:none;box-shadow:0 4px 16px #0005;font-size:14px}
+  border-radius:0;padding:12px 14px;display:none;box-shadow:0 4px 16px #0005;font-size:16px}
 .banner.on{display:block}
 .toast{position:fixed;left:50%;bottom:calc(132px + var(--safe-b));transform:translateX(-50%);background:var(--text-primary);color:var(--surface-1);
-  padding:8px 14px;border-radius:0;font-size:13px;z-index:31;opacity:0;transition:opacity .2s;pointer-events:none}
+  padding:8px 14px;border-radius:0;font-size:15px;z-index:31;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.on{opacity:1}
 .hit{background:#ffd54a55;border-radius:0}
 </style>
@@ -623,12 +637,11 @@ textarea.inp{line-height:1.6;resize:vertical}
 <body>
 <div class="cchart" id="cchart" hidden><div class="cc-box"><b>色を選ぶ</b><div class="cc-grid" id="ccGrid"></div>
   <div class="cc-row"><span class="cc-prev" id="ccPrev"></span><input class="inp" id="ccHex" maxlength="7" aria-label="色の番号"><button class="btn" id="ccX">やめる</button><button class="btn primary" id="ccOk">決める</button></div></div></div>
-<div class="livebar" id="livebar">作業時間 自動記録中 <b id="liveToday">0分</b>(今日)<button class="syncchip" id="syncChip" hidden>☁ ログインして同期</button></div>
+<div class="livebar" id="livebar"><button class="syncchip" id="syncChip" hidden>☁ ログインして同期</button></div>
 <main>
   <!-- メモ -->
   <section class="view" id="v-memo">
-    <div class="filebar"><button class="fb-side" id="sideBtn" aria-label="グループとメモの一覧">☰</button><b class="fb-title" id="fbName"></b>
-      <button class="fb-boardbtn" id="fileBar" aria-label="ボードを開く">◧ ボード</button>
+    <div class="filebar"><button class="fb-open" id="fileBar" style="flex:none" aria-label="ボードに戻る"><span class="fb-board">← ボード</span></button><button class="fb-side" id="sideBtn" aria-label="グループとメモの一覧">☰</button><b class="fb-title" id="fbName"></b>
       <button class="fb-new" id="newMemo">＋ メモ</button></div>
     <div class="memo-body">
       <aside class="side" id="side" aria-label="グループとメモ">
@@ -686,16 +699,18 @@ textarea.inp{line-height:1.6;resize:vertical}
 
   <!-- ボード(すべてのメモ) -->
   <section class="view" id="v-board">
-    <div class="filebar"><button class="fb-open" id="boardBack" style="flex:none"><span class="fb-board">← メモ</span></button>
+    <div class="filebar" style="padding-left:12px">
       <div class="seg bmode" id="bmode"><button data-bm="map">図</button><button data-bm="list">リスト</button></div>
       <span class="spacer"></span>
       <button class="fb-new" id="boardNew">＋ メモ</button></div>
     <div class="bbar" id="bbar"></div>
+    <div class="mindnote" id="mindNote" hidden>マップモード:カードを押すと表題を直せます。メモの中に書き込むには、右の「マップ」を押してマップモードを終了してください</div>
+    <div class="stylebar" id="styleBar" hidden></div>
     <div class="blist" id="blist"></div>
     <div class="board" id="board">
       <div class="world" id="world"><svg class="edges" id="edges"></svg><div id="cards"></div><div id="glabels"></div></div>
-      <div class="bhint" id="bhint">カードはドラッグで移動、タップで開く、長押しで色や削除。カードの右下の●を別のカードへ引くと矢印、空いた所で離すと新しいメモ。「◯ 囲む」で指で描いて囲むと、その形がグループになります(丸ごと囲めば入れ子)。空いた所はドラッグで移動、二本指で拡大縮小。矢印は二回タップで消せます。カードや丸は下のゴミ箱へドラッグすると消せます。</div>
-      <div class="bctl"><button data-z="lasso" id="lassoBtn" class="lasso-btn">◯ 囲む</button><button data-z="arrange">整列</button><button data-z="in" aria-label="拡大">＋</button><button data-z="out" aria-label="縮小">−</button><button data-z="fit">全体</button></div>
+      <div class="bhint" id="bhint"><b>ボードの使い方</b><br>・カードを押すと開く。長押しでメニュー(色・複製・削除など)<br>・カードはドラッグで動かす。右下の□を別のカードへ引くと矢印<br>・右の「◯ 囲む」を押して、指でぐるっと囲むとグループ<br>・右上の「＋ メモ」でカードを足し、その場で表題を書ける<br>・右の「マップ」をオンにすると、カードの右の＋で矢印でつながったカードを足せる。表題を書いて Enter で、続けて次のカード。カードを押すと表題を直せ、上に出る帯で色・枠・形を変えられる<br>・空いた所のドラッグで画面を動かし、二本指で拡大・縮小<br>・いらないカードや丸は、下に出るゴミ箱へドラッグ</div>
+      <div class="bctl"><button data-z="lasso" id="lassoBtn" class="lasso-btn">◯ 囲む</button><button data-z="mind" id="mindBtn" aria-label="マインドマップ:つながったメモを足す">マップ</button><button data-z="arrange">整列</button><button data-z="in" aria-label="拡大">＋</button><button data-z="out" aria-label="縮小">−</button><button data-z="fit">全体</button></div>
     </div>
   </section>
 
@@ -1021,6 +1036,7 @@ function distMs(dateStr, appId) {
 const VIEWS = ["memo", "board", "log", "timer", "plan", "prefs"];
 let view = "memo";
 function show(v, push = true) {
+  if (titleEditing) titleEditing(false); // ボードで書きかけの表題は、ほかの画面へ移る前に決める
   let cus = null;
   if (typeof v === "string" && v.startsWith("c:")) { // 自分で作った項目:中身はメモ
     const pg = customPage(v);
@@ -1056,8 +1072,10 @@ $("#nav").addEventListener("click", e => {
   const x = e.target.closest("[data-hide]"); if (x) { hidePage(x.dataset.hide); return; }
   const b = e.target.closest("button"); if (!b) return;
   if (b.dataset.v === "memo" && customOpen && files[prevFile]) { flushOutline(); saveView(); setOutline(prevFile); customOpen = null; renderMemo(); }
+  if (b.dataset.v === "memo") { flushOutline(); show("board"); return; } // 下の「メモ」はボード(メモの一覧)を開く
   show(b.dataset.v);
 });
+const showHome = () => show(navHome() === "memo" ? "board" : navHome()); // いちばん初めの画面(メモならボード)
 
 addEventListener("hashchange", () => { const h = location.hash.slice(1); if (h !== view) show(h, false); }); // 自分で動かした分は受け直さない
 
@@ -2430,16 +2448,24 @@ function createMemo(firstLine, at, exact) {
   if (firstLine) f.nodes[0].t = firstLine;
   files[f.id] = f; Store.put("file-" + f.id, f);
   board.cards[f.id] = exact ? { x: at.x, y: at.y } : freeSpot(at.x, at.y); saveBoard();
-  if (board !== boards.main) withBoard("main", placeMissing); // メインには、すべてのメモが並ぶ
+  if (board !== boards.main) withBoard("main", placeMissing); // どのボードにもないメモだけ、いちばん左のボードへ(ここで作ったメモはこのボードにあるので、何もしない)
   return f;
 }
 function newMemo() { // メモ画面の「＋ 新しいメモ」:ボード上ではいまのメモの右隣に置き、すぐ書く
+  if (board.mind && board.cards[curFile] && files[curFile]) { closeSheet(); flushOutline(); show("board"); mindAdd(curFile); return; } // マインドマップ:ボードに戻り、いまのメモから矢印でつないで表題を書く
   const c = board.cards[curFile] || { x: 40, y: 40 };
   const f = createMemo("", { x: c.x + 200, y: c.y });
   closeSheet(); openFile(f.id); focusStart();
 }
 $("#newMemo").onclick = () => newMemo();
-$("#fileBar").onclick = () => { flushOutline(); show("board"); };
+function backToBoard() { // メモからボードへ戻る。「＋」で作って何も書かなかったメモは残さない
+  flushOutline();
+  const f = files[curFile];
+  if (f && f.fresh && isEmptyMemo(f) && Object.keys(files).length > 1) removeMemo(f.id, true);
+  else if (f && f.fresh) { delete f.fresh; saveFileQuiet(f); }
+  show("board");
+}
+$("#fileBar").onclick = () => backToBoard();
 function fmtWhen(t) { const d = new Date(t); return ymd(d) === ymd(new Date()) ? hm(t) : `${d.getMonth() + 1}/${d.getDate()}`; }
 const countNodes = l => l.reduce((t, n) => t + 1 + countNodes(n.c || []), 0);
 const saveFileQuiet = f => { delete f.auto; Store.put("file-" + f.id, f); };
@@ -2522,13 +2548,13 @@ document.addEventListener("click", e => { // 虹色の丸
 }, true);
 const COMPACT_K = 0.6; // これより縮小したら、カードはタイトルだけ
 const ZOOM_MIN = 0.08; // 「全体」で、たくさんのグループも一度に見渡せるように
-/* ボードはいくつでも作れる。"main"(メイン)には、すべてのメモが自動で並ぶ(doc "board")。
+/* ボードはいくつでも作れる。"main"(いちばん左のボード。doc "board")も、ほかのボードと同じ。どのボードにもないメモだけがここへ並ぶ。
    ほかのボード(doc "board-<id>"、名前と順は meta.boards)には、選んだメモやグループだけを置く。
    同じメモを複数のボードに置ける。丸(グループ)・矢印・位置はボードごとに別々。いま開いているのが board */
 let boards = {}, curBoard = LS.get("curBoard") || "main";
 const boardDocId = id => id === "main" ? "board" : "board-" + id;
-const boardList = () => [{ id: "main", name: meta.prefs.mainBoardName || "メイン" }, ...(meta.boards || [])];
-const boardName = id => (boardList().find(b => b.id === id) || {}).name || "メイン";
+const boardList = () => [{ id: "main", name: meta.prefs.mainBoardName || "ボード" }, ...(meta.boards || [])];
+const boardName = id => (boardList().find(b => b.id === id) || {}).name || "ボード";
 const normBoard = b => { b = b || {}; b.cards ||= {}; b.edges ||= []; b.groups ||= []; return b; };
 const boardIdOf = b => Object.keys(boards).find(k => boards[k] === b);
 function withBoard(id, fn) { const prev = board; board = boards[id]; try { return fn(); } finally { board = prev; } }
@@ -2586,8 +2612,8 @@ function freeSpot(x, y) { // ほかのカードに重ならない場所を、下
   return { x, y };
 }
 // ボードにまだ置かれていないメモを並べる。以前グループにまとめていたメモは、同じ列にそろえる
-function placeMissing() {
-  const ids = Object.keys(files).filter(id => !board.cards[id]);
+function placeMissing() { // 最初のボードには、どのボードにもないメモだけを置く(すべてのメモを集めるメインのボードはやめた)
+  const ids = Object.keys(files).filter(id => !board.cards[id] && (board !== boards.main || !Object.values(boards).some(b => b.cards[id])));
   if (!ids.length) return;
   const placed = Object.entries(board.cards).filter(([id]) => files[id]).map(([, c]) => c);
   const y0 = placed.length ? Math.max(...placed.map(c => c.y)) + 170 : 40;
@@ -2757,6 +2783,8 @@ function applyView() {
 }
 function renderBoard() {
   boardEl.classList.toggle("compact", BV.k < COMPACT_K);
+  boardEl.classList.toggle("mindmap", !!board.mind); $("#mindBtn")?.classList.toggle("on", !!board.mind); // マインドマップ(ボードごと)
+  const mn = $("#mindNote"); if (mn) mn.hidden = !board.mind;
   cardsEl.innerHTML = Object.keys(files).filter(id => board.cards[id]).map(id => {
     const f = files[id], c = board.cards[id];
     const pv = previewLines(f);
@@ -2764,7 +2792,7 @@ function renderBoard() {
       <div class="bc-t">${esc(memoTitle(f))}</div>${pv.length ? `<div class="bc-p">${pv.map(t => `<div>${esc(t)}</div>`).join("")}</div>` : ""}
       ${memoTags(f).length ? `<div class="bc-tags">${tagChips(f)}</div>` : ""}
       <div class="bc-m">${countNodes(f.nodes)}行 · ${fmtWhen(f.updated)}</div>${f.comment ? `<div class="bc-cm">${esc(f.comment)}</div>` : ""}
-      <div class="bc-h" data-handle="${id}" aria-label="引いて矢印をつなぐ"></div></div>`;
+      <div class="bc-h" data-handle="${id}" aria-label="引いて矢印をつなぐ"></div><button class="bc-add" data-addchild="${id}" aria-label="矢印でつながったメモを足す">＋</button></div>`;
   }).join("");
   // 以前の版の丸(形を持たない)は、中のカードを囲む楕円の形にして引き継ぐ
   let migrated = false;
@@ -2895,7 +2923,7 @@ function setLasso(on, forGroup) {
   if (on) toast(forGroup ? `「${groupById(forGroup).name}」の新しい形を、指で描いてください` : "指で描いて、まとめたいカードや丸を囲んでください");
 }
 boardEl.addEventListener("pointerdown", e => {
-  if (e.target.closest(".bctl")) return;
+  if (e.target.closest(".bctl") || e.target.closest(".bc-edit")) return; // 表題を書いている入力欄の中は、ボードの操作にしない
   if (e.button > 0) return;
   try { boardEl.setPointerCapture(e.pointerId); } catch {}
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -2910,6 +2938,7 @@ boardEl.addEventListener("pointerdown", e => {
   if (ptrs.size > 2) return;
   const base = { x0: e.clientX, y0: e.clientY, moved: false, pid: e.pointerId };
   if (lassoMode) { gest = { ...base, type: "lasso" }; lassoPts = [toWorld(e.clientX, e.clientY)]; return; }
+  const addc = e.target.closest("[data-addchild]"); if (addc) { e.preventDefault(); e.stopPropagation(); hintDone(); mindAdd(addc.dataset.addchild); return; } // preventDefault:押した＋に入力の焦点を取られないように
   const handle = e.target.closest("[data-handle]"), ghandle = e.target.closest("[data-ghandle]"), card = e.target.closest("[data-card]"),
     glabel = e.target.closest("[data-group]"), edge = e.target.closest("[data-edge]");
   if (handle || ghandle) {
@@ -2998,7 +3027,7 @@ function endGesture(e, cancel) {
       const after = groupsOfCard(g.id);
       if (groupsKey(g.id) !== before) toast(after.length ? `「${after.map(x => x.name).join("」と「")}」に入れました` : "グループの外に出しました");
       renderBoard(); renderFileBar(); hintDone();
-    } else if (!g.moved && !g.long) openFile(g.id);
+    } else if (!g.moved && !g.long) { if (board.mind) titleEdit(g.id, null); else openFile(g.id); } // マップモードでは、押すと表題を直す
     else drawEdges();
   } else if (g.type === "group") {
     if (g.moved && g.trash) { for (const [x, pts] of g.pts) x.pts = pts; for (const [m, x, y] of g.cards) { const c = board.cards[m]; c.x = x; c.y = y; } dropDelete({ t: "g", id: g.id }); }
@@ -3041,7 +3070,66 @@ $("#v-board .bctl").addEventListener("click", e => {
   else if (b.dataset.z === "fit") fitView();
   else if (b.dataset.z === "arrange") arrangeAll();
   else if (b.dataset.z === "lasso") setLasso(!lassoMode);
+  else if (b.dataset.z === "mind") { board.mind = !board.mind; if (!board.mind) delete board.mind; saveBoard(); renderBoard();
+    toast(board.mind ? "マインドマップ:カードの右の＋か「＋ メモ」で、矢印でつながったメモを足せます" : "マインドマップをやめました"); }
 });
+// ---- マインドマップ:元のメモの右に新しいメモを置いて矢印でつなぎ、カードの上でそのまま表題を書く(兄弟は下へ並べる) ----
+let mindLast = null; // いちばん最近に足した(表題を書いた)カード。「＋ メモ」はここからつなぐ
+var titleEditing = null; // 書いている途中の表題を決める関数(次のカードを足す前に、先に決める)
+function mindAdd(pid) {
+  if (titleEditing) titleEditing(false);
+  const p = board.cards[pid]; if (!p || !files[pid]) return null;
+  const kids = board.edges.filter(e => e.a === pid && board.cards[e.b]).map(e => board.cards[e.b]);
+  const y = kids.length ? Math.max(...kids.map(c => c.y)) + 90 : p.y;
+  const f = createMemo("", { x: p.x + CARD_W + 90, y }); f.fresh = true;
+  board.edges.push({ id: uid(), a: pid, b: f.id, dir: "to", label: "" }); saveBoard();
+  recomputeTree(); renderBoard(); titleEdit(f.id, pid);
+  return f;
+}
+// ---- 表題を書いている間だけ、そのカードの色・枠・形をその場で変える帯を出す ----
+function styleBar(id) {
+  const el = $("#styleBar"); if (!el) return;
+  if (!id || !board.cards[id]) { el.hidden = true; el.innerHTML = ""; return; }
+  const c = board.cards[id];
+  const opt = (key, list) => list.map(([k, l]) => `<button class="sb-b${(c[key] || "") === k ? " on" : ""}" data-sb="${key}:${k}">${l}</button>`).join("");
+  el.innerHTML = `<span class="sb-l">色</span><span class="swatches">${COLORS.map(k => `<button class="sw2${k ? " c-" + ck(k) : ""}${(c.c || "") === k ? " on" : ""}" data-sb="c:${k}" aria-label="${COLOR_NAMES[k]}">${k ? "" : "なし"}</button>`).join("")}</span>
+    <span class="sb-l">枠</span>${opt("bd", [["", "通常"], ["dash", "点線"], ["thick", "太線"], ["double", "二重"], ["none", "なし"]])}
+    <span class="sb-l">形</span>${opt("bs", [["", "通常"], ["sq", "四角"], ["round", "丸く"], ["diamond", "菱形"]])}`;
+  el.hidden = false; el.dataset.id = id;
+}
+$("#styleBar").addEventListener("pointerdown", e => e.preventDefault()); // 押しても、表題の入力から焦点を外さない
+$("#styleBar").addEventListener("click", e => {
+  const b = e.target.closest("[data-sb]"), id = $("#styleBar").dataset.id, c = board.cards[id]; if (!b || !c) return;
+  const [key, val] = b.dataset.sb.split(":"); if (val) c[key] = val; else delete c[key]; saveBoard();
+  const el = cardsEl.querySelector(`[data-card="${id}"]`); if (el) el.className = "bcard" + cardColorClass(id) + cardFrame(id) + (id === curFile ? " cur" : "");
+  styleBar(id); drawEdges();
+});
+// ---- カードの上で表題を書く:Enter で決める。マインドマップなら、続けて同じ親に次のカードを足す。空のまま決めると、そのカードは消える ----
+function titleEdit(id, parent) {
+  if (view !== "board") show("board");
+  const el = cardsEl.querySelector(`[data-card="${id}"]`), t = el?.querySelector(".bc-t"); if (!t) return;
+  centerOn(id);
+  const f = files[id]; t.innerHTML = `<input class="bc-edit" maxlength="80" placeholder="表題を入力" aria-label="カードの表題" value="${esc(f.nodes[0]?.t || "")}">`;
+  const i = t.querySelector("input"); let done = false;
+  const finish = next => {
+    if (done) return; done = true; if (titleEditing === finish) titleEditing = null;
+    const v = i.value.trim(); styleBar(null);
+    if (!v && !f.fresh) { renderBoard(); return; } // 書いてあった表題を空にしたときは、元のまま
+    if (!v && f.fresh && isEmptyMemo(f)) { removeMemo(id, true); recomputeTree(); renderBoard(); if (parent && board.cards[parent]) centerOn(parent); return; } // 空のまま決めたら消して、元のカードへ戻る
+    if (f.nodes[0]) { f.nodes[0].t = v; delete f.nodes[0].f; } delete f.fresh; f.updated = Date.now(); saveFileQuiet(f);
+    mindLast = id; renderBoard(); hintDone();
+    if (next && v && board.mind && parent && files[parent]) mindAdd(parent); // Enter:同じ親に次のカード
+  };
+  i.addEventListener("keydown", e => { if (e.isComposing) return; if (e.key === "Enter") { e.preventDefault(); finish(true); } else if (e.key === "Escape") finish(false); });
+  const t0 = Date.now();
+  i.addEventListener("blur", () => setTimeout(() => {
+    if (done || !i.isConnected) return;
+    if (Date.now() - t0 < 700 && !i.value.trim()) { i.focus(); return; } // 押した指やマウスの名残で焦点が外れただけなら、入力に戻す
+    finish(false);
+  }, 0));
+  titleEditing = finish; i.focus(); styleBar(id);
+  setTimeout(() => { if (!done && i.isConnected && document.activeElement !== i) i.focus(); }, 80); // 押し終わったあとにも、もう一度入力へ
+}
 function finishLasso() { // 描いた形をグループ(丸)にする。形の内側のカードと丸が中身になる
   const raw = lassoPts, forG = lassoFor; lassoPts = null; setLasso(false);
   const pts = raw ? tidyShape(raw) : [];
@@ -3058,10 +3146,16 @@ function finishLasso() { // 描いた形をグループ(丸)にする。形の�
   groupNameSheet(g.id, true);
 }
 function hintDone() { if (!LS.get("boardHintDone")) { LS.set("boardHintDone", true); $("#bhint").style.display = "none"; } }
-$("#boardBack").onclick = () => show("memo");
-$("#boardNew").onclick = () => {
+// ボードがメモの親:メモの「← ボード」で戻る。ボードからはカードやリストの行を押してメモを開く
+$("#boardNew").onclick = () => { // 「＋ メモ」:新しいカードを置いて、その場で表題を書く
+  if (titleEditing) titleEditing(false);
   if (boardMode !== "map") { newMemoInList(); return; }
-  const r = boardEl.getBoundingClientRect(); const w = toWorld(r.left + r.width / 2, r.top + r.height / 3); quickMemoSheet({ x: Math.round(w.x - CARD_W / 2), y: Math.round(w.y) }); };
+  const from = [mindLast, curFile].find(id => id && board.cards[id] && files[id]);
+  if (board.mind && from) { mindAdd(from); return; } // マインドマップ:最後に足した(開いていた)メモから矢印でつなぐ
+  const r = boardEl.getBoundingClientRect(), w = toWorld(r.left + r.width / 2, r.top + r.height / 3);
+  const f = createMemo("", { x: Math.round(w.x - CARD_W / 2), y: Math.round(w.y) }); f.fresh = true; hintDone();
+  recomputeTree(); renderBoard(); titleEdit(f.id, null); // カードの上で表題を書く(中身はカードを押して開いて書く)
+};
 
 function addEdge(a, b) {
   if (board.edges.some(e => (e.a === a && e.b === b) || (e.a === b && e.b === a && e.dir === "both"))) { toast("すでにつながっています"); return; }
@@ -3270,7 +3364,7 @@ function cardMenu(id) {
     ${fileTags(id).length ? `<p class="muted small" style="margin:6px 0 0">グループから付いたタグ:${fileTags(id).map(t => "📁#" + esc(t)).join(" ")}</p>` : ""}
     ${meta.boards.length ? `<p class="muted small" style="margin:6px 0 0">置いてあるボード:${boardsOfMemo(id).map(b => "◧ " + esc(b.name)).join("、")}</p>` : ""}
     <button class="btn block" data-dup style="margin-top:6px">このメモを複製</button>
-    <button class="btn block" data-onb style="margin-top:6px">ほかのボードにも置く</button>${curBoard !== "main" ? `<button class="btn block" data-unb style="margin-top:6px">このボードから外す(メモは残す)</button>` : ""}
+    <button class="btn block" data-onb style="margin-top:6px">ほかのボードにも置く</button>${Object.entries(boards).some(([bid, b]) => bid !== curBoard && b.cards[id]) ? `<button class="btn block" data-unb style="margin-top:6px">このボードから外す(メモは残す)</button>` : ""}
     <button class="btn danger block" data-del style="margin-top:8px">このメモを削除${meta.boards.length ? "(すべてのボードから)" : ""}</button>
     <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
     const apply = () => { const nm = $("#cmName").value.trim(); if (nm !== (f.name || "")) { f.name = nm; saveFileQuiet(f); if (id === curFile) renderFileBar(); } };
@@ -3371,7 +3465,7 @@ function groupMenu(gid) {
     <div class="btns" style="margin-top:4px"><button class="btn" data-arrange>中を整列</button><button class="btn" data-redraw>形を描き直す</button></div>
     <button class="btn block" data-merge style="margin-top:8px">中のメモを一つにまとめる</button>
     <button class="btn block" data-subgroup style="margin-top:8px">この中に新しいグループを作る</button>
-    <button class="btn danger block" data-delall style="margin-top:8px">${curBoard === "main" ? "グループと中身を削除" : "グループをこのボードから外す"}</button>
+    <button class="btn danger block" data-delall style="margin-top:8px">グループと中身を消す(ほかのボードにもあるメモは、ここから外すだけ)</button>
     <button class="btn block" data-del style="margin-top:8px">丸だけ消す(中身は残す)</button>
     <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
     $("#gmTag").onchange = e => { $("#gmTagF").hidden = !e.target.checked; if (e.target.checked && !$("#gmTagN").value.trim()) $("#gmTagN").value = $("#gmN").value.trim() || g.name; };
@@ -3638,9 +3732,9 @@ $("#bmode").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.d
 // ---- ボードの切り替え・作成・名前・削除と、メモやグループを入れる ----
 function renderBoardBar() {
   const el = $("#bbar"); if (!el) return;
-  el.innerHTML = boardList().map(b => `<button class="bchip${b.id === curBoard ? " on" : ""}" data-bid="${b.id}">${b.id === "main" ? "◧ " : ""}${esc(b.name)}${b.id === curBoard ? ` <span class="bc-dd">▾</span>` : ""}</button>`).join("") +
+  el.innerHTML = boardList().map(b => `<button class="bchip${b.id === curBoard ? " on" : ""}" data-bid="${b.id}">${esc(b.name)}${b.id === curBoard ? ` <span class="bc-dd">▾</span>` : ""}</button>`).join("") +
     `<button class="bchip add" data-bnew>＋ ボード</button>` +
-    (curBoard !== "main" ? `<span class="spacer"></span><button class="mini bput" data-bput>＋ 入れる</button>` : "");
+    `<span class="spacer"></span><button class="mini bput" data-bput>＋ 入れる</button>`;
 }
 $("#bbar").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
@@ -3663,7 +3757,7 @@ function switchBoard(id) {
 }
 function newBoardSheet() {
   openSheet(`<h2>新しいボード</h2>
-    <p class="muted small" style="margin-top:-4px">選んだメモやグループだけを置くボードです。同じメモを、いくつものボードに置けます。メインには、これまでどおりすべてのメモが並びます。</p>
+    <p class="muted small" style="margin-top:-4px">選んだメモやグループだけを置くボードです。同じメモを、いくつものボードに置けます。</p>
     <label class="field"><span>名前</span><input class="inp" id="nbN" maxlength="24" placeholder="例:第2章の構成"></label>
     <div class="btns"><button class="btn" data-x>やめる</button><button class="btn primary" data-ok>作る</button></div>`, s => {
     const i = $("#nbN"); i.focus();
@@ -3678,25 +3772,30 @@ function newBoardSheet() {
   });
 }
 function boardMenu() {
-  if (curBoard === "main") {
-    openSheet(`<h2>◧ ${esc(boardName("main"))}</h2>
-      <p class="muted small" style="margin-top:-4px">メインのボードには、すべてのメモが自動で並びます。メモを選んで置くには、新しいボードを作ってください。</p>
+  if (curBoard === "main") { // 最初のボードも、ほかのボードと同じ。消すことだけはできない(どのボードにもないメモの置き場になる)
+    const n = Object.keys(board.cards).filter(id => files[id]).length;
+    openSheet(`<h2>${esc(boardName("main"))}</h2>
+      <p class="muted small" style="margin-top:-4px">メモ ${n} 件 · グループ ${board.groups.length} 個</p>
       <label class="field"><span>名前</span><input class="inp" id="bmN" value="${esc(boardName("main"))}" maxlength="24"></label>
-      <button class="btn block" data-bnew style="margin-top:4px">＋ 新しいボードを作る</button>
+      <button class="btn block" data-put style="margin-top:4px">＋ メモやグループを入れる</button>
+      <button class="btn block" data-bnew style="margin-top:8px">＋ 新しいボードを作る</button>
+      <p class="muted small">いちばん左のボードは消せません。ほかのボードを消したとき、そのボードにだけあったメモはここへ移ります。</p>
       <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
-      $("[data-bnew]", s).onclick = () => { closeSheet(); newBoardSheet(); };
-      $("[data-ok]", s).onclick = () => { const v = $("#bmN").value.trim(); if (v && v !== "メイン") meta.prefs.mainBoardName = v; else delete meta.prefs.mainBoardName; saveMeta(); closeSheet(); renderBoardBar(); renderSide(); };
+      const apply = () => { const v = $("#bmN").value.trim(); if (v && v !== "ボード") meta.prefs.mainBoardName = v; else delete meta.prefs.mainBoardName; saveMeta(); };
+      $("[data-put]", s).onclick = () => { apply(); closeSheet(); putSheet(); };
+      $("[data-bnew]", s).onclick = () => { apply(); closeSheet(); newBoardSheet(); };
+      $("[data-ok]", s).onclick = () => { apply(); closeSheet(); renderBoardBar(); renderSide(); };
     });
     return;
   }
   const meB = meta.boards.find(b => b.id === curBoard), n = Object.keys(board.cards).filter(id => files[id]).length;
-  openSheet(`<h2>◧ ${esc(meB.name)}</h2>
+  openSheet(`<h2>${esc(meB.name)}</h2>
     <p class="muted small" style="margin-top:-4px">メモ ${n} 件 · グループ ${board.groups.length} 個</p>
     <label class="field"><span>名前</span><input class="inp" id="bmN" value="${esc(meB.name)}" maxlength="24"></label>
     <button class="btn block" data-put style="margin-top:4px">＋ メモやグループを入れる</button>
     <div class="btns" style="margin-top:8px"><button class="btn" data-up>← 前へ</button><button class="btn" data-down>後ろへ →</button></div>
     <button class="btn danger block" data-del style="margin-top:8px">このボードを消す</button>
-    <p class="muted small">ボードを消しても、メモは消えません(メインやほかのボードに残ります)。このボードに描いた丸と矢印は消えます。</p>
+    <p class="muted small">ボードを消しても、メモは消えません。ほかのボードにないメモは、いちばん左のボードへ移ります。このボードに描いた丸と矢印は消えます。</p>
     <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
     const apply = () => { meB.name = $("#bmN").value.trim() || meB.name; saveMeta(); };
     s.addEventListener("click", e => {
@@ -3704,10 +3803,11 @@ function boardMenu() {
       if ("put" in b.dataset) { apply(); closeSheet(); putSheet(); }
       else if ("up" in b.dataset || "down" in b.dataset) { const L = meta.boards, i = L.indexOf(meB), j = i + ("up" in b.dataset ? -1 : 1); if (j >= 0 && j < L.length) { [L[i], L[j]] = [L[j], L[i]]; saveMeta(); renderBoardBar(); } }
       else if ("ok" in b.dataset) { apply(); closeSheet(); renderBoardBar(); renderSide(); }
-      else if ("del" in b.dataset) confirmSheet("ボードを消しますか", `ボード「${meB.name}」を消します。メモ ${n} 件は消えず、メインに残ります。このボードの丸 ${board.groups.length} 個と矢印 ${board.edges.length} 本は消えます。`, "消す", () => {
+      else if ("del" in b.dataset) confirmSheet("ボードを消しますか", `ボード「${meB.name}」を消します。メモ ${n} 件は消えません(ほかのボードにないメモは、いちばん左のボードへ移ります)。このボードの丸 ${board.groups.length} 個と矢印 ${board.edges.length} 本は消えます。`, "消す", () => {
         const id = curBoard; switchBoard("main");
         meta.boards = meta.boards.filter(x => x.id !== id); saveMeta();
         clearTimeout(boardTimers[id]); delete boards[id]; Store.remove(boardDocId(id)); LS.del("boardView:" + id); ftCache = null;
+        withBoard("main", placeMissing); saveBoardOf("main"); // このボードにだけあったメモは、いちばん左のボードへ
         renderBoardView(); renderSide(); toast("ボードを消しました");
       });
     });
@@ -5195,7 +5295,7 @@ const Sync = {
     return m || (String(this.err).startsWith("http") ? `ドライブにつながりません(${this.err})` : `うまくいきませんでした(${this.err})`);
   },
   paint() { // 上の帯のボタンと、設定の欄だけを描き直す
-    const c = $("#syncChip"); if (c) c.hidden = !(this.on() && this.need);
+    const c = $("#syncChip"); if (c) { c.hidden = !(this.on() && this.need); $("#livebar").classList.toggle("need", !c.hidden); }
     const k = $("#syncCard"); if (k) k.outerHTML = syncCardHtml();
   },
   async start() { // ログインして同期を始める(ログインし直すときも)
@@ -5782,7 +5882,7 @@ function newItemSheet() {
 }
 // ---- ドラッグで消す:動かしている間だけ下にゴミ箱を出す。落としたら消し、直後なら元に戻せる ----
 const trashEl = document.createElement("div"); trashEl.className = "droptrash"; document.body.appendChild(trashEl);
-const trashLabel = t => curBoard !== "main" ? `🗑 ドラッグで${t === "g" ? "グループを" : ""}このボードから外す` : t === "g" ? "🗑 ドラッグでグループと中身を削除" : "🗑 ドラッグでメモを削除";
+const trashLabel = t => t === "g" ? "🗑 ドラッグでグループを消す" : "🗑 ドラッグで消す(ほかのボードにもあれば、ここから外すだけ)";
 function showTrash(text) { trashEl.textContent = text; trashEl.style.bottom = ($("#nav").offsetHeight + 10) + "px"; trashEl.classList.add("on"); trashEl.classList.remove("hot"); trashEl.classList.toggle("warn", text.includes("ボードから外す")); }
 function hideTrash() { trashEl.classList.remove("on", "hot", "warn"); }
 function overTrash(x, y) {
@@ -5793,19 +5893,20 @@ function overTrash(x, y) {
   return on;
 }
 function dropDelete(it) {
-  const snap = JSON.stringify(boards), main = curBoard === "main", copies = []; let msg;
-  const dropMemo = id => { // メインでは削除(ゴミ箱に残る)。ほかのボードでは、そのボードから外すだけ
-    if (!main) removeFromBoard(id); else if (files[id]) { copies.push(JSON.parse(JSON.stringify(files[id]))); removeMemo(id, true); }
+  const snap = JSON.stringify(boards), copies = []; let msg, gone = 0, off = 0;
+  const elsewhere = id => Object.entries(boards).some(([bid, b]) => bid !== curBoard && b.cards[id]);
+  const dropMemo = id => { // どのボードでも同じ:ほかのボードにもあるメモは、このボードから外すだけ。ここにしかないメモは削除(ゴミ箱に残る)
+    if (elsewhere(id)) { removeFromBoard(id); off++; } else if (files[id]) { copies.push(JSON.parse(JSON.stringify(files[id]))); removeMemo(id, true); gone++; }
   };
   flushOutline();
   if (it.t === "g") { // グループは中の丸とメモごと
     const g = groupById(it.id), all = [g, ...descendantsOf(g)], ids = new Set(all.map(x => x.id)), mems = [...new Set(all.flatMap(x => x.members || []))].filter(m => groupsOfCard(m).every(x => ids.has(x.id))); // ほかのグループにも入っているメモは残す
     board.groups = board.groups.filter(x => !ids.has(x.id)); board.edges = board.edges.filter(e => !ids.has(e.a) && !ids.has(e.b));
     mems.forEach(dropMemo); recomputeTree();
-    msg = main ? `グループ「${g.name}」と中のメモ ${mems.length} 件を削除しました` : `グループ「${g.name}」をこのボードから外しました`;
+    msg = `グループ「${g.name}」を消しました` + (gone ? `(メモ ${gone} 件はゴミ箱へ)` : "") + (off ? `(ほかのボードにもあるメモ ${off} 件は、このボードから外しただけ)` : "");
   } else {
     const name = memoTitle(files[it.id]); dropMemo(it.id); recomputeTree();
-    msg = main ? `「${name}」を削除しました` : `「${name}」をこのボードから外しました`;
+    msg = gone ? `「${name}」を削除しました(ゴミ箱に30日残ります)` : `「${name}」をこのボードから外しました(ほかのボードに残っています)`;
   }
   const refresh = () => { ftCache = null; board = boards[curBoard]; if (customOpen && !files[customPage(customOpen)?.file]) show(navHome()); renderNav(); if (view === "board") renderBoardView(); renderMemo(); };
   refresh(); snack(msg);
@@ -5821,7 +5922,7 @@ const trashList = () => Object.entries(Store.localDocs()).filter(([k, v]) => k.s
 function purgeTrash() { for (const x of trashList()) if (Date.now() - x.at > TRASH_MS) Store.remove(x.key); }
 function trashSheet() {
   const L = trashList();
-  openSheet(`<h2>ゴミ箱</h2><p class="muted small" style="margin-top:-4px">消したメモは30日間ここに残ります。戻すとメインのボードに置かれます(矢印や丸の所属は戻りません)。</p>
+  openSheet(`<h2>ゴミ箱</h2><p class="muted small" style="margin-top:-4px">消したメモは30日間ここに残ります。戻すといちばん左のボードに置かれます(矢印や丸の所属は戻りません)。</p>
     ${L.map(x => `<div class="row"><span class="grow"><b>${esc(memoTitle(x.file))}</b><div class="muted small">${countNodes(x.file.nodes)}行 · ${fmtDate(x.at)} に消しました</div></span><button class="mini" style="flex:none" data-tr="${esc(x.key)}">戻す</button><button class="mini" style="flex:none" data-tx="${esc(x.key)}">完全に消す</button></div>`).join("") || `<div class="empty">ゴミ箱は空です</div>`}
     <div class="btns"><button class="btn" data-x>閉じる</button></div>`, s => {
     s.addEventListener("click", e => {
@@ -5888,7 +5989,7 @@ function rollDay() { // 開いたまま日付が変わったら、今日を見�
 function refreshLive() {
   rollDay();
   const a = startOfDay(new Date()).getTime();
-  $("#liveToday").textContent = fmtSec(workTotal(a, a + 864e5));
+  const lt = $("#liveToday"); if (lt) lt.textContent = fmtSec(workTotal(a, a + 864e5)); // 上の帯は出さなくなった(同期のログインを求めるときだけ出す)
   if (view === "log" && logLive) { // 記録画面に今日が入っていれば、作業時間を秒で進める
     const tw = $("#tileWork"); if (tw) tw.textContent = fmtSec(workTotal(logLive.a, logLive.b));
     const rw = $("#rowWork"); if (rw) rw.textContent = fmtSec(workMs(logLive.a, logLive.b));
@@ -5923,40 +6024,43 @@ function focusStart() { // 起動直後にすぐ書けるよう、前回の行(�
 }
 // ---- チュートリアルのメモ:初めて開いたときに置く(「設定」からも開ける)。触りながら覚えられるよう、ふつうのメモとして書いてある ----
 // 1行 = 「字下げ(空白2つで1段)+ 印 + 文」。印は ・ふつう ☐チェック ☑済み ■見出し。**太字** と {赤:色} はメモを開くときに範囲へ直る
-const TUTORIAL_ID = "tutorial", TUTORIAL2_ID = "tutorial2", TUTORIAL_V = 4; // 版を上げると、設定から開いたときに新しい文に置き直す
+const TUTORIAL_ID = "tutorial", TUTORIAL2_ID = "tutorial2", TUTORIAL_V = 5; // 版を上げると、設定から開いたときに新しい文に置き直す
 function tutorial2Lines() { // 発展:初めは出していない機能など
   return [
     "・チュートリアル(発展)",
     "・初めは隠している機能",
-    "  ・「設定 › 画面の編集」をオンにして「項目の一覧」を押すと、隠している機能を出せます",
+    "  ・画面の下の右端の「設定」で「画面の編集」をオンにし、画面の下に出る帯の「項目の一覧」を押すと、隠している機能を出せます",
     "    ・メモの上の段:タグ、コメント、テンプレート",
     "    ・「予定」の中:収支、長期計画",
-    "  ・下のタブを**長押し**しても編集モードに入れます。タブの並べ替えや、メモで作る新しい項目も足せます",
+    "  ・画面の下のタブを**長押し**しても編集モードに入れます。タブの並べ替えや、メモで作る新しい項目も足せます",
     "・キーボードの上のバー",
-    "  ・書いているときに出るバーの「⋯」から、↑↓、色、＋子、テンプレートなども使えます",
-    "  ・「⋯」の「バーに出すものを選ぶ」で、バーの中身を入れ替えられます",
+    "  ・書いているときにキーボードのすぐ上に出るバーの右端の「⋯」から、↑↓、色、＋子、テンプレートなども使えます",
+    "  ・「⋯」の中の「バーに出すものを選ぶ」で、バーの中身と並びを入れ替えられます",
     "・文字を飾る",
-    "  ・「色」は押すたびに{赤:赤}{橙:橙}{黄:黄}{緑:緑}{青:青}{紫:紫}と変わり、長押しでほかの色も選べます",
+    "  ・バーの「⋯」から出せる「色」は、押すたびに{赤:赤}{橙:橙}{黄:黄}{緑:緑}{青:青}{紫:紫}と変わり、長押しでほかの色も選べます",
     "・行の形式",
-    "  ・「形式」では、番号・タイムライン・補足・コードも選べます",
-    "  ・行の頭で「@ 」と打つとタイムラインになります。時を押すと、ホイールで時刻・月日・年月日を選べます",
+    "  ・バーの「形式」では、番号・タイムライン・補足・コードも選べます",
+    "  ・行の頭で「@ 」と打つとタイムラインになります。行の左の時の札を押すと、ホイールで時刻・月日・年月日を選べます",
     "  ・タイムラインの行を入れ替えても、時はその位置に残り、中身だけが動きます",
     "・つなぐ",
     "  ・「/」を打つと、ほかのメモへのリンクを作れます",
-    "  ・バーの「⋯」の「ほかの項目と関連付け」で、行どうしを結べます",
+    "  ・バーの右端の「⋯」の「ほかの項目と関連付け」で、行どうしを結べます",
     "・ボードをもっと使う",
     "  ・丸どうしを重ねて、その重なりにカードを置くと、どちらのグループにも入ります(女性 かつ ウサギ族、のように)",
-    "  ・カードを長押しして「ほかのボードにも置く」で、同じメモをいくつものボードに置けます",
-    "  ・「＋ ボード」で、ボードをいくつも作れます",
+    "  ・カードを長押しして出るメニューの「ほかのボードにも置く」で、同じメモをいくつものボードに置けます。同じメニューの「このメモを複製」で写しも作れます",
+    "  ・ボードの上から二段目の「＋ ボード」で、ボードをいくつも作れます",
+    "  ・丸の名札を押して出るメニューの「中のメモを一つにまとめる」で、グループのメモを一つのメモにできます",
+    "・書き出す",
+    "  ・メモの上の段の「コピー」で、文章・Markdown・表(列を自分で決める)・CSV にできます",
     "・活用例",
-    "  ・「設定 › 活用例」で、仕事の計画(サイト リニューアル)とゲーム開発(相関図・アイテム図鑑・年表)の例を入れられます",
+    "  ・画面の下の右端の「設定」の一番上の「活用例」で、仕事の計画(サイト リニューアル)とゲーム開発(相関図・アイテム図鑑・年表)の例を入れられます",
     "・例",
     "  ・好きな果物",
     "    ・りんご",
     "      ☐ 文字の色は{赤:あいうえお}{青:かきくけこ}いっかい",
     "    ■ ぶどうつぶつぶだよわーい",
     "    ・ばなな",
-    "・このメモは消してもかまいません。「設定」から、いつでもまた開けます",
+    "・このメモは消してもかまいません。画面の下の右端の「設定」の一番上から、いつでもまた開けます",
   ];
 }
 function tutorialLines() {
@@ -5964,31 +6068,33 @@ function tutorialLines() {
   return [
     "・チュートリアル",
     "・←ここを押すと子をたためます",
-    "  ・→を押すか「・」をドラッグで行を入れ子にできます",
+    "  ・書いているときに画面の下(キーボードのすぐ上)に出る「→」を押すか、行の頭の「・」をドラッグすると、行を入れ子にできます",
     "    ・何段でも階層構造を作れます",
     "・書いてみる",
     "  ・行をタップすると書けます。改行で次の行へ進みます",
-    "  ・行を**長押し**すると持ち上がり、好きな場所へ動かせます。動かさずに離すと選択になり、ほかの行もタップで選んで、←→↑↓でまとめて動かせます",
-    "  ・上の「↶」で一つ前に戻し、「↷」でやり直せます",
-    "  ・書いているときに下に出る「形式」で、行をチェックや見出しに変えられます",
+    "  ・行を**長押し**すると持ち上がり、好きな場所へ動かせます。動かさずに離すと選択になり、ほかの行もタップで選んで、画面の下に出る「←」「→」「↑」「↓」でまとめて動かせます",
+    "  ・メモの上の段の左端の「↶」で一つ前に戻し、そのすぐ右の「↷」でやり直せます",
+    "  ・書いているときに画面の下に出る「形式」で、行をチェックや見出しに変えられます",
     "    ☐ 行の頭で「[] 」と打つと、チェックになります",
-    "    ☑ 済んだら「☐」を押して、済みにします",
-    "  ・「B」で**太字**にできます",
+    "    ☑ 済んだら、行の頭の「☐」を押して済みにします",
+    "  ・書いているときに画面の下に出る「B」で**太字**にできます",
     "・メモを整理する",
-    "  ・上の「◧ ボード」を押すと、メモがカードになって並びます",
-    "  ・カードの右下の●を、別のカードへ引くと矢印でつながります",
-    "  ・指でぐるっと囲むと、グループにまとまります",
-    "  ・左上の「☰」で、グループとメモの一覧が出ます",
+    "  ・メモの左上の「← ボード」を押すと、ボードに戻ります。ボードでは、メモがカードになって並びます",
+    "  ・ボードでカードを押すと、そのメモが開きます。右上の「＋ メモ」で新しいメモを作れます",
+    "  ・カードの右下の●を、別のカードまで引くと、矢印でつながります",
+    "  ・ボードの右側の「◯ 囲む」を押してから、指でぐるっと囲むと、グループにまとまります",
+    "  ・ボードの左上の「図」と「リスト」で、並べ方を切り替えられます",
+    "  ・メモの左上の「☰」で、グループとメモの一覧が出ます",
     "・時間を記録する",
     `  ・${NATIVE ? "このアプリ" : "このページ"}を開いているあいだは、自動で作業時間に入ります`,
-    "  ・下の「タイマー」で作業の種類を選んで計ると、「記録」にグラフで積み上がります",
-    "  ・「予定」で、日々の予定を管理できます",
+    "  ・画面の下の「タイマー」で作業の種類を選んで計ると、その右の「記録」にグラフで積み上がります",
+    "  ・画面の下の「予定」で、日々の予定を管理できます",
     "・データについて",
     `  ・メモや記録は、${where}の中に保存されます`,
-    ...(canSync() ? ["  ・「設定 › ドライブで同期」で、ほかの端末とも同じデータを使えます"] : []),
-    "  ・機種変更の前は「設定 › データの引っ越し」で書き出してください",
-    "・慣れてきたら、メモの一覧の「チュートリアル(発展)」で、初めは隠している機能や細かな使い方を見られます",
-    "・このメモは消してもかまいません。「設定」から、いつでもまた開けます",
+    ...(canSync() ? ["  ・画面の下の右端の「設定」の「ドライブで同期」で、ほかの端末とも同じデータを使えます"] : []),
+    "  ・機種変更の前は、画面の下の右端の「設定」の「データの引っ越し」で書き出してください",
+    "・慣れてきたら、「チュートリアル(発展)」のメモで、初めは隠している機能や細かな使い方を見られます(ボードのカードか、メモの左上の「☰」から開けます)",
+    "・このメモは消してもかまいません。画面の下の右端の「設定」の一番上から、いつでもまた開けます",
   ];
 }
 function tutorialNodes(lines = tutorialLines()) {
@@ -6256,7 +6362,8 @@ window.androidBack = () => {
   if ($("#veil").classList.contains("on")) { closeSheet(); return true; }
   if (document.body.classList.contains("side-open") && !isWide()) { setSide(false); return true; }
   if (document.body.classList.contains("layoutedit")) { setLayoutEdit(false); return true; }
-  if ((customOpen || view) !== navHome()) { show(navHome()); return true; }
+  if (view === "memo" && !customOpen) { backToBoard(); return true; } // メモ → ボードへ戻る
+  if ((customOpen || (view === "board" ? "memo" : view)) !== navHome()) { showHome(); return true; }
   return false;
 };
 window.onAndroidResume = () => { // 設定画面から戻ったときなど:許可と使用時間を読み直す
@@ -6280,7 +6387,7 @@ function boot() {
   Work.start();
   renderMemo();
   renderNav();
-  show(location.hash.slice(1) || navHome(), false);
+  { const h = location.hash.slice(1); h ? show(h, false) : showHome(); } // 開いたときは、メモではなくボードから
   refreshLive();
   if (!meta.guideSeen) firstRun(); else if (view === "memo") focusStart();
   setInterval(() => Work.beat(), 10000);
