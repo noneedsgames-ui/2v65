@@ -13,7 +13,7 @@
 - 画面の写真を見せて質問してくることが多い。手順は、押すボタンの名前をそのまま書いて案内する。
 - 機能の要望は細かく続けて来る。直したら、何を変えたかを短く報告する。
 
-## 作業記録メモ帳の作り
+## 開発メモの作り
 
 ```
 prototype/worklog-memo/index.html      アプリの本体(HTML・CSS・JS を一つのファイルに)
@@ -27,12 +27,20 @@ prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は ind
 
 ### index.html の中の区切り
 
-コメントの `/* ===` で区切ってある。主な所:保存層(Store・LS)→ データモデル(loadAll)→ 作業時間の自動記録(Work)→ 画面切り替え(show)→ メモ(入れ子のアウトライン)→ ボード(カード・丸=ファイル・矢印、複数のボード、タグのベン図)→ 左のツリー → つながり → 記録(積み上げグラフ)→ タイマー → 予定 → 設定 → 起動(boot)。
+コメントの `/* ===` で区切ってある。主な所:保存層(Store・LS)→ データモデル(loadAll)→ 作業時間の自動記録(Work)→ 画面切り替え(show)→ メモ(入れ子のアウトライン)→ ボード(カード・丸=グループ・矢印、複数のボード、マップモード、使い方の案内)→ 左のツリー → つながり → 記録(積み上げグラフ)→ タイマー → 予定 → 設定 → 起動(boot)。
+### 画面の流れ(2026-11 のクローズドテストの声で変えた)
+
+- ボードがメモの親。下の「メモ」はボードを開き、カードを押すとメモ、メモの左上の「← ボード」で戻る。開いたときもボードから。
+- ボードの「＋ メモ」はカードを足して、カードの上で表題を書く(`titleEdit`)。マップモード(`board.mind`)では、カードの右の＋で矢印つきのカードを足し、押すと表題を直す。
+- メモの行は、文の長押しで選択(そのままなぞって範囲)。行を動かすのは行頭の「・」のドラッグか選択の ↑↓。
+- 初めに出す機能は少なくしてあり、ほかは設定の「画面の編集 › 項目の一覧」とキーボードの上のバーの「⋯」から出す。
+- 初めて開いたときと設定の一番上から、点滅する枠の「使い方の案内」(`startTour`)。チュートリアルのメモは基本と発展の二つ(`TUTORIAL_V` を上げると置き直す)。
+
 
 ### データ
 
 - 端末内の localStorage(キーは `wm:` で始まる)を正とし、claude.ai の試作ページで開いたときだけ、claude.ai の個人用ストアにも同期する。
-- 文書:`meta`(設定・予定・作業の種類・ボードの一覧 `meta.boards`)、`file-<id>`(メモ 1 件)、`board`(メインのボード)、`board-<id>`(ほかのボード)、`log-YYYY-MM`(作業区間・タイマーの記録)、`money-YYYY-MM`(収支の記録。プロジェクトの分は proj と line を持つ)、`projects`(プロジェクトの予算)、`plans`(長期計画)、`trash-<id>`(ゴミ箱)。収支と長期計画の画面は、下のタブを増やさず「予定」のページの中に置く。
+- 文書:`meta`(設定・予定・作業の種類・ボードの一覧 `meta.boards`)、`file-<id>`(メモ 1 件)、`board`(いちばん左のボード。すべてのメモを集める「メイン」はやめ、どのボードにもないメモだけがここへ並ぶ)、`board-<id>`(ほかのボード)、`log-YYYY-MM`(作業区間・タイマーの記録)、`money-YYYY-MM`(収支の記録。プロジェクトの分は proj と line を持つ)、`projects`(プロジェクトの予算)、`plans`(長期計画)、`trash-<id>`(ゴミ箱)。収支と長期計画の画面は、下のタブを増やさず「予定」のページの中に置く。
 - **ブラウザ版とアプリ版のデータは別々**。アプリは同じ鍵で上書きして入れる限り、更新してもデータは残る。
 
 ### Android 版
@@ -44,12 +52,12 @@ prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は ind
 - `BlockService.kt`:タイマー中、選んだ妨害アプリを覆う(試験運用、最大 5 分)。
 - `TimerWidget.kt`:ホーム画面のウィジェット「作業タイマー」。押すとアプリを開き、`window.onWidget('stopwatch'|'pomodoro'|'stop'|'show')` を呼ぶ。
 - ビルドのたびに `../worklog-memo/index.html` を assets に写す(`app/build.gradle.kts` の copyWeb)。なので **リポジトリ全体** が要る。
-- debug ビルドは `app/debug.keystore`(試作用の固定鍵)で署名し、`com.noneedsgames.worklogmemo.dev`「作業記録メモ帳(試作)」として入る。
+- debug ビルドは `app/debug.keystore`(試作用の固定鍵)で署名し、`com.noneedsgames.worklogmemo.dev`「開発メモ(試作)」として入る。
 - Windows で動かすとき:`cd prototype\worklog-memo-android` で `.\gradlew.bat installDebug`(スマホを USB デバッグでつないでおく)。ログは `adb logcat`。
 
 ## 確かめ方
 
-- 画面の変更は、`index.html` をブラウザで開いて確かめられる。スマホの大きさ(幅 390px 前後)で見る。
+- 画面の変更は、`index.html` をブラウザで開いて確かめられる。スマホの大きさ(幅 390px 前後)で見る。押す・長押しの動きは、プログラムから呼ぶだけでなく本物のクリックでも確かめる(焦点の移り方が違い、見逃したことがある)。
 - `#start=stopwatch`・`#start=pomodoro`・`#stop` を付けて開くと、ウィジェットと同じ動きになる。
 - 自動テストはリポジトリに入っていない(これまではクラウドの作業環境で Playwright を使っていた)。
 - 実機は、debug ビルドなら `adb forward tcp:9333 localabstract:webview_devtools_remote_<pid>` で WebView に Chrome DevTools Protocol でつながり、画面を叩かずに JavaScript を動かして確かめられる。Android の窓口を模すなら `<head>` の先頭で `window.Android` を差し替えた HTML を iframe の srcdoc で開く。
@@ -83,4 +91,4 @@ prototype/worklog-memo-android/        Android アプリ(Kotlin)。画面は ind
 - **データの書き出し/読み込み**:設定の「データの引っ越し」として実装した。Android の保存・ファイル選択(`MainActivity.kt`)と claude.ai 上の `downloads` は実機で未確認。
 - **実機で未確認**:Google ドライブのファイルからの読み込み、翌日以降の自動の上書き、書き出しの保存先の選択、再起動のあとの通知、新しい画面を指で触った使い心地。ロック画面の通知、閉じているときの知らせ、妨害アプリの使用時間の隅の表示は、利用者の実機で確認済み。
 - **Norton 360**:直接入れた試作版を入れるたびに「疑わしいアプリ」と出る。Play の版でどうなるかは未確認。
-- **Google Play の内部テスト**:2026-11-03 に Play Console の本人確認が済み、利用者が `2v65` の Secrets にアップロード鍵を入れ、同日の Run workflow(#8)で `worklog-memo-8-play.aab` ができた(Releases にも置かれる)。同日、利用者が Play Console でアプリ「開発メモ」(com.noneedsgames.worklogmemo)を作り、#8 の AAB を内部テストとしてリリースした。難読化はしていない(isMinifyEnabled = false。JS から Android.* を名前で呼ぶため)。Actions で「Releases に置く」が 403(権限)で失敗するが、APK は実行結果の Artifacts から落とせる(失敗扱いにはしないよう直してある)。
+- **Google Play の内部テスト**:2026-11-03 に Play Console の本人確認が済み、利用者が `2v65` の Secrets にアップロード鍵を入れ、同日の Run workflow(#8)で `worklog-memo-8-play.aab` ができた(Releases にも置かれる)。同日、利用者が Play Console でアプリ「開発メモ」(com.noneedsgames.worklogmemo)を作り、#8 の AAB を内部テストとしてリリースした。難読化はしていない(isMinifyEnabled = false。JS から Android.* を名前で呼ぶため)。Actions で「Releases に置く」が 403(権限)で失敗するが、APK は実行結果の Artifacts から落とせる(失敗扱いにはしないよう直してある)。 2026-11-08 には利用者がクローズドテスト(トラック「クローズドテスト1」)を始めており、その声を受けて直した 10(0.1.10)を「開発メモ(テスト2)」として審査に送った。フォアグラウンド サービスの申告(動画 https://youtu.be/wLRHP9cK6To 、限定公開)も保存済み。Play Console の操作は Claude in Chrome で手伝える(送信などの前は利用者に確かめる)。

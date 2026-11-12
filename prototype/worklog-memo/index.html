@@ -243,7 +243,7 @@ body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 .fb-open b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fb-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:18px;font-weight:700;padding:12px 4px}
 .fb-boardbtn{flex:none;font-size:15px;font-weight:600;padding:7px 12px;border-radius:0;border:1px solid var(--line);color:var(--text-primary);background:none;white-space:nowrap}
-.fb-new{flex:none;font-size:15px;font-weight:600;padding:8px 12px;border-radius:0;background:var(--accent);color:var(--accent-ink);white-space:nowrap}
+.fb-new{flex:none;font-size:18px;font-weight:700;padding:11px 20px;min-height:46px;letter-spacing:.04em;border-radius:0;background:var(--accent);color:var(--accent-ink);white-space:nowrap}
 .fb-ic{color:var(--text-secondary);font-size:19px}
 .fb-board{color:var(--accent);font-weight:600;font-size:16px;white-space:nowrap}
 .fb-sep{color:var(--text-muted)}
@@ -252,7 +252,7 @@ body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 /* board */
 .board{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;
   background-color:var(--board-bg);background-image:radial-gradient(var(--board-dot) 1px,transparent 1.2px);background-size:22px 22px}
-.world{position:absolute;left:0;top:0;transform-origin:0 0}
+.world{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
 .edges{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none}
 .edge{stroke:var(--text-secondary);stroke-width:1.8;fill:none}
 .edge.tmp{stroke:var(--accent);stroke-dasharray:5 4}
@@ -307,6 +307,12 @@ body.dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 /* マインドマップ:カードの右に、つながったメモを足す＋ */
 .bc-add{display:none;position:absolute;right:-16px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:20px;line-height:28px;text-align:center;padding:0;z-index:2;box-shadow:0 1px 4px #0003}
 .board.mindmap .bc-add{display:block}
+/* 使い方の案内:点滅する枠と吹き出し */
+.tour-ring{position:fixed;z-index:60;pointer-events:none;border:3px solid #eda100;box-shadow:0 0 0 4px #eda10055;animation:tourBlink 1s ease-in-out infinite;transition:left .2s,top .2s,width .2s,height .2s}
+@keyframes tourBlink{0%,100%{opacity:1;box-shadow:0 0 0 4px #eda10055}50%{opacity:.35;box-shadow:0 0 0 10px #eda10022}}
+.tour-tip{position:fixed;z-index:61;background:var(--surface-1);color:var(--text-primary);border:2px solid var(--text-primary);padding:12px 14px 10px;font-size:16px;line-height:1.65;box-shadow:0 6px 20px #0003}
+.tour-tip .tt-b{display:flex;align-items:center;gap:8px;margin-top:10px}
+.tour-tip .tt-n{font-size:13px;color:var(--text-muted);font-variant-numeric:tabular-nums}
 .mindnote{font-size:13px;line-height:1.6;padding:6px 14px;background:var(--surface-2);border-bottom:1px solid var(--line);color:var(--text-secondary)}
 .stylebar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 12px;background:var(--surface-1);border-bottom:1px solid var(--line);font-size:13px}
 .stylebar .sb-l{color:var(--text-muted);font-size:12px}
@@ -709,7 +715,7 @@ textarea.inp{line-height:1.6;resize:vertical}
     <div class="blist" id="blist"></div>
     <div class="board" id="board">
       <div class="world" id="world"><svg class="edges" id="edges"></svg><div id="cards"></div><div id="glabels"></div></div>
-      <div class="bhint" id="bhint"><b>ボードの使い方</b><br>・カードを押すと開く。長押しでメニュー(色・複製・削除など)<br>・カードはドラッグで動かす。右下の□を別のカードへ引くと矢印<br>・右の「◯ 囲む」を押して、指でぐるっと囲むとグループ<br>・右上の「＋ メモ」でカードを足し、その場で表題を書ける<br>・右の「マップ」をオンにすると、カードの右の＋で矢印でつながったカードを足せる。表題を書いて Enter で、続けて次のカード。カードを押すと表題を直せ、上に出る帯で色・枠・形を変えられる<br>・空いた所のドラッグで画面を動かし、二本指で拡大・縮小<br>・いらないカードや丸は、下に出るゴミ箱へドラッグ</div>
+      <div class="bhint" id="bhint"><b>ボードの使い方</b><br>・カードを押すと開く。長押しでメニュー(色・複製・削除など)<br>・カードはドラッグで動かす。右下の□を別のカードへ引くと矢印<br>・右の「◯ 囲む」を押して、指でぐるっと囲むとグループ<br>・右上の「＋ メモ」でメモを足して、すぐ書き始められる(マップモードではカードの上で表題を書く)<br>・右の「マップ」をオンにすると、カードの右の＋で矢印でつながったカードを足せる。表題を書いて Enter で、続けて次のカード。カードを押すと表題を直せ、上に出る帯で色・枠・形を変えられる<br>・空いた所のドラッグで画面を動かし、二本指で拡大・縮小<br>・いらないカードや丸は、下に出るゴミ箱へドラッグ</div>
       <div class="bctl"><button data-z="lasso" id="lassoBtn" class="lasso-btn">◯ 囲む</button><button data-z="mind" id="mindBtn" aria-label="マインドマップ:つながったメモを足す">マップ</button><button data-z="arrange">整列</button><button data-z="in" aria-label="拡大">＋</button><button data-z="out" aria-label="縮小">−</button><button data-z="fit">全体</button></div>
     </div>
   </section>
@@ -1637,13 +1643,17 @@ async function copyText(text, what) {
 $("#btnCopy").onclick = () => copyChooser(outline.nodes, "メモ全体");
 // ---- 複数選択 ----
 let selecting = false; const selSet = new Set();
+let kbKeep = false; // 書いている途中で選択に入ったら、キーボードを閉じずにその行の入力を保つ
 function setSelecting(on) {
   selecting = on; selSet.clear();
-  if (on) { flushOutline(); document.activeElement?.blur?.(); editId = null; }
+  if (on) { flushOutline(); kbKeep = !!(editId && document.activeElement?.classList?.contains("ol-t")); if (!kbKeep) { document.activeElement?.blur?.(); editId = null; } }
   document.body.classList.toggle("selecting", on);
   $("#btnSelect").textContent = on ? "選択をやめる" : "選択";
   renderOutline();
+  if (!on) kbKeep = false;
 }
+{ const ro = renderOutline; renderOutline = function () { ro(); // 描き直したあとも、書いていた行の入力に焦点を戻す(キーボードを閉じない)
+  if (kbKeep && editId) { const ta = box.querySelector(`textarea.ol-t[data-t="${editId}"]`); if (ta && document.activeElement !== ta) ta.focus({ preventScroll: true }); } }; }
 $("#btnSelect").onclick = () => setSelecting(!selecting);
 function selRoots() { // 選んだ行のうち、上の行が選ばれていないもの(下の行は一緒に扱う)を、メモの順に
   const out = []; const walk = l => l.forEach(n => { if (selSet.has(n.id)) out.push(n); else walk(n.c); }); walk(roots()); return out;
@@ -2022,10 +2032,10 @@ box.addEventListener("click", e => {
 let drag = null, justDragged = false;
 const dropline = document.createElement("div"); dropline.className = "dropline"; document.body.appendChild(dropline);
 const ghost = document.createElement("div"); ghost.className = "dragghost"; document.body.appendChild(ghost);
-// 行のどこでも長押し(約0.35秒)で持ち上がる。そのまま離せば、その行を選んで複数選択に入る。行頭の ▾/• はそのまま動かしても持ち上がる。
+// 文の上を長押し(約0.45秒)すると、その行を選んで複数選択に入り、そのままなぞると範囲を広げる。行頭の ▾/• は、そのまま動かすと行を持ち上げる。
 // 普通のタップは書き込み、すぐ動かせばスクロール。いま書いている行の中は文字選択を優先する
-const LONGPRESS_MS = 350;
-box.addEventListener("contextmenu", e => { if (drag || e.target.closest(".bul")) e.preventDefault(); });
+const LONGPRESS_MS = 450; // 少し長め:さっと押したら書き始め、しっかり押したら選ぶ
+box.addEventListener("contextmenu", e => { if (drag || sweep || selecting || e.target.closest(".bul") || (e.target.closest(".ol-v") && !e.target.closest("textarea"))) e.preventDefault(); });
 // ---- 選択モード:長押ししてそのままなぞると、なぞった範囲の行をまとめて選ぶ(選んだ行から始めれば、まとめて外す) ----
 let sweep = null;
 function sweepTo(x, y) {
@@ -2080,14 +2090,27 @@ box.addEventListener("pointerdown", e => {
   const b = e.target.closest(".bul");
   const ta = e.target.closest(".ol-t");
   if (!b && ta && ta === document.activeElement) return;
-  if (!b && e.target.closest(".ol-rel button,.foldcnt")) return;
+  if (!b && !e.target.closest(".ol-v,.ol-t")) return; // 文の上を長押ししたときだけ選ぶ(行の空いた所や頭を押したら、すぐ書ける)
   clearTimeout(drag?.timer);
   drag = { id: row.dataset.id, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, on: false, pid: e.pointerId, el: b || row, viaBul: !!b, target: null };
   if (!b) {
     row.classList.add("pressing");
-    drag.timer = setTimeout(() => { if (drag && !drag.on && drag.pid === e.pointerId) { startDrag(); dragOver(); } }, LONGPRESS_MS);
+    drag.timer = setTimeout(() => { if (drag && !drag.on && drag.pid === e.pointerId) pressSelect(drag); }, LONGPRESS_MS);
   }
 });
+// 文を長押し → その行を選んで選択に入り、そのまま上下になぞると範囲を広げる(行を動かすのは、行の頭の「・」をドラッグするか、選択の ↑↓)
+function pressSelect(d) {
+  const id = d.id, x = d.x, y = d.y, pid = d.pid; cancelPress();
+  setSelecting(true); selSet.add(id); renderOutline();
+  try { navigator.vibrate && navigator.vibrate(12); } catch {}
+  const s = sweep = { start: id, cur: id, pid, x0: x, y0: y, x, y, on: true, val: true, base: new Set(selSet) };
+  document.body.classList.add("sweeping");
+  const loop = () => { if (sweep !== s) return;
+    const b = box.getBoundingClientRect(), edge = 48, dy = s.y < b.top + edge ? -(b.top + edge - s.y) / 3 : s.y > b.bottom - edge ? (s.y - (b.bottom - edge)) / 3 : 0;
+    if (dy) { box.scrollTop += dy; s.cur = null; sweepTo(s.x, Math.max(b.top + 4, Math.min(b.bottom - 4, s.y))); }
+    s.raf = requestAnimationFrame(loop); };
+  s.raf = requestAnimationFrame(loop);
+}
 function cancelPress() { if (drag && !drag.on) { clearTimeout(drag.timer); box.querySelectorAll(".pressing").forEach(r => r.classList.remove("pressing")); drag = null; } }
 box.addEventListener("pointermove", e => {
   if (!drag || e.pointerId !== drag.pid) return;
@@ -2387,6 +2410,23 @@ function openSearch(q) {
 
 // ---- テンプレート ----
 $("#btnTpl").onclick = () => openTemplates(focusId && index[focusId] ? focusId : null, false);
+function nodesTemplate(list, depth = 0) { // 形式つきのまま、テンプレートの文字(行頭の空白2つで1段、行頭の記号で形式)にする
+  let out = ""; for (const n of list) {
+    const mark = n.k === "check" ? (n.done ? "[x] " : "[] ") : n.k === "num" ? "1. " : n.k === "time" ? `@${n.at || ""} ` : n.k === "head" ? "# " : n.k === "quote" ? "> " : n.k === "code" ? "``` " : "";
+    out += "  ".repeat(depth) + mark + plainT(n.t || "") + "\n" + nodesTemplate(n.c || [], depth + 1);
+  }
+  return out;
+}
+function saveAsTemplate() {
+  flushOutline();
+  openSheet(`<h2>このメモをテンプレートにする</h2><p class="muted small" style="margin-top:-4px">チェック・番号・タイムライン・見出し・補足・コードの行も、そのままの形で入れられるテンプレートになります。</p>
+    <label class="field"><span>テンプレートの名前</span><input class="inp" id="stN" maxlength="20" value="${esc(memoTitle(files[curFile]).slice(0, 20))}"></label>
+    <div class="btns"><button class="btn" data-x>やめる</button><button class="btn primary" data-ok>保存</button></div>`, s => {
+    $("[data-x]", s).onclick = closeSheet;
+    $("[data-ok]", s).onclick = () => { const k = $("#stN").value.trim(); if (!k) return toast("名前を入れてください");
+      meta.prefs.templates[k] = nodesTemplate(outline.nodes).trimEnd(); saveMeta(); closeSheet(); toast(`テンプレート「${k}」を保存しました`); };
+  });
+}
 function openTemplates(id, asChild) {
   flushOutline();
   const T = meta.prefs.templates;
@@ -2395,7 +2435,9 @@ function openTemplates(id, asChild) {
       ? `<p class="muted small" style="margin-top:-4px">いまの空の行に入れます</p><input type="checkbox" id="asChild" hidden>`
       : `<label class="row"><input type="checkbox" id="asChild" ${asChild ? "checked" : ""}><span class="grow">「${esc(label(id))}」の子として入れる</span></label>`) : ""}
     ${Object.keys(T).map(k => `<button class="row" style="width:100%;text-align:left" data-tpl="${esc(k)}"><span class="grow"><b>${esc(k)}</b><div class="muted small">${esc(T[k].split("\n").filter(Boolean).slice(0, 3).map(s => s.trim()).join(" / "))}</div></span><span>＋</span></button>`).join("")}
-    <p class="muted small">中身は「設定」で書き換えられます(行頭の空白2つで1段下げ)。</p>`, s => {
+    <button class="btn block" data-saveas style="margin-top:6px">＋ このメモをテンプレートにする(形式つきのまま)</button>
+    <p class="muted small">中身は「設定」で書き換えられます(行頭の空白2つで1段下げ。行頭に「[] 」「1. 」「@ 」「# 」「> 」と書くと、チェック・番号・タイムライン・見出し・補足の行になります)。</p>`, s => {
+    $("[data-saveas]", s).onclick = () => saveAsTemplate();
     s.addEventListener("click", e => {
       const b = e.target.closest("[data-tpl]"); if (!b) return;
       const nodes = parseIndented(T[b.dataset.tpl]); if (!nodes.length) return;
@@ -2454,7 +2496,7 @@ function createMemo(firstLine, at, exact) {
 function newMemo() { // メモ画面の「＋ 新しいメモ」:ボード上ではいまのメモの右隣に置き、すぐ書く
   if (board.mind && board.cards[curFile] && files[curFile]) { closeSheet(); flushOutline(); show("board"); mindAdd(curFile); return; } // マインドマップ:ボードに戻り、いまのメモから矢印でつないで表題を書く
   const c = board.cards[curFile] || { x: 40, y: 40 };
-  const f = createMemo("", { x: c.x + 200, y: c.y });
+  const f = createMemo("", { x: c.x + 200, y: c.y }); f.fresh = true;
   closeSheet(); openFile(f.id); focusStart();
 }
 $("#newMemo").onclick = () => newMemo();
@@ -2923,6 +2965,7 @@ function setLasso(on, forGroup) {
   if (on) toast(forGroup ? `「${groupById(forGroup).name}」の新しい形を、指で描いてください` : "指で描いて、まとめたいカードや丸を囲んでください");
 }
 boardEl.addEventListener("pointerdown", e => {
+  stopGlide();
   if (e.target.closest(".bctl") || e.target.closest(".bc-edit")) return; // 表題を書いている入力欄の中は、ボードの操作にしない
   if (e.button > 0) return;
   try { boardEl.setPointerCapture(e.pointerId); } catch {}
@@ -2946,7 +2989,7 @@ boardEl.addEventListener("pointerdown", e => {
     gest = { ...base, type: "link", from: id }; tmpLine = { x1: G.cx, y1: G.cy, x2: w.x, y2: w.y };
   } else if (card) {
     const id = card.dataset.card, c = board.cards[id];
-    gest = { ...base, type: "card", id, el: card, cx: c.x, cy: c.y, from: groupOfCard(id)?.id || null };
+    gest = { ...base, type: "card", id, el: card, cx: c.x, cy: c.y, from: groupOfCard(id)?.id || null, t0: Date.now() };
     gest.timer = setTimeout(() => { if (gest && gest.type === "card" && !gest.moved) { gest.long = true; try { navigator.vibrate && navigator.vibrate(12); } catch {} cardMenu(id); } }, 500);
   } else if (glabel) { // 丸を動かすときは、中の丸・カードもいっしょに
     const g = groupById(glabel.dataset.group), desc = descendantsOf(g);
@@ -2956,6 +2999,20 @@ boardEl.addEventListener("pointerdown", e => {
   } else if (edge) gest = { ...base, type: "edge", id: edge.dataset.edge, tx: BV.tx, ty: BV.ty };
   else gest = { ...base, type: "pan", tx: BV.tx, ty: BV.ty };
 });
+// ---- ボードの動かし方をなめらかに:指を離したあとも少し滑り、止まる ----
+let glide = 0;
+function stopGlide() { cancelAnimationFrame(glide); glide = 0; }
+function startGlide(g) {
+  const s = g.samples || [], now = performance.now(), recent = s.filter(p => now - p[0] < 90);
+  if (recent.length < 2) return;
+  const [t0, x0, y0] = recent[0], [t1, x1, y1] = recent[recent.length - 1], dt = Math.max(8, t1 - t0);
+  let vx = (x1 - x0) / dt, vy = (y1 - y0) / dt; // 1ミリ秒あたりの速さ
+  if (Math.hypot(vx, vy) < 0.25) return;
+  let last = now;
+  const step = t => { const d = Math.min(32, t - last); last = t; BV.tx += vx * d; BV.ty += vy * d; vx *= Math.pow(0.93, d / 16); vy *= Math.pow(0.93, d / 16); applyView();
+    glide = Math.hypot(vx, vy) > 0.02 ? requestAnimationFrame(step) : 0; };
+  glide = requestAnimationFrame(step);
+}
 boardEl.addEventListener("pointermove", e => {
   if (!ptrs.has(e.pointerId)) return;
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -2972,9 +3029,10 @@ boardEl.addEventListener("pointermove", e => {
   }
   if (e.pointerId !== gest.pid) return;
   const dx = e.clientX - gest.x0, dy = e.clientY - gest.y0;
-  if (!gest.moved && Math.hypot(dx, dy) > 6) { gest.moved = true; clearTimeout(gest.timer); if (gest.type === "edge") gest.type = "pan"; if (gest.type === "card") { gest.el.classList.add("moving"); showTrash(trashLabel("m")); } if (gest.type === "group") showTrash(trashLabel("g")); }
+  if (!gest.moved && gest.type === "card" && Math.hypot(dx, dy) > 6 && Date.now() - gest.t0 < 140) { clearTimeout(gest.timer); gest = { ...gest, type: "pan", tx: BV.tx - dx, ty: BV.ty - dy }; } // 押してすぐ払ったら、カードではなくボードを動かす
+  if (!gest.moved && Math.hypot(dx, dy) > (gest.type === "pan" ? 4 : 6)) { gest.moved = true; clearTimeout(gest.timer); if (gest.type === "edge") gest.type = "pan"; if (gest.type === "card") { gest.el.classList.add("moving"); showTrash(trashLabel("m")); } if (gest.type === "group") showTrash(trashLabel("g")); }
   if (!gest.moved) return;
-  if (gest.type === "pan") { BV.tx = gest.tx + dx; BV.ty = gest.ty + dy; applyView(); }
+  if (gest.type === "pan") { BV.tx = gest.tx + dx; BV.ty = gest.ty + dy; applyView(); (gest.samples ||= []).push([performance.now(), e.clientX, e.clientY]); if (gest.samples.length > 8) gest.samples.shift(); }
   else if (gest.type === "lasso") { lassoPts.push(toWorld(e.clientX, e.clientY)); drawEdges(); }
   else if (gest.type === "card" && !gest.long) {
     const c = board.cards[gest.id]; c.x = Math.round(gest.cx + dx / BV.k); c.y = Math.round(gest.cy + dy / BV.k);
@@ -3017,6 +3075,7 @@ function endGesture(e, cancel) {
   cardsEl.querySelectorAll(".moving,.linktarget").forEach(x => x.classList.remove("moving", "linktarget"));
   const hotAtEnd = hotGroup; hotGroup = null; hideTrash();
   if (cancel) { tmpLine = null; lassoPts = null; drawEdges(); return; }
+  if (g.type === "pan" && g.moved) startGlide(g);
   if (g.type === "lasso") { finishLasso(); return; }
   if (g.type === "card") {
     if (g.moved && !g.long && g.trash) { const c = board.cards[g.id]; c.x = g.cx; c.y = g.cy; dropDelete({ t: "m", id: g.id }); }
@@ -3109,14 +3168,16 @@ function titleEdit(id, parent) {
   if (view !== "board") show("board");
   const el = cardsEl.querySelector(`[data-card="${id}"]`), t = el?.querySelector(".bc-t"); if (!t) return;
   centerOn(id);
-  const f = files[id]; t.innerHTML = `<input class="bc-edit" maxlength="80" placeholder="表題を入力" aria-label="カードの表題" value="${esc(f.nodes[0]?.t || "")}">`;
+  const f = files[id], cur = f.name || plainT(f.nodes[0]?.t || ""); // カードに出ている名前(付けた名前があればそれ、なければ1行目)を直す
+  t.innerHTML = `<input class="bc-edit" maxlength="80" placeholder="表題を入力" aria-label="カードの表題" value="${esc(cur)}">`;
   const i = t.querySelector("input"); let done = false;
   const finish = next => {
     if (done) return; done = true; if (titleEditing === finish) titleEditing = null;
     const v = i.value.trim(); styleBar(null);
     if (!v && !f.fresh) { renderBoard(); return; } // 書いてあった表題を空にしたときは、元のまま
     if (!v && f.fresh && isEmptyMemo(f)) { removeMemo(id, true); recomputeTree(); renderBoard(); if (parent && board.cards[parent]) centerOn(parent); return; } // 空のまま決めたら消して、元のカードへ戻る
-    if (f.nodes[0]) { f.nodes[0].t = v; delete f.nodes[0].f; } delete f.fresh; f.updated = Date.now(); saveFileQuiet(f);
+    if (v !== cur) { if (f.name) f.name = v; else if (f.nodes[0]) { f.nodes[0].t = v; delete f.nodes[0].f; } f.updated = Date.now(); }
+    delete f.fresh; saveFileQuiet(f);
     mindLast = id; renderBoard(); hintDone();
     if (next && v && board.mind && parent && files[parent]) mindAdd(parent); // Enter:同じ親に次のカード
   };
@@ -3124,7 +3185,7 @@ function titleEdit(id, parent) {
   const t0 = Date.now();
   i.addEventListener("blur", () => setTimeout(() => {
     if (done || !i.isConnected) return;
-    if (Date.now() - t0 < 700 && !i.value.trim()) { i.focus(); return; } // 押した指やマウスの名残で焦点が外れただけなら、入力に戻す
+    if (Date.now() - t0 < 700) { i.focus(); return; } // 押した指やマウスの名残で焦点が外れただけなら、入力に戻す(書いてあってもなくても)
     finish(false);
   }, 0));
   titleEditing = finish; i.focus(); styleBar(id);
@@ -3147,14 +3208,16 @@ function finishLasso() { // 描いた形をグループ(丸)にする。形の�
 }
 function hintDone() { if (!LS.get("boardHintDone")) { LS.set("boardHintDone", true); $("#bhint").style.display = "none"; } }
 // ボードがメモの親:メモの「← ボード」で戻る。ボードからはカードやリストの行を押してメモを開く
-$("#boardNew").onclick = () => { // 「＋ メモ」:新しいカードを置いて、その場で表題を書く
+$("#boardNew").onclick = () => { // 「＋ メモ」:ふだんは新しいメモを開いてすぐ書き始める。マップモードでは、カードの上で表題だけを書く
   if (titleEditing) titleEditing(false);
   if (boardMode !== "map") { newMemoInList(); return; }
   const from = [mindLast, curFile].find(id => id && board.cards[id] && files[id]);
   if (board.mind && from) { mindAdd(from); return; } // マインドマップ:最後に足した(開いていた)メモから矢印でつなぐ
   const r = boardEl.getBoundingClientRect(), w = toWorld(r.left + r.width / 2, r.top + r.height / 3);
   const f = createMemo("", { x: Math.round(w.x - CARD_W / 2), y: Math.round(w.y) }); f.fresh = true; hintDone();
-  recomputeTree(); renderBoard(); titleEdit(f.id, null); // カードの上で表題を書く(中身はカードを押して開いて書く)
+  recomputeTree(); renderBoard();
+  if (board.mind) titleEdit(f.id, null); // マップモード:カードの上で表題を書く
+  else { openFile(f.id); focusStart(); } // ふだん:メモを開いて、そのまま書き始める(何も書かずに戻ると消える)
 };
 
 function addEdge(a, b) {
@@ -3166,7 +3229,7 @@ function addEdge(a, b) {
 function quickMemoSheet(at, linkFrom, inGroup) {
   openSheet(`<h2>新しいメモ</h2>${linkFrom ? `<p class="muted small" style="margin-top:-4px">「${esc(nameOf(linkFrom))}」から矢印でつなぎます</p>` : ""}
     ${inGroup ? `<p class="muted small" style="margin-top:-4px">「📁 ${esc(groupById(inGroup).name)}」の中に置きます</p>` : ""}
-    <label class="field"><span>1行目(カードの名前になります)</span><input class="inp" id="qmT" maxlength="80" placeholder="例:ボス戦の流れ"></label>
+    <label class="field"><span>1行目(カードの名前になります)</span><input class="inp" id="qmT" maxlength="80" placeholder="例:トップページの案"></label>
     <div class="btns"><button class="btn" data-x>やめる</button><button class="btn" data-ok>ボードに置く</button><button class="btn primary" data-go>置いて書く</button></div>`, s => {
     const i = $("#qmT"); i.focus();
     const make = () => {
@@ -3362,7 +3425,7 @@ function cardMenu(id) {
     <div class="field"><span>形</span><div class="seg" style="display:flex">${[["", "通常"], ["sq", "四角"], ["round", "丸く"], ["diamond", "菱形"]].map(([k, l]) => `<button style="flex:1" data-bs="${k}" class="${(c.bs || "") === k ? "on" : ""}">${l}</button>`).join("")}</div></div>
     ${g ? `<button class="btn block" data-out style="margin-top:4px">「${esc(g.name)}」の外へ出す</button>` : ""}
     ${fileTags(id).length ? `<p class="muted small" style="margin:6px 0 0">グループから付いたタグ:${fileTags(id).map(t => "📁#" + esc(t)).join(" ")}</p>` : ""}
-    ${meta.boards.length ? `<p class="muted small" style="margin:6px 0 0">置いてあるボード:${boardsOfMemo(id).map(b => "◧ " + esc(b.name)).join("、")}</p>` : ""}
+    ${meta.boards.length ? `<p class="muted small" style="margin:6px 0 0">置いてあるボード:${boardsOfMemo(id).map(b => "" + esc(b.name)).join("、")}</p>` : ""}
     <button class="btn block" data-dup style="margin-top:6px">このメモを複製</button>
     <button class="btn block" data-onb style="margin-top:6px">ほかのボードにも置く</button>${Object.entries(boards).some(([bid, b]) => bid !== curBoard && b.cards[id]) ? `<button class="btn block" data-unb style="margin-top:6px">このボードから外す(メモは残す)</button>` : ""}
     <button class="btn danger block" data-del style="margin-top:8px">このメモを削除${meta.boards.length ? "(すべてのボードから)" : ""}</button>
@@ -3380,7 +3443,7 @@ function cardMenu(id) {
       else if ("ok" in b.dataset) { apply(); closeSheet(); renderBoard(); }
       else if ("onb" in b.dataset) { apply(); closeSheet(); placeOnBoardSheet(id); }
       else if ("dup" in b.dataset) { apply(); closeSheet(); duplicateMemo(id); }
-      else if ("unb" in b.dataset) { apply(); closeSheet(); removeFromBoard(id); recomputeTree(); renderBoardView(); renderFileBar(); toast(`◧ ${boardName(curBoard)} から外しました(メモは残っています)`); }
+      else if ("unb" in b.dataset) { apply(); closeSheet(); removeFromBoard(id); recomputeTree(); renderBoardView(); renderFileBar(); toast(`${boardName(curBoard)} から外しました(メモは残っています)`); }
       else if ("del" in b.dataset) confirmSheet("メモを削除しますか", `「${memoTitle(f)}」(${countNodes(f.nodes)}行)${n ? `と、つながっている矢印 ${n} 本` : ""}を削除します。メモは30日間、「設定 › ゴミ箱」から戻せます。`, "削除する", () => { removeMemo(id); renderBoard(); recomputeTree(); renderBoardView(); renderFileBar(); });
     });
   });
@@ -3508,7 +3571,7 @@ function edgeTap(id) { // 一回でメニュー、すばやく二回で消す
 function edgeMenu(eid) {
   const e = board.edges.find(x => x.id === eid); if (!e) return;
   openSheet(`<h2>矢印</h2><p class="muted small" style="margin-top:-4px">${esc(nameOf(e.a))} → ${esc(nameOf(e.b))}</p>
-    <label class="field"><span>ラベル(矢印に添える言葉)</span><input class="inp" id="emL" value="${esc(e.label || "")}" maxlength="30" placeholder="例:倒すと解放"></label>
+    <label class="field"><span>ラベル(矢印に添える言葉)</span><input class="inp" id="emL" value="${esc(e.label || "")}" maxlength="30" placeholder="例:できたら次へ"></label>
     <div class="field"><span>向き</span><div class="seg" id="emDir">${[["to", "→ 片向き"], ["both", "↔ 両向き"], ["none", "― 線だけ"]].map(([k, l]) => `<button data-dir="${k}" class="${(e.dir || "to") === k ? "on" : ""}">${l}</button>`).join("")}</div></div>
     <div class="btns" style="margin-top:4px"><button class="btn" data-rev>向きを反対にする</button></div>
     <button class="btn danger block" data-del style="margin-top:12px">この矢印を削除</button>
@@ -3580,7 +3643,7 @@ function renderSide() {
     sideList.querySelector(".srow.cur")?.scrollIntoView({ block: "nearest" });
   }
   if (view === "board" && boardMode === "list") renderBoardList();
-  const sb = $("#sideBoard"); if (sb) sb.textContent = (meta.boards || []).length ? "◧ " + boardName(curBoard) : "グループとメモ";
+  const sb = $("#sideBoard"); if (sb) sb.textContent = (meta.boards || []).length ? "" + boardName(curBoard) : "グループとメモ";
 }
 /* ---- ボードの「リスト」:ボードがいくつもあれば、いちばん外はボード(大きなグループ)の一覧。ボードの中は、いちばん外のグループをタブにして、
    選んだタブのメモを並べる(中のグループは見出しの下にまとめる)。グループの外のメモは「グループの外」のタブ。メモを押すと開く ---- */
@@ -3758,7 +3821,7 @@ function switchBoard(id) {
 function newBoardSheet() {
   openSheet(`<h2>新しいボード</h2>
     <p class="muted small" style="margin-top:-4px">選んだメモやグループだけを置くボードです。同じメモを、いくつものボードに置けます。</p>
-    <label class="field"><span>名前</span><input class="inp" id="nbN" maxlength="24" placeholder="例:第2章の構成"></label>
+    <label class="field"><span>名前</span><input class="inp" id="nbN" maxlength="24" placeholder="例:サイトの構成"></label>
     <div class="btns"><button class="btn" data-x>やめる</button><button class="btn primary" data-ok>作る</button></div>`, s => {
     const i = $("#nbN"); i.focus();
     i.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) $("[data-ok]", s).click(); });
@@ -3795,7 +3858,7 @@ function boardMenu() {
     <button class="btn block" data-put style="margin-top:4px">＋ メモやグループを入れる</button>
     <div class="btns" style="margin-top:8px"><button class="btn" data-up>← 前へ</button><button class="btn" data-down>後ろへ →</button></div>
     <button class="btn danger block" data-del style="margin-top:8px">このボードを消す</button>
-    <p class="muted small">ボードを消しても、メモは消えません。ほかのボードにないメモは、いちばん左のボードへ移ります。このボードに描いた丸と矢印は消えます。</p>
+    <p class="muted small">ボードを消すと、このボードにだけあるメモも消えます(30日間ゴミ箱に残ります)。ほかのボードにもあるメモは、そちらに残ります。</p>
     <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
     const apply = () => { meB.name = $("#bmN").value.trim() || meB.name; saveMeta(); };
     s.addEventListener("click", e => {
@@ -3803,13 +3866,16 @@ function boardMenu() {
       if ("put" in b.dataset) { apply(); closeSheet(); putSheet(); }
       else if ("up" in b.dataset || "down" in b.dataset) { const L = meta.boards, i = L.indexOf(meB), j = i + ("up" in b.dataset ? -1 : 1); if (j >= 0 && j < L.length) { [L[i], L[j]] = [L[j], L[i]]; saveMeta(); renderBoardBar(); } }
       else if ("ok" in b.dataset) { apply(); closeSheet(); renderBoardBar(); renderSide(); }
-      else if ("del" in b.dataset) confirmSheet("ボードを消しますか", `ボード「${meB.name}」を消します。メモ ${n} 件は消えません(ほかのボードにないメモは、いちばん左のボードへ移ります)。このボードの丸 ${board.groups.length} 個と矢印 ${board.edges.length} 本は消えます。`, "消す", () => {
+      else if ("del" in b.dataset) { const ids = Object.keys(board.cards).filter(id => files[id]), only = ids.filter(id => !Object.entries(boards).some(([bid, B]) => bid !== curBoard && B.cards[id]));
+        confirmSheet("ボードを消しますか", `ボード「${meB.name}」と、このボードにだけあるメモ ${only.length} 件を消します(メモは30日間ゴミ箱に残ります)。${ids.length - only.length ? `ほかのボードにもあるメモ ${ids.length - only.length} 件は、そちらに残ります。` : ""}このボードの丸 ${board.groups.length} 個と矢印 ${board.edges.length} 本も消えます。`, "消す", () => {
+        flushOutline(); for (const m of only) removeMemo(m, true); // このボードにだけあるメモはゴミ箱へ
         const id = curBoard; switchBoard("main");
         meta.boards = meta.boards.filter(x => x.id !== id); saveMeta();
         clearTimeout(boardTimers[id]); delete boards[id]; Store.remove(boardDocId(id)); LS.del("boardView:" + id); ftCache = null;
-        withBoard("main", placeMissing); saveBoardOf("main"); // このボードにだけあったメモは、いちばん左のボードへ
-        renderBoardView(); renderSide(); toast("ボードを消しました");
-      });
+        withBoard("main", placeMissing); saveBoardOf("main");
+        if (!files[curFile]) setOutline(allFilesSorted()[0].id);
+        renderBoardView(); renderSide(); toast(only.length ? `ボードとメモ ${only.length} 件を消しました(ゴミ箱から戻せます)` : "ボードを消しました");
+      }); }
     });
   });
 }
@@ -3824,7 +3890,7 @@ function putSheet(fresh) {
   }
   let tab = "m"; const pickM = new Set(), pickG = new Set(); let q = "";
   openSheet(`<h2>${fresh ? "ボードを作りました" : "このボードに入れる"}</h2>
-    <p class="muted small" style="margin-top:-4px">◧ ${esc(boardName(curBoard))} に置くメモやグループを選んでください。${fresh ? "あとからでも、上の「＋ 入れる」で足せます。" : ""}</p>
+    <p class="muted small" style="margin-top:-4px">${esc(boardName(curBoard))} に置くメモやグループを選んでください。${fresh ? "あとからでも、上の「＋ 入れる」で足せます。" : ""}</p>
     <div class="seg" id="puTab"><button data-pt="m" class="on">メモ</button><button data-pt="g">グループ(ほかのボードの丸)</button></div>
     <input class="inp" id="puQ" maxlength="40" placeholder="名前で絞り込む" style="margin-top:8px">
     <div class="pulist" id="puL"></div>
@@ -3833,7 +3899,7 @@ function putSheet(fresh) {
       s.querySelectorAll("#puTab button").forEach(x => x.classList.toggle("on", x.dataset.pt === tab));
       const ql = q.toLowerCase();
       if (tab === "m") $("#puL").innerHTML = memosOut.filter(f => !ql || fullTitle(f).toLowerCase().includes(ql)).map(f => `<label class="purow"><input type="checkbox" data-pm="${f.id}"${pickM.has(f.id) ? " checked" : ""}><span class="grow"><b>${esc(memoTitle(f))}</b><span class="muted small">${countNodes(f.nodes)}行${memoTags(f).length ? " · " + memoTags(f).map(t => "#" + esc(t)).join(" ") : ""}</span></span></label>`).join("") || `<div class="empty">${memosOut.length ? "当てはまるメモがありません" : "すべてのメモが、もうこのボードにあります"}</div>`;
-      else $("#puL").innerHTML = srcGroups.map((x, i) => [x, i]).filter(([x]) => !ql || x.g.name.toLowerCase().includes(ql)).map(([x, i]) => `<label class="purow"><input type="checkbox" data-pg="${i}"${pickG.has(i) ? " checked" : ""}><span class="grow"><b>📁 ${esc(x.g.name)}</b><span class="muted small">◧ ${esc(x.bname)}${x.g.parent ? " · " + esc(groupChain(withBoard(x.bid, () => groupById(x.g.parent)))) + " の中" : ""} · メモ ${x.n} 件${x.k ? ` · 中の丸 ${x.k} 個` : ""}</span></span></label>`).join("") || `<div class="empty">ほかのボードに、まだ丸(グループ)がありません</div>`;
+      else $("#puL").innerHTML = srcGroups.map((x, i) => [x, i]).filter(([x]) => !ql || x.g.name.toLowerCase().includes(ql)).map(([x, i]) => `<label class="purow"><input type="checkbox" data-pg="${i}"${pickG.has(i) ? " checked" : ""}><span class="grow"><b>📁 ${esc(x.g.name)}</b><span class="muted small">${esc(x.bname)}${x.g.parent ? " · " + esc(groupChain(withBoard(x.bid, () => groupById(x.g.parent)))) + " の中" : ""} · メモ ${x.n} 件${x.k ? ` · 中の丸 ${x.k} 個` : ""}</span></span></label>`).join("") || `<div class="empty">ほかのボードに、まだ丸(グループ)がありません</div>`;
       const c = pickM.size + pickG.size; $("[data-ok]", s).textContent = c ? `入れる(${c})` : "入れる";
     };
     draw();
@@ -3885,15 +3951,15 @@ function boardsOfMemo(id) { return boardList().filter(b => boards[b.id] && board
 function placeOnBoardSheet(id) { // カードのメニューから:ほかのボードにも置く
   const L = boardList().filter(b => b.id !== curBoard);
   openSheet(`<h2>ほかのボードにも置く</h2><p class="muted small" style="margin-top:-4px">「${esc(memoTitle(files[id]))}」を置くボードを選んでください。</p>
-    ${L.map(b => { const has = !!boards[b.id].cards[id]; return `<button class="row" style="width:100%;text-align:left" data-pb="${b.id}"${has ? " disabled" : ""}><span class="grow"><b>◧ ${esc(b.name)}</b>${has ? `<div class="muted small">もう置いてあります</div>` : ""}</span><span>${has ? "✓" : "＋"}</span></button>`; }).join("") || `<div class="empty">ほかのボードがありません</div>`}
+    ${L.map(b => { const has = !!boards[b.id].cards[id]; return `<button class="row" style="width:100%;text-align:left" data-pb="${b.id}"${has ? " disabled" : ""}><span class="grow"><b>${esc(b.name)}</b>${has ? `<div class="muted small">もう置いてあります</div>` : ""}</span><span>${has ? "✓" : "＋"}</span></button>`; }).join("") || `<div class="empty">ほかのボードがありません</div>`}
     <button class="btn block" data-bnew style="margin-top:8px">＋ 新しいボードを作って置く</button>
     <div class="btns"><button class="btn" data-x>閉じる</button></div>`, s => {
     s.addEventListener("click", e => {
       const b = e.target.closest("button"); if (!b || b.disabled) return;
-      if (b.dataset.pb) { withBoard(b.dataset.pb, () => putCardHere(id)); toast(`◧ ${boardName(b.dataset.pb)} に置きました`); renderBoardBar(); b.disabled = true; b.lastElementChild.textContent = "✓"; } // 閉じずに、続けてほかのボードにも置ける
+      if (b.dataset.pb) { withBoard(b.dataset.pb, () => putCardHere(id)); toast(`${boardName(b.dataset.pb)} に置きました`); renderBoardBar(); b.disabled = true; b.lastElementChild.textContent = "✓"; } // 閉じずに、続けてほかのボードにも置ける
       else if ("bnew" in b.dataset) {
         const nb = { id: uid(), name: "ボード " + (meta.boards.length + 1) }; meta.boards.push(nb); saveMeta();
-        boards[nb.id] = normBoard(); withBoard(nb.id, () => putCardHere(id)); closeSheet(); renderBoardBar(); toast(`◧ ${nb.name} を作って置きました(名前はボードを開いて ▾ から)`);
+        boards[nb.id] = normBoard(); withBoard(nb.id, () => putCardHere(id)); closeSheet(); renderBoardBar(); toast(`${nb.name} を作って置きました(名前はボードを開いて ▾ から)`);
       }
       else if ("x" in b.dataset) closeSheet();
     });
@@ -4048,7 +4114,7 @@ function tagSheet() {
   openSheet(`<h2>このメモのタグ</h2>
     <div class="metas" id="tgCur"></div>
     ${fileTags(f.id).length ? `<p class="muted small" style="margin:0">グループから付いたタグ:${fileTags(f.id).map(t => "📁#" + esc(t)).join(" ")}(グループの設定で変えられます)</p>` : ""}
-    <div style="display:flex;gap:8px;margin-top:6px"><input class="inp" id="tgIn" placeholder="タグを足す(例:敵キャラ)" maxlength="20"><button class="btn primary" id="tgAdd" style="flex:none">足す</button></div>
+    <div style="display:flex;gap:8px;margin-top:6px"><input class="inp" id="tgIn" placeholder="タグを足す(例:重要)" maxlength="20"><button class="btn primary" id="tgAdd" style="flex:none">足す</button></div>
     <div class="field"><span>ほかのメモのタグから</span><div class="metas" id="tgAll"></div></div>
     <div class="btns"><button class="btn primary" data-ok>決定</button></div>`, s => {
     const draw = () => {
@@ -4620,7 +4686,7 @@ function renderTimer() {
     <div class="phase" id="phase"></div>
     <button class="bigbtn ${s.running ? "stop" : ""}" id="tGo">${s.running ? "停止" : "開始"}</button>
     <div class="field"><span>作業の種類</span><div class="typechips">${meta.workTypes.map(t => `<button class="tchip${s.type === t.id ? " on" : ""}" data-ttype="${t.id}" style="--tc:${typeColor(t.id)}"><i></i>${esc(t.name)}</button>`).join("")}<button class="tchip add" data-ttypeadd>＋ 種類</button></div></div>
-    <label class="field"><span>作業内容のラベル(くわしく)</span><input class="inp" id="tLabel" value="${esc(s.label)}" placeholder="例:マップ制作、敵AI" maxlength="40"></label>
+    <label class="field"><span>作業内容のラベル(くわしく)</span><input class="inp" id="tLabel" value="${esc(s.label)}" placeholder="例:資料づくり、実装" maxlength="40"></label>
     ${labels.length ? `<div class="metas">${labels.map(l => `<button class="mini" data-lbl="${esc(l)}">${esc(l)}</button>`).join("")}</div>` : ""}
     <div class="card"><h3>タイマーの設定</h3>
       <div style="display:flex;gap:8px">
@@ -4788,7 +4854,7 @@ function editEvent(ev) {
   const late = now.getHours() >= 22; // 夜遅くは、次の時間が日をまたいで終わりが始まりより前にならないよう、終わりを空ける
   const e = ev ? { ...ev } : { id: uid(), title: "", date: ymd(planAnchor), start: now.getHours() === 23 ? "23:00" : nextH, end: late ? "" : `${pad(now.getHours() + 2)}:00`, note: "", notify: 10 };
   openSheet(`<h2>${ev ? "予定を編集" : "予定を追加"}</h2>
-    <label class="field"><span>タイトル</span><input class="inp" id="eT" value="${esc(e.title)}" placeholder="例:ボス戦の調整" maxlength="60"></label>
+    <label class="field"><span>タイトル</span><input class="inp" id="eT" value="${esc(e.title)}" placeholder="例:構成案の見直し" maxlength="60"></label>
     <label class="field"><span>日付</span><input class="inp" type="date" id="eD" value="${esc(e.date)}"></label>
     <div style="display:flex;gap:8px"><label class="field" style="flex:1"><span>開始</span><input class="inp" type="time" id="eS" value="${esc(e.start)}"></label>
     <label class="field" style="flex:1"><span>終了</span><input class="inp" type="time" id="eE" value="${esc(e.end)}"></label></div>
@@ -4850,6 +4916,7 @@ function renderPrefs() {
   const used = storageUsed();
   $("#prefsScroll").innerHTML =
     sec("はじめに", card("",
+      line("使い方の案内", "画面のボタンを、点滅する枠で順に案内します", `<button class="btn" id="tourOpen">見る</button>`) +
       line("チュートリアル", "使い方を、触りながら覚えるメモ", `<button class="btn" id="reGuide">開く</button>`) +
       line("活用例", "仕事の計画とゲーム開発の、メモとボードの例", `<button class="btn" id="sampleOpen">選ぶ</button>`))) +
     sec("表示", card("",
@@ -4940,6 +5007,7 @@ $("#prefsScroll").addEventListener("click", e => {
     confirmSheet("テンプレートを削除しますか", `「${k}」を削除します。メモに入れ済みの行はそのまま残ります。`, "削除する", () => { delete meta.prefs.templates[k]; saveMeta(); renderPrefs(); toast("削除しました"); });
   }
   else if (b.id === "reGuide") openTutorial();
+  else if (b.id === "tourOpen") startTour();
   else if (b.id === "sampleOpen") samplesSheet();
   else if (b.dataset.wtcol) typeColorSheet(b.dataset.wtcol);
   else if (b.id === "syncOn" || b.id === "syncLogin") Sync.start();
@@ -5516,7 +5584,7 @@ function moneyAdd() {
 function projectSheet(p) {
   const e = p ? JSON.parse(JSON.stringify(p)) : { id: uid(), name: "", start: ymd(new Date()), due: "", note: "", budget: 0, lines: [{ id: uid(), name: "", amt: 0 }] }; e.lines ||= [];
   openSheet(`<h2>${p ? "予算を直す" : "プロジェクトの予算を立てる"}</h2>
-    <label class="field"><span>プロジェクトの名前</span><input class="inp" id="pjN" maxlength="40" value="${esc(e.name)}" placeholder="例:ゲームの制作"></label>
+    <label class="field"><span>プロジェクトの名前</span><input class="inp" id="pjN" maxlength="40" value="${esc(e.name)}" placeholder="例:アプリの制作"></label>
     <div style="display:flex;gap:8px"><label class="field" style="flex:1;min-width:0"><span>始まり</span><input class="inp" id="pjS" type="date" value="${esc(e.start || "")}"></label><label class="field" style="flex:1;min-width:0"><span>終わり(なくてもよい)</span><input class="inp" id="pjD" type="date" value="${esc(e.due || "")}"></label></div>
     <div class="field"><span>費目と予算(例:素材、音楽、機材、外注)</span><div id="pjL"></div><button class="mini" data-lnadd style="margin-top:8px">＋ 費目を足す</button></div>
     <div class="small" style="display:flex;justify-content:space-between;padding:8px 0"><b>予算の合計</b><b class="num" id="pjT"></b></div>
@@ -5724,7 +5792,7 @@ function longHtml() {
 function goalSheet(g) {
   const e = g ? JSON.parse(JSON.stringify(g)) : { id: uid(), title: "", start: ymd(new Date()), due: "", note: "", ms: [] }; e.ms ||= [];
   openSheet(`<h2>${g ? "長期計画を直す" : "長期計画を足す"}</h2>
-    <label class="field"><span>目標</span><input class="inp" id="gT" maxlength="60" value="${esc(e.title)}" placeholder="例:ゲームを完成させて公開する"></label>
+    <label class="field"><span>目標</span><input class="inp" id="gT" maxlength="60" value="${esc(e.title)}" placeholder="例:アプリを完成させて公開する"></label>
     <div style="display:flex;gap:8px"><label class="field" style="flex:1;min-width:0"><span>始まり</span><input class="inp" id="gS" type="date" value="${esc(e.start || "")}"></label><label class="field" style="flex:1;min-width:0"><span>期限(なくてもよい)</span><input class="inp" id="gD" type="date" value="${esc(e.due || "")}"></label></div>
     <div class="field"><span>節目(すべて済むと100%)</span><div id="gM"></div>
       <div style="display:flex;gap:6px;margin-top:6px"><input class="inp" id="gMT" style="flex:1;min-width:0" maxlength="40" placeholder="例:体験版を出す"><input class="inp" id="gMD" type="date" style="flex:none;width:9.5em"><button class="btn" id="gMA" style="flex:none">足す</button></div></div>
@@ -5948,7 +6016,7 @@ function policySheet() {
     <p><b>1. 扱う情報</b><br>利用者が書いたメモ、ボードの配置、予定、収支、長期計画、タイマーの記録 / 本アプリを開いていた時間 / 利用者が選んだアプリの使用時間(「使用状況へのアクセス」を許可した場合のみ) / 端末に入っているアプリの名前の一覧(利用者がアプリを選ぶときのみ)</p>
     <p><b>2. 情報の保存と送信</b><br>${NATIVE ? "上の情報は、利用者の端末の中に保存します。本アプリは、これらの情報を開発者やほかの第三者に送信しません。本アプリは、「ドライブで同期」をオンにしたときだけ、利用者の Google ドライブ(このアプリ専用の隠しフォルダ)と通信して、上の情報を読み書きします。それ以外にはネットワークに接続せず、端末のクラウドバックアップの対象にもしません。利用者が書き出しや自動バックアップで選んだ保存先(Google ドライブなど)へは、その内容を書き込みます。その保存先での扱いは、保存先のサービスと利用者に委ねられます。" : `上の情報はこのブラウザの中に保存します。${ON_CLAUDE ? "claude.ai で開いたときは、利用者本人専用の領域へも同期します。" : ""}${canSync() ? "「ドライブで同期」をオンにしたときは、利用者の Google ドライブ(このアプリ専用の隠しフォルダ)へも保存します。" : ""}開発者やほかの第三者には送信しません。`}</p>
     ${NATIVE ? `<p><b>3. 権限</b><br>通知:タイマーのボタンと経過時間を出し、予定やタイマーを知らせるために使います。<br>アラームとリマインダー:その知らせを遅れずに届けるために使います。<br>再起動の知らせの受信:再起動のあと、通知と知らせを預け直すために使います。<br>使用状況へのアクセス:選んだアプリの使用時間を表示し、集中タイマー中に選んだアプリが前面に出たかを判断するために使います。<br>他のアプリの上に重ねて表示:集中タイマー中(最大5分)に選んだアプリの上を覆う画面を出し、設定でオンにした場合は、選んだアプリの使用中に今日の使用時間を画面の隅に出すために使います。<br>どの権限も、利用者が端末の設定でいつでも外せます。</p>` : ""}
-    <p><b>${NATIVE ? 4 : 3}. 情報の削除</b><br>「設定 › このアプリについて › すべてのデータを消す」で消せます。${NATIVE ? "本アプリをアンインストールしても、端末に保存された情報はすべて削除されます。" : ""}</p></div>
+    <p><b>${NATIVE ? 4 : 3}. 情報の削除</b><br>「設定 › このアプリ › すべてのデータを消す」で消せます。${NATIVE ? "本アプリをアンインストールしても、端末に保存された情報はすべて削除されます。" : ""}</p></div>
     <div class="btns"><button class="btn primary" data-x>閉じる</button></div>`, s => { $("[data-x]", s).onclick = closeSheet; });
 }
 function wipeSheet() {
@@ -6024,7 +6092,7 @@ function focusStart() { // 起動直後にすぐ書けるよう、前回の行(�
 }
 // ---- チュートリアルのメモ:初めて開いたときに置く(「設定」からも開ける)。触りながら覚えられるよう、ふつうのメモとして書いてある ----
 // 1行 = 「字下げ(空白2つで1段)+ 印 + 文」。印は ・ふつう ☐チェック ☑済み ■見出し。**太字** と {赤:色} はメモを開くときに範囲へ直る
-const TUTORIAL_ID = "tutorial", TUTORIAL2_ID = "tutorial2", TUTORIAL_V = 5; // 版を上げると、設定から開いたときに新しい文に置き直す
+const TUTORIAL_ID = "tutorial", TUTORIAL2_ID = "tutorial2", TUTORIAL_V = 7; // 版を上げると、設定から開いたときに新しい文に置き直す
 function tutorial2Lines() { // 発展:初めは出していない機能など
   return [
     "・チュートリアル(発展)",
@@ -6067,12 +6135,14 @@ function tutorialLines() {
   const where = NATIVE ? "この端末" : "このブラウザ";
   return [
     "・チュートリアル",
+    "・画面のボタンの場所は、画面の下の右端の「設定」の一番上の「使い方の案内」で、点滅する枠で順に見られます",
     "・←ここを押すと子をたためます",
     "  ・書いているときに画面の下(キーボードのすぐ上)に出る「→」を押すか、行の頭の「・」をドラッグすると、行を入れ子にできます",
     "    ・何段でも階層構造を作れます",
     "・書いてみる",
     "  ・行をタップすると書けます。改行で次の行へ進みます",
-    "  ・行を**長押し**すると持ち上がり、好きな場所へ動かせます。動かさずに離すと選択になり、ほかの行もタップで選んで、画面の下に出る「←」「→」「↑」「↓」でまとめて動かせます",
+    "  ・行の文を**長押し**すると選択になり、そのまま上下になぞるとまとめて選べます。画面の下に出る「←」「→」「↑」「↓」で、選んだ行をまとめて動かせます",
+    "  ・行の頭の「・」をドラッグすると、行を好きな場所へ動かせます",
     "  ・メモの上の段の左端の「↶」で一つ前に戻し、そのすぐ右の「↷」でやり直せます",
     "  ・書いているときに画面の下に出る「形式」で、行をチェックや見出しに変えられます",
     "    ☐ 行の頭で「[] 」と打つと、チェックになります",
@@ -6317,10 +6387,60 @@ function installSamples() {
   closeSheet(); show("board"); setBoardMode("map"); switchBoard(bid); fitView();
   toast("活用例を入れました。カードを押すと中身、メモの一覧に図鑑と年表があります");
 }
+// ---- 使い方の案内:画面のボタンを一つずつ点滅する枠で囲み、吹き出しで説明する(初めて開いたとき・設定から) ----
+const TOUR = [
+  ["board", "#boardNew", "「＋ メモ」でメモを足し、すぐ書き始めます。マップモードのときは、カードの上で表題だけを書きます"],
+  ["board", "#cards .bcard", "カードを押すとメモが開き、中身を書けます。長押しでメニュー(色・形・複製・削除)、ドラッグで移動です"],
+  ["board", "#cards .bcard .bc-h", "カードの右下の□を、別のカードまで引くと矢印でつながります"],
+  ["board", "#lassoBtn", "「◯ 囲む」を押してから指でぐるっと囲むと、グループになります"],
+  ["board", "#mindBtn", "「マップ」をオンにすると、カードの右の＋で、つながったカードを次々に足せます"],
+  ["board", "#bmode", "「図」と「リスト」で、並べ方を切り替えます"],
+  ["board", "#bbar", "ボードはいくつでも作れます。「＋ ボード」で足し、名前を押すとメニューが出ます"],
+  ["memo", "#fileBar", "メモの中です。「← ボード」でボードに戻ります"],
+  ["memo", "#btnUndo", "「↶」で一つ前に戻し、「↷」でやり直せます"],
+  ["memo", "#outline", "行を押して書きます。改行で次の行へ。文を長押しすると選べて、そのままなぞるとまとめて選べます。行の頭の「・」をドラッグすると動かせます"],
+  ["memo", '#nav [data-v="timer"]', "「タイマー」で作業時間を計ります"],
+  ["memo", '#nav [data-v="log"]', "「記録」で、かけた時間をグラフで見られます"],
+  ["memo", '#nav [data-v="plan"]', "「予定」で、日々の予定を書いておけます"],
+  ["memo", '#nav [data-v="prefs"]', "「設定」の一番上から、この案内とチュートリアルをいつでも見直せます"],
+];
+let tourAt = -1;
+function startTour() { closeSheet(); tourAt = -1; tourNext(); }
+function tourEnd() { tourAt = -1; $("#tourRing")?.remove(); $("#tourTip")?.remove(); window.removeEventListener("resize", tourPlace); }
+function tourNext() {
+  for (tourAt++; tourAt < TOUR.length; tourAt++) {
+    const [v, sel] = TOUR[tourAt];
+    if (v === "board" && view !== "board") { if (boardMode !== "map") setBoardMode("map"); show("board"); }
+    if (v === "memo" && view !== "memo") { if (!files[curFile]) setOutline(allFilesSorted()[0].id); openFile(curFile); show("memo"); }
+    const el = document.querySelector(sel);
+    if (el && el.getClientRects().length) { if (sel.startsWith("#cards")) centerOn(el.closest("[data-card]").dataset.card); break; } // 見えない所は飛ばす
+  }
+  if (tourAt >= TOUR.length) { tourEnd(); toast("案内はおしまいです。設定の一番上から、いつでも見直せます"); return; }
+  if (!$("#tourRing")) {
+    document.body.insertAdjacentHTML("beforeend", `<div class="tour-ring" id="tourRing"></div><div class="tour-tip" id="tourTip"><div class="tt-t"></div><div class="tt-b"><span class="tt-n"></span><span class="spacer"></span><button class="mini" data-tour="end">やめる</button><button class="btn primary" data-tour="next">次へ</button></div></div>`);
+    $("#tourTip").addEventListener("click", e => { const b = e.target.closest("[data-tour]"); if (!b) return; b.dataset.tour === "end" ? tourEnd() : tourNext(); });
+    window.addEventListener("resize", tourPlace);
+  }
+  $("#tourTip .tt-t").textContent = TOUR[tourAt][2];
+  $("#tourTip .tt-n").textContent = `${tourAt + 1} / ${TOUR.length}`;
+  $("#tourTip [data-tour=next]").textContent = tourAt === TOUR.length - 1 ? "おわり" : "次へ";
+  setTimeout(tourPlace, 60);
+}
+function tourPlace() {
+  if (tourAt < 0) return;
+  const el = document.querySelector(TOUR[tourAt][1]), ring = $("#tourRing"), tip = $("#tourTip"); if (!el || !ring) return;
+  const r = el.getBoundingClientRect(), pad = 6;
+  Object.assign(ring.style, { left: r.left - pad + "px", top: r.top - pad + "px", width: r.width + pad * 2 + "px", height: Math.min(r.height, innerHeight * .6) + pad * 2 + "px" });
+  const below = r.top + Math.min(r.height, innerHeight * .6) + 16, tw = Math.min(340, innerWidth - 24);
+  tip.style.width = tw + "px"; tip.style.left = Math.max(12, Math.min(innerWidth - tw - 12, r.left + r.width / 2 - tw / 2)) + "px";
+  const th = tip.offsetHeight;
+  tip.style.top = (below + th < innerHeight - 8 ? below : Math.max(8, r.top - th - 16)) + "px";
+}
 function firstRun() { // 初めて開いたとき:空のメモの代わりにチュートリアルのメモを置いて開く
   meta.guideSeen = true; saveMeta();
   for (const f of Object.values(files)) if (f.auto && isEmptyMemo(f)) { delete files[f.id]; for (const b of Object.values(boards)) delete b.cards[f.id]; }
   openTutorial();
+  setTimeout(() => { show("board"); startTour(); }, 400); // まずボードから、ボタンを順に案内する
   if (NATIVE) setTimeout(() => { try { Android.requestNotifyPerm(); } catch {} }, 1500); // 予定やタイマーの知らせのため
 }
 // Android の戻るボタン:開いているものを一つずつ閉じる。何もなければアプリを閉じる
