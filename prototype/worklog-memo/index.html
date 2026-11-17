@@ -3029,7 +3029,6 @@ boardEl.addEventListener("pointermove", e => {
   }
   if (e.pointerId !== gest.pid) return;
   const dx = e.clientX - gest.x0, dy = e.clientY - gest.y0;
-  if (!gest.moved && gest.type === "card" && Math.hypot(dx, dy) > 6 && Date.now() - gest.t0 < 140) { clearTimeout(gest.timer); gest = { ...gest, type: "pan", tx: BV.tx - dx, ty: BV.ty - dy }; } // 押してすぐ払ったら、カードではなくボードを動かす
   if (!gest.moved && Math.hypot(dx, dy) > (gest.type === "pan" ? 4 : 6)) { gest.moved = true; clearTimeout(gest.timer); if (gest.type === "edge") gest.type = "pan"; if (gest.type === "card") { gest.el.classList.add("moving"); showTrash(trashLabel("m")); } if (gest.type === "group") showTrash(trashLabel("g")); }
   if (!gest.moved) return;
   if (gest.type === "pan") { BV.tx = gest.tx + dx; BV.ty = gest.ty + dy; applyView(); (gest.samples ||= []).push([performance.now(), e.clientX, e.clientY]); if (gest.samples.length > 8) gest.samples.shift(); }
