@@ -1060,7 +1060,9 @@ function show(v, push = true) {
   if (v === "board" && boardMode === "list") renderBoardList();
   else if (v === "board") {
     renderBoard();
-    if (!LS.get(bvKey())) fitView();
+    if (!LS.get(bvKey()) || (BV.k <= ZOOM_MIN && Object.keys(board.cards).length < 12)) { // 下限の倍率を覚えてしまった(前に測りそこねた)ときも、測り直す
+      fitView(); const was = JSON.stringify(BV);
+      setTimeout(() => { if (JSON.stringify(BV) === was) fitView(); }, 400); } // 起動の直後は右のボタンや下の説明がまだ並び終わっていないので、触られていなければ測り直す
     else { // いまのメモのカードが画面の外なら、そこへ寄せる
       const el = cardsEl.querySelector(`[data-card="${curFile}"]`);
       if (el) { const r = boardEl.getBoundingClientRect(), b = el.getBoundingClientRect();
@@ -2939,14 +2941,19 @@ function fitView() {
   let x1 = Math.max(...bs.map(b => b.x + b.w)), y1 = Math.max(...bs.map(b => b.y + b.h));
   for (const g of board.groups) { const G = groupGeo(g); if (G) { x0 = Math.min(x0, G.x0); x1 = Math.max(x1, G.x1); y0 = Math.min(y0, G.y0 - 16); y1 = Math.max(y1, G.y1); } }
   const r = boardEl.getBoundingClientRect(), pad = 24, uw = r.width - (($(".bctl")?.offsetWidth || 0) + 12); // 右端のボタンの列にかからないように
-  const k = Math.max(ZOOM_MIN, Math.min(1.2, (uw - pad * 2) / (x1 - x0), (r.height - pad * 2) / (y1 - y0)));
-  BV.k = k; BV.tx = (uw - (x1 - x0) * k) / 2 - x0 * k; BV.ty = Math.max(pad, (r.height - (y1 - y0) * k) / 2) - y0 * k;
+  if (uw < 120 || r.height < 120) { // ボードがまだ画面に出ていない(幅が 0 の)うちは測れない。出てからやり直す(下限の倍率で覚えてしまわないように)
+    if ((fitView.tries = (fitView.tries || 0) + 1) <= 20) setTimeout(fitView, 150); return; }
+  fitView.tries = 0;
+  const hint = $("#bhint"), hr = hint && hint.offsetParent ? hint.getBoundingClientRect() : null; // 下の「ボードの使い方」が出ているときは、その上の空きに収める(カードが隠れないように)
+  const uh = hr && hr.height && hr.top > r.top + 160 ? Math.min(r.height, hr.top - r.top - 8) : r.height;
+  const k = Math.max(ZOOM_MIN, Math.min(1.2, (uw - pad * 2) / (x1 - x0), (uh - pad * 2) / (y1 - y0)));
+  BV.k = k; BV.tx = (uw - (x1 - x0) * k) / 2 - x0 * k; BV.ty = Math.max(pad, (uh - (y1 - y0) * k) / 2) - y0 * k;
   applyView();
 }
 function centerOn(id) {
   const b = cardBox(id); if (!b) return;
-  const r = boardEl.getBoundingClientRect();
-  BV.tx = r.width / 2 - b.cx * BV.k; BV.ty = r.height / 3 - b.cy * BV.k; applyView();
+  const r = boardEl.getBoundingClientRect(), uw = r.width - (($(".bctl")?.offsetWidth || 0) + 12); // 右端のボタンの列を除いた幅の真ん中へ
+  BV.tx = uw / 2 - b.cx * BV.k; BV.ty = r.height / 3 - b.cy * BV.k; applyView();
 }
 function groupAt(w, skip) { // その点を含む、いちばん内側の丸(skip に入っている丸は除く)
   let best = null;
